@@ -1,29 +1,46 @@
 import sqlite3
 from pathlib import Path
 
+from romini.composition.sqlite_schema import ensure_schema, open_state
+
 
 class SqliteMixer:
-    def __init__(self, path: Path, *, ceiling: int = 100) -> None:
+    def __init__(self, source: Path | sqlite3.Connection, *, ceiling: int = 100) -> None:
         self.ceiling = ceiling
-        self._path = path
-        with sqlite3.connect(path) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS mixer (id INTEGER PRIMARY KEY CHECK (id = 1), level INTEGER NOT NULL)"
-            )
-            conn.execute("INSERT OR IGNORE INTO mixer (id, level) VALUES (1, 0)")
+        if isinstance(source, sqlite3.Connection):
+            self._conn = source
+            self._path: Path | None = None
+        else:
+            self._conn = None
+            self._path = source
+            conn = open_state(source)
+            ensure_schema(conn)
+            conn.close()
 
     @property
     def level(self) -> int:
-        with sqlite3.connect(self._path) as conn:
-            row = conn.execute("SELECT level FROM mixer WHERE id = 1").fetchone()
+        conn = self._connect()
+        row = conn.execute("SELECT level FROM mixer WHERE id = 1").fetchone()
+        self._release(conn)
         if row is None:
             return 0
         return int(row[0])
 
     def set_level(self, level: int) -> None:
-        with sqlite3.connect(self._path) as conn:
-            conn.execute(
-                "INSERT INTO mixer (id, level) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET level = excluded.level",
-                (level,),
-            )
+        conn = self._connect()
+        conn.execute(
+            "INSERT INTO mixer (id, level) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET level = excluded.level",
+            (level,),
+        )
+        conn.commit()
+        self._release(conn)
+
+    def _connect(self) -> sqlite3.Connection:
+        if self._conn is not None:
+            return self._conn
+        assert self._path is not None
+        return open_state(self._path)
+
+    def _release(self, conn: sqlite3.Connection) -> None:
+        if self._conn is None:
+            conn.close()

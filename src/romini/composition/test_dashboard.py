@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from romini.composition.dashboard import create_dashboard
+from romini.composition.dashboard import DiskStorage, create_dashboard
 from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import PlayMode
@@ -100,3 +100,21 @@ def test_dashboard_switches_play_mode(tmp_path: Path) -> None:
 
     assert response.status_code == 204
     assert settings.play_mode() is PlayMode.TAP
+
+
+def test_disk_storage_puts_audio_and_reports_free_space(tmp_path: Path) -> None:
+    storage = DiskStorage(tmp_path / "library")
+    storage.put("frog.mp3", b"id3")
+
+    assert (tmp_path / "library" / "frog.mp3").read_bytes() == b"id3"
+    assert storage.free_bytes > 0
+
+
+def test_dashboard_home_shows_free_space() -> None:
+    from fastapi.testclient import TestClient
+
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024))
+    response = TestClient(app).get("/")
+
+    assert response.status_code == 200
+    assert "1024" in response.text

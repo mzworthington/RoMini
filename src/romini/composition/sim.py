@@ -8,6 +8,7 @@ from romini.composition.pi import SystemdHalt
 from romini.composition.sessions import MemorySessions
 from romini.composition.sqlite_catalog import SqliteCatalog
 from romini.composition.sqlite_mixer import SqliteMixer
+from romini.composition.sqlite_schema import ensure_schema, open_state
 from romini.composition.sqlite_sessions import SqliteSessions
 from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.library.import_catalog import import_catalog
@@ -88,11 +89,13 @@ def load_sim_box(
     library_root = data_dir / "library"
     catalog_yaml = (data_dir / "catalog.yaml").read_text()
     db = data_dir / "state.sqlite"
+    conn = open_state(db)
+    ensure_schema(conn)
     if sessions is None:
-        sessions = SqliteSessions(db)
+        sessions = SqliteSessions(conn)
     if mixer is None:
-        mixer = SqliteMixer(db)
-    settings = SqliteSettings(db)
+        mixer = SqliteMixer(conn)
+    settings = SqliteSettings(conn)
     if play_mode is None:
         play_mode = settings.play_mode() or PlayMode.PRESENCE
     else:
@@ -108,7 +111,8 @@ def load_sim_box(
         sessions=sessions,
         mixer=mixer,
     )
-    SqliteCatalog(db).replace_tracks(box.library.tracks)
+    SqliteCatalog(conn).replace_tracks(box.library.tracks)
+    box.state = conn
     return box
 
 
