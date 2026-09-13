@@ -79,3 +79,11 @@ def test_power_returns_in_presence_resumes_mapped_figure() -> None:
 
     assert earcon.plays == [READY_EARCON_PATH]
     assert story.plays == [("/var/lib/romini/library/bear.mp3", 14.5)]
+
+
+def test_ready_wav_is_packaged() -> None:
+    from importlib.resources import files
+
+    wav = files("romini").joinpath("ready.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"

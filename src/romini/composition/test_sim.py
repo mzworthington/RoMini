@@ -4,11 +4,21 @@ from pathlib import Path
 import pytest
 
 from romini.composition.catalog import poll_catalog, run_catalog_ticks
-from romini.composition.gpio import GPIO_VOL_UP, apply_gpio_press
+from romini.composition.gpio import (
+    GPIO_HALT,
+    GPIO_LED,
+    GPIO_PLAY,
+    GPIO_VOL_DOWN,
+    GPIO_VOL_UP,
+    GpioLed,
+    apply_gpio_press,
+)
 from romini.composition.halt import LoggingHalt
 from romini.composition.http import apply_sim_http, start_sim_http
 from romini.composition.inject import apply_sim_line, run_sim_lines
+from romini.composition.loop import run_core_ticks
 from romini.composition.nfc import NFC_POLL_SEC, FakeNfc, poll_nfc, run_nfc_ticks
+from romini.composition.pi import SystemdHalt
 from romini.composition.sim import SimBox, load_sim_box, load_sim_box_from_env
 from romini.composition.sqlite_catalog import SqliteCatalog
 from romini.composition.sqlite_sessions import SqliteSessions
@@ -66,6 +76,14 @@ class FakeLed:
 
     def flash(self) -> None:
         self.flashes += 1
+
+
+@dataclass
+class FakeLedDriver:
+    pins: list[int] = field(default_factory=list)
+
+    def pulse(self, pin: int) -> None:
+        self.pins.append(pin)
 
 
 def test_sim_place_plays_mapped_catalog_track() -> None:
@@ -164,6 +182,18 @@ def test_load_sim_box_from_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     box.place("04aabbccddeeff")
 
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_load_pi_box_from_env_uses_systemd_halt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+
+    box = load_sim_box_from_env(player=FakePlayer(), led=FakeLed())
+
+    assert isinstance(box.halt, SystemdHalt)
 
 
 def test_sim_line_place_starts_the_track() -> None:
@@ -782,6 +812,95 @@ def test_gpio_vol_up_steps_the_mixer() -> None:
     apply_gpio_press(box, GPIO_VOL_UP)
 
     assert mixer.level == 11
+
+
+def test_gpio_vol_down_steps_the_mixer() -> None:
+    mixer = FakeMixer(level=10, ceiling=100)
+    box = SimBox(
+        catalog_yaml="tracks: []\n",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: False,
+        player=FakePlayer(),
+        led=FakeLed(),
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        mixer=mixer,
+    )
+
+    apply_gpio_press(box, GPIO_VOL_DOWN)
+
+    assert mixer.level == 9
+
+
+def test_gpio_play_starts_selected_tap_track() -> None:
+    player = FakePlayer()
+    box = SimBox(
+        catalog_yaml="""
+tracks:
+  - uid: "04aabbccddeeff"
+    path: "stories/frog-prince.mp3"
+    title: "The Frog Prince"
+""",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+        player=player,
+        led=FakeLed(),
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+    )
+    box.place("04aabbccddeeff")
+
+    apply_gpio_press(box, GPIO_PLAY)
+
+    assert player.plays == [("/var/lib/romini/library/stories/frog-prince.mp3", 0.0)]
+
+
+def test_gpio_halt_flashes_and_powers_off() -> None:
+    led = FakeLed()
+    halt = FakeHalt()
+    box = SimBox(
+        catalog_yaml="tracks: []\n",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: False,
+        player=FakePlayer(),
+        led=led,
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        halt=halt,
+    )
+
+    apply_gpio_press(box, GPIO_HALT)
+
+    assert led.flashes == 1
+    assert halt.poweroffs == 1
+
+
+def test_gpio_led_pulses_on_pin_27() -> None:
+    driver = FakeLedDriver()
+    led = GpioLed(driver)
+
+    led.pulse()
+
+    assert GPIO_LED == 27
+    assert driver.pins == [27]
+
+
+def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    sleeps: list[float] = []
+
+    run_core_ticks(
+        box,
+        FakeNfc(),
+        data_dir=data,
+        ticks=[None, None],
+        sleep=sleeps.append,
+    )
+
+    assert sleeps == [NFC_POLL_SEC, NFC_POLL_SEC]
 
 
 def test_sim_line_play_starts_selected_tap_track() -> None:
