@@ -1,0 +1,11 @@
+[Unit]
+Description=RoMini GitHub Release updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+EnvironmentFile=-/etc/romini/env
+ExecStart=/var/lib/romini/repo/bin/update

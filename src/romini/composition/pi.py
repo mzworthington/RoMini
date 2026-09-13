@@ -7,29 +7,47 @@ class SystemdHalt:
 
 
 class MpvPlayer:
+    def __init__(self, ipc=None) -> None:
+        self._ipc = ipc
+        self._playing = False
+        self._uid: str | None = None
+        self._path: str | None = None
+        self._selected: tuple[str, str] | None = None
+
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        subprocess.run(["mpv", "--ao=alsa", f"--start={position_sec}", path], check=False)
+        subprocess.run(
+            ["mpv", "--ao=alsa", "--input-ipc-server=/tmp/romini-mpv.sock", f"--start={position_sec}", path],
+            check=False,
+        )
+        self._playing = True
+        self._uid = uid
+        self._path = path
 
     def select(self, uid: str, path: str) -> None:
-        return
+        self._selected = (uid, path)
 
     def selected_track(self) -> tuple[str, str] | None:
-        return None
+        return self._selected
 
     def pause(self) -> None:
-        return
+        if self._ipc is not None:
+            self._ipc('{"command":["set_property","pause",true]}')
+        self._playing = False
 
     def stop(self) -> None:
-        return
+        if self._ipc is not None:
+            self._ipc('{"command":["stop"]}')
+        self._playing = False
+        self._uid = None
 
     def is_playing(self) -> bool:
-        return False
+        return self._playing
 
     def playing_uid(self) -> str | None:
-        return None
+        return self._uid
 
     def playing_path(self) -> str | None:
-        return None
+        return self._path
 
 
 class Pn532Nfc:

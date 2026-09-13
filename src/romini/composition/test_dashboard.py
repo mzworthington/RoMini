@@ -215,3 +215,16 @@ def test_dashboard_home_lists_catalog_titles(tmp_path: Path) -> None:
 
     assert "The Frog Prince" in response.text
     assert "04aabbccddeeff" in response.text
+
+
+def test_dashboard_pi_profile_may_bind_lan(monkeypatch) -> None:
+    from fastapi import FastAPI
+
+    from romini.composition.dashboard import start_dashboard
+
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    listener = start_dashboard(FastAPI(), host="0.0.0.0", port=0)
+    try:
+        assert listener.port > 0
+    finally:
+        listener.close()

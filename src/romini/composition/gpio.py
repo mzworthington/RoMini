@@ -24,6 +24,17 @@ class GpioLed:
         self._driver.pulse(GPIO_LED)
 
 
+class RpiGpioLedDriver:
+    def __init__(self, gpio: object) -> None:
+        self._gpio = gpio
+        gpio.setmode(gpio.BCM)
+        gpio.setup(GPIO_LED, gpio.OUT)
+
+    def pulse(self, pin: int) -> None:
+        self._gpio.output(pin, self._gpio.HIGH)
+        self._gpio.output(pin, self._gpio.LOW)
+
+
 def apply_gpio_press(box: SimBox, pin: int) -> None:
     if pin == GPIO_VOL_UP:
         on_volume_up(mixer=box.mixer)

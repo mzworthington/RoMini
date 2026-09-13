@@ -245,3 +245,58 @@ def test_romini_core_main_pi_profile_defaults_mpv_player(tmp_path: Path, monkeyp
     box = main(led=FakeLed())
 
     assert isinstance(box.player, MpvPlayer)
+
+
+def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+    hosts: list[str] = []
+
+    class Listener:
+        port = 80
+
+        def close(self) -> None:
+            return
+
+    def start(app, *, host: str, port: int) -> Listener:
+        hosts.append(host)
+        return Listener()
+
+    monkeypatch.setattr("romini.__main__.start_dashboard", start)
+    main(led=FakeLed())
+
+    assert hosts == ["0.0.0.0"]
+
+
+def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.gpio import GpioLed
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+
+    class Gpio:
+        BCM = 11
+        OUT = 0
+        HIGH = 1
+        LOW = 0
+
+        def setmode(self, mode: int) -> None:
+            return
+
+        def setup(self, pin: int, mode: int) -> None:
+            return
+
+        def output(self, pin: int, value: int) -> None:
+            return
+
+    monkeypatch.setattr("romini.__main__.load_rpi_gpio", lambda: Gpio())
+    box = main()
+
+    assert isinstance(box.led, GpioLed)
