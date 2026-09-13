@@ -260,6 +260,26 @@ def test_play_button_pauses_when_a_track_is_playing() -> None:
     assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
 
 
+def test_play_button_resumes_after_pause_in_presence() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    led = FakeLed()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+    on_play_pressed(player=player)
+    on_play_pressed(player=player)
+
+    assert player.pauses == 1
+    assert player.is_playing() is True
+
+
 def test_long_press_play_restarts_the_track() -> None:
     library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
     player = FakePlayer()

@@ -1,7 +1,14 @@
 from collections.abc import Callable
 
 from romini.features.library.import_catalog import import_catalog
-from romini.features.play_by_tag.place_figure import Player, PlayMode, StatusLed, on_figure_placed
+from romini.features.play_by_tag.place_figure import (
+    Player,
+    PlayMode,
+    Sessions,
+    StatusLed,
+    on_figure_lifted,
+    on_figure_placed,
+)
 
 
 class SimBox:
@@ -15,6 +22,7 @@ class SimBox:
         led: StatusLed,
         play_mode: PlayMode,
         assign_mode: bool,
+        sessions: Sessions | None = None,
     ) -> None:
         self.library = import_catalog(
             catalog_yaml,
@@ -25,6 +33,7 @@ class SimBox:
         self.led = led
         self.play_mode = play_mode
         self.assign_mode = assign_mode
+        self.sessions = sessions
 
     def place(self, uid: str) -> None:
         on_figure_placed(
@@ -34,4 +43,16 @@ class SimBox:
             library=self.library,
             player=self.player,
             led=self.led,
+        )
+
+    def lift(self, uid: str, *, elapsed_sec: float, position_sec: float) -> None:
+        if self.sessions is None:
+            return
+        on_figure_lifted(
+            uid,
+            play_mode=self.play_mode,
+            elapsed_sec=elapsed_sec,
+            position_sec=position_sec,
+            player=self.player,
+            sessions=self.sessions,
         )

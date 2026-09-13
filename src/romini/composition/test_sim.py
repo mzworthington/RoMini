@@ -79,3 +79,38 @@ tracks:
 
     assert player.plays == [("/var/lib/romini/library/stories/frog-prince.mp3", 0.0)]
     assert led.pulses == 1
+
+
+@dataclass
+class FakeSessions:
+    positions: dict[str, float] = field(default_factory=dict)
+
+    def remember(self, uid: str, position_sec: float) -> None:
+        self.positions[uid] = position_sec
+
+
+def test_sim_lift_pauses_after_grace() -> None:
+    player = FakePlayer()
+    led = FakeLed()
+    sessions = FakeSessions()
+    box = SimBox(
+        catalog_yaml="""
+tracks:
+  - uid: "04aabbccddeeff"
+    path: "stories/frog-prince.mp3"
+    title: "The Frog Prince"
+""",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+        player=player,
+        led=led,
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        sessions=sessions,
+    )
+
+    box.place("04aabbccddeeff")
+    box.lift("04aabbccddeeff", elapsed_sec=2.1, position_sec=14.5)
+
+    assert player.pauses == 1
+    assert sessions.positions == {"04aabbccddeeff": 14.5}
