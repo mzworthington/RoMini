@@ -51,6 +51,7 @@ class Halt(Protocol):
 
 
 PRESENCE_LIFT_GRACE_SEC = 2.0
+ASSIGN_IDLE_SEC = 60.0
 
 
 def on_figure_placed(
@@ -140,3 +141,9 @@ def on_halt_pressed(
             sessions.remember(uid, position_sec)
     led.flash()
     halt.poweroff()
+
+
+def next_assign_mode(*, assign_mode: bool, idle_sec: float) -> bool:
+    if not assign_mode:
+        return False
+    return idle_sec < ASSIGN_IDLE_SEC

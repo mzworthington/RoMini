@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from romini.features.play_by_tag.place_figure import (
     PlayMode,
+    next_assign_mode,
     on_figure_lifted,
     on_figure_placed,
     on_halt_pressed,
@@ -333,3 +334,7 @@ def test_short_press_halt_remembers_position_and_powers_off() -> None:
     assert led.flashes == 1
     assert halt.poweroffs == 1
     assert sessions.positions == {"04AABBCC": 14.5}
+
+
+def test_assign_ends_on_idle() -> None:
+    assert next_assign_mode(assign_mode=True, idle_sec=60.0) is False
