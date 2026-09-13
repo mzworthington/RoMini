@@ -1,6 +1,6 @@
 {
   "name": "RoMini",
-  "install": "python3 -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pip install -e . --no-deps",
+  "install": "bash .cursor/install.sh",
   "terminals": [
     {
       "name": "web",
