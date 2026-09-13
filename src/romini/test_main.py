@@ -142,6 +142,27 @@ def test_romini_core_main_starts_sim_http(tmp_path: Path, monkeypatch) -> None:
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
 
 
+def test_romini_core_main_starts_dashboard(tmp_path: Path, monkeypatch) -> None:
+    import json
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/storage") as resp:
+            body = json.loads(resp.read().decode())
+    finally:
+        box.dashboard.close()
+
+    assert "free_bytes" in body
+
+
 def test_romini_core_main_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"

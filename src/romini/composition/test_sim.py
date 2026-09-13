@@ -736,6 +736,18 @@ def test_load_sim_box_writes_state_sqlite(tmp_path: Path) -> None:
     assert not (data / "sessions.db").exists()
 
 
+def test_load_sim_box_applies_schema_version(tmp_path: Path) -> None:
+    import sqlite3
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+
+    conn = sqlite3.connect(data / "state.sqlite")
+    assert conn.execute("SELECT version FROM schema_version WHERE id = 1").fetchone() == (1,)
+
+
 def test_load_sim_box_unmaps_removed_yaml_uid_and_keeps_position(tmp_path: Path) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"
