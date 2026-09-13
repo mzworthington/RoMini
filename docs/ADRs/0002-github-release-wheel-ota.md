@@ -33,7 +33,7 @@ Chosen option: "**Option A**", because it is proven on gpio, keeps the updater o
 * Good, because rollback is `pip install` a previous wheel.
 * Bad, because the Pi still needs a persistent clone for `bin/update` and unit files (not in the wheel).
 * The repo is **public** from day one; the device still uses a **PAT** in `/etc/romini/env` (chmod 600) for Releases API auth and rate limits. Never commit the token.
-* Follow-up: skip install while playing; copy updated unit files from the clone after `git fetch` of tags only if we later put units in the repo without overlaying `/etc`.
+* Follow-up: skip install while playing is implemented (`apply_update` + `MpvIpcStatus`). Copy updated unit files from the clone after `git fetch` of tags only if we later put units in the repo without overlaying `/etc`.
 
 ## Architecture sketch
 

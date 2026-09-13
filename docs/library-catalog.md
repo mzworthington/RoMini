@@ -4,10 +4,10 @@ Source of truth for **Tracks and Tag mappings**. Live playback position, volume,
 
 Path on the box: `/var/lib/romini/catalog.yaml` (data volume). Audio files sit beside it under `/var/lib/romini/library/`. `path` is relative to `library/`.
 
-There is **no daemon yet**. When it exists, `romini-core` will:
+`romini-core` does this today:
 
-1. Read `catalog.yaml` at start.
-2. Watch for changes (mtime) and import again without a restart.
+1. Read `catalog.yaml` at start (`load_sim_box`).
+2. Watch for changes (mtime) on the core tick loop and import again without a restart.
 3. Upsert Library + TagMapping in SQLite.
 4. Skip a row if the YAML is invalid or the MP3 is missing; keep playing other Tags.
 5. **Not** copy pause position into YAML.

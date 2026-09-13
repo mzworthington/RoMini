@@ -1,6 +1,6 @@
 # RoMini technical architecture
 
-Planning artefact for the Raspberry Pi player. Product: [PRD_001.md](./PRD_001.md). Behaviour: [spec.md](./spec.md). Decisions: [ADRs](./ADRs/README.md).
+Planning artefact for the Raspberry Pi player. Operator steps: [guide.md](./guide.md). Product: [PRD_001.md](./PRD_001.md). Behaviour: [spec.md](./spec.md). Decisions: [ADRs](./ADRs/README.md).
 
 gpio-build-monitor is the operational template for **device install, systemd, and GitHub Release wheels**. Playback stays offline. OTA uses a PAT against public Releases.
 
@@ -142,11 +142,11 @@ flowchart TB
 
 ## 5. Over-the-wire updates
 
-gpio-style `bin/update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota.md)). Public repo; **PAT** in `/etc/romini/env`. Skip upgrade while a Track is playing. Do not `git pull` the daemon.
+gpio-style `bin/update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota.md)). Public repo; **PAT** in `/etc/romini/env`. `apply_update` skips while mpv IPC says a Track is playing. Do not `git pull` the daemon.
 
 ## 6. Parent dashboard
 
-`http://romini.local` on house WPA. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`** then import. Play mode switch lives here (SQLite/settings, not YAML).
+`http://romini.local` on house WPA when Avahi + port 80 are on. Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`**. Play mode switch lives here (SQLite, not YAML). Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
 
 ## 7. Runtime
 
@@ -160,32 +160,32 @@ Profiles `sim` / `pi`: [ADR-0004](./ADRs/0004-composition-root-profiles.md), [de
 
 LED: boot animation, then steady = ready, pulse = playing, flash = shutting down.
 
-### Ports (planned)
+### Ports
 
-No source tree yet. Domain talks these ports; adapters bind in `sim` / `pi`.
+Domain talks these; adapters bind in `sim` / `pi` (`src/romini/`).
 
 | Port | Direction | Role |
 |------|-----------|------|
-| Nfc | in | Current Tag UID or none, 250ms |
-| Buttons | in | Halt, vol±, play/pause, long-press |
-| Catalog | in | Load/watch YAML; dashboard writes it |
-| Player | out | Play path + position, pause, end-of-track |
-| LibraryStore | out | Tracks/mappings cache after import |
-| SessionStore | out | Position, volume, play_mode |
+| Nfc | in | Current Tag UID or none, 250ms (`poll_nfc` in `run_core_ticks`) |
+| Buttons | in | Halt, vol±, play/pause (`apply_gpio_press` / TTY / sim HTTP). Not yet in the core tick loop |
+| Catalog | in | Load/watch YAML mtime; dashboard writes it |
+| Player | out | Play path + position, pause; `sim` silent, `pi` mpv |
+| LibraryStore | out | SQLite cache after YAML import |
+| SessionStore | out | Position, volume, play_mode in `state.sqlite` |
 | Mixer | out | Volume with ceiling |
-| StatusLed | out | Ready / playing / halt / boot |
-| Halt | out | Clean poweroff |
+| StatusLed | out | Pulse / flash (GPIO 27 on `pi`) |
+| Halt | out | `LoggingHalt` on `sim`; `systemctl poweroff` on `pi` |
 
 ## 8. CI / release
 
-PR: ruff, pytest, typecheck. `main`: semantic-release wheel on GitHub Releases. Device timer installs the wheel with PAT.
+PR: `pre-commit --all-files` + `make test` (ruff, pytest). `main`: semantic-release wheel on GitHub Releases. Device timer installs the wheel with PAT.
 
 ## 9. Implementation order
 
-1. Domain + presence/tap slices on `sim` ([spec.md](./spec.md)).
-2. Breadboard: PN532 SPI + mpv into powered speaker.
-3. Four buttons, halt, boot earcon.
-4. Dashboard + overlay + updater.
+1. Domain + presence/tap slices on `sim` — done ([spec.md](./spec.md)).
+2. Breadboard: PN532 SPI + mpv into powered speaker — soak.
+3. Four buttons in `run_core_ticks`, halt wake, boot earcon on device — soak / remaining GPIO poll.
+4. Dashboard + provision files + updater skip-while-playing — laptop complete; overlay on device.
 5. Birthday: `library/` + `catalog.yaml` + affixed Tags.
 
 ## 10. Open questions

@@ -1,6 +1,6 @@
 # Specification: RoMini player
 
-Stakeholder spec after grilling 2026-09-13. Technical layout: [architecture.md](./architecture.md). Product: [PRD_001.md](./PRD_001.md).
+Stakeholder spec after grilling 2026-09-13. How to run: [guide.md](./guide.md). Technical layout: [architecture.md](./architecture.md). Product: [PRD_001.md](./PRD_001.md).
 
 ## Bounded context
 
