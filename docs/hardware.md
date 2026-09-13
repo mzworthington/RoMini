@@ -74,8 +74,8 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 |------|----------------|
 | NFC | PN532 SPI, 250ms, UID hex |
 | LED | GPIO 27 PWM |
-| Vol ± | GPIO 22 / 23 |
-| Play/pause | GPIO 24 |
+| Vol ± | GPIO 22 / 23 (`apply_gpio_press`; not yet in `run_core_ticks`) |
+| Play/pause | GPIO 24 (same) |
 | Catalog import | Watch `catalog.yaml`, upsert mappings |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |

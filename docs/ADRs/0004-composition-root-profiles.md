@@ -48,5 +48,5 @@ flowchart TB
 ## Links
 
 * Related ADRs: [0001](./0001-python-hexagonal-daemon.md)
-* Spec / issue: [development.md](../development.md), [architecture.md](../architecture.md)
+* Spec / issue: [guide.md](../guide.md), [development.md](../development.md), [architecture.md](../architecture.md)
 * Arch norms: hexagonal composition root; gpio `python -O` is **not** copied
