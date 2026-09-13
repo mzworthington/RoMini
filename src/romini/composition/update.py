@@ -59,9 +59,7 @@ def main() -> int:
     import subprocess
     import urllib.request
 
-    class Idle:
-        def is_playing(self) -> bool:
-            return False
+    from romini.composition.pi import MpvIpcStatus
 
     repo = os.environ.get("GITHUB_REPO", "mzworthington/RoMini")
     token = os.environ.get("GITHUB_TOKEN", "")
@@ -91,7 +89,7 @@ def main() -> int:
         subprocess.run(["systemctl", "restart", "romini-core"], check=False)
 
     result = run_cli(
-        player=Idle(),
+        player=MpvIpcStatus(),
         fetch_release=lambda: payload,
         installed_version=installed_version,
         install=install,

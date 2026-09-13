@@ -104,3 +104,50 @@ def test_update_cli_applies_github_release_when_idle() -> None:
 
     assert result == "updated"
     assert installed == ["https://example.test/romini.whl"]
+
+
+def test_update_main_skips_when_mpv_is_playing(monkeypatch) -> None:
+    from romini.composition.pi import MpvIpcStatus
+    from romini.composition.update import main as update_main
+
+    class Sock:
+        def sendall(self, data: bytes) -> None:
+            return
+
+        def recv(self, n: int) -> bytes:
+            return b'{"data":false,"error":"success"}\n'
+
+        def close(self) -> None:
+            return
+
+    installed: list[str] = []
+
+    def urlopen(request, timeout: int = 30):
+        class Resp:
+            def read(self) -> bytes:
+                return (
+                    b'{"tag_name":"v0.2.0","assets":[{"name":"romini-0.2.0-py3-none-any.whl",'
+                    b'"browser_download_url":"https://example.test/romini.whl"}]}'
+                )
+
+            def __enter__(self) -> object:
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        return Resp()
+
+    monkeypatch.setenv("ROMINI_PIP", "/bin/false")
+    monkeypatch.setattr(
+        "romini.composition.update.run_cli",
+        lambda **kwargs: installed.append(type(kwargs["player"]).__name__) or "skipped",
+    )
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+    monkeypatch.setattr("romini.composition.pi.MpvIpcStatus", lambda: MpvIpcStatus(connect=lambda path: Sock()))
+
+    try:
+        update_main()
+    except SystemExit as exc:
+        assert exc.code == 0
+    assert installed == ["MpvIpcStatus"]

@@ -9,8 +9,8 @@ from romini.composition.gpio import GpioLed, RpiGpioLedDriver
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
 from romini.composition.loop import run_core_ticks
-from romini.composition.nfc import Nfc
-from romini.composition.pi import MpvPlayer
+from romini.composition.nfc import FakeNfc, Nfc
+from romini.composition.pi import MpvPlayer, Pn532Nfc
 from romini.composition.sim import SimBox, load_sim_box_from_env
 from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.play_by_tag.place_figure import Player, StatusLed
@@ -66,6 +66,28 @@ def default_led() -> StatusLed:
     return GpioLed(RpiGpioLedDriver(gpio))
 
 
+def default_nfc() -> Nfc:
+    if os.environ.get("ROMINI_PROFILE", "sim") != "pi":
+        return FakeNfc()
+    try:
+        from nfc import PN532_SPI
+
+        return Pn532Nfc(PN532_SPI(reset=20, cs=4))
+    except ImportError:
+        return FakeNfc()
+
+
+def default_ticks():
+    while True:
+        yield None
+
+
+def entry(*, player: Player | None = None, led: StatusLed | None = None) -> SimBox:
+    if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
+        return main(player=player, led=led, nfc=default_nfc(), ticks=default_ticks())
+    return run(player=player, led=led)
+
+
 def main(
     *,
     player: Player | None = None,
@@ -111,4 +133,4 @@ def run(*, player: Player | None = None, led: StatusLed | None = None) -> SimBox
 
 
 if __name__ == "__main__":
-    run()
+    entry()

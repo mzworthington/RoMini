@@ -300,3 +300,25 @@ def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> N
     box = main()
 
     assert isinstance(box.led, GpioLed)
+
+
+def test_romini_core_entry_on_pi_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> None:
+    from romini.__main__ import entry
+    from romini.composition.nfc import FakeNfc
+
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setattr("romini.__main__.default_nfc", lambda: FakeNfc(uid="04aabbccddeeff"))
+    monkeypatch.setattr("romini.__main__.default_ticks", lambda: [None])
+    player = FakePlayer()
+
+    entry(player=player, led=FakeLed())
+
+    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]

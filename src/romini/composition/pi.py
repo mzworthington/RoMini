@@ -15,9 +15,8 @@ class MpvPlayer:
         self._selected: tuple[str, str] | None = None
 
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        subprocess.run(
-            ["mpv", "--ao=alsa", "--input-ipc-server=/tmp/romini-mpv.sock", f"--start={position_sec}", path],
-            check=False,
+        subprocess.Popen(
+            ["mpv", "--ao=alsa", "--input-ipc-server=/tmp/romini-mpv.sock", f"--start={position_sec}", path]
         )
         self._playing = True
         self._uid = uid
@@ -48,6 +47,33 @@ class MpvPlayer:
 
     def playing_path(self) -> str | None:
         return self._path
+
+
+class MpvIpcStatus:
+    def __init__(self, connect=None, path: str = "/tmp/romini-mpv.sock") -> None:
+        self._connect = connect
+        self._path = path
+
+    def is_playing(self) -> bool:
+        import json
+
+        connect = self._connect if self._connect is not None else _unix_connect
+        try:
+            sock = connect(self._path)
+            sock.sendall(b'{"command":["get_property","pause"]}\n')
+            payload = json.loads(sock.recv(4096).decode())
+            sock.close()
+        except OSError:
+            return False
+        return payload.get("data") is False
+
+
+def _unix_connect(path: str) -> object:
+    import socket
+
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect(path)
+    return sock
 
 
 class Pn532Nfc:
