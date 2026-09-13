@@ -1,0 +1,11 @@
+{
+  "name": "RoMini",
+  "install": "python3 -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pip install -e . --no-deps",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "PORT=8000 .venv/bin/python -m romini"
+    }
+  ],
+  "ports": [8000]
+}

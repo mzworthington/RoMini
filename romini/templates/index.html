@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoMini · Magic Storyteller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="logo">✨🪄📖</div>
+      <h1>RoMini</h1>
+      <p class="tagline">A magic storyteller, built for Romy</p>
+    </header>
+
+    <section class="panel" aria-label="Story options">
+      <div class="field">
+        <label for="hero">Who is the hero?</label>
+        <input
+          id="hero"
+          type="text"
+          value="Romy"
+          maxlength="40"
+          placeholder="Type a name…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="field">
+        <label>Pick a magical world</label>
+        <div class="themes" id="themes" role="radiogroup">
+          {% for theme in themes %}
+          <button
+            type="button"
+            class="theme-chip{% if loop.first %} selected{% endif %}"
+            role="radio"
+            aria-checked="{{ 'true' if loop.first else 'false' }}"
+            data-theme="{{ theme.key }}"
+          >
+            <span class="theme-emoji">{{ theme.emoji }}</span>
+            <span class="theme-label">{{ theme.label }}</span>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button id="generate" class="magic-btn" type="button">
+        <span class="btn-emoji">🪄</span>
+        <span class="btn-text">Tell me a story!</span>
+      </button>
+    </section>
+
+    <section id="story" class="story-card" aria-live="polite" hidden>
+      <div class="story-emoji" id="story-emoji">📖</div>
+      <h2 id="story-title">…</h2>
+      <div id="story-body" class="story-body"></div>
+      <button id="again" class="again-btn" type="button">✨ Another one!</button>
+    </section>
+
+    <footer class="foot">
+      <span>Made with love · RoMini v{{ version }}</span>
+    </footer>
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
