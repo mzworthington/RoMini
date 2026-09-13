@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from romini.composition.inject import apply_sim_line, run_sim_lines
 from romini.composition.sim import SimBox, load_sim_box, load_sim_box_from_env
 from romini.features.play_by_tag.place_figure import PlayMode
 
@@ -153,3 +154,79 @@ def test_load_sim_box_from_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     box.place("04aabbccddeeff")
 
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_sim_line_place_starts_the_track() -> None:
+    player = FakePlayer()
+    led = FakeLed()
+    box = SimBox(
+        catalog_yaml="""
+tracks:
+  - uid: "04aabbccddeeff"
+    path: "stories/frog-prince.mp3"
+    title: "The Frog Prince"
+""",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+        player=player,
+        led=led,
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+    )
+
+    apply_sim_line(box, "place 04aabbccddeeff")
+
+    assert player.plays == [("/var/lib/romini/library/stories/frog-prince.mp3", 0.0)]
+
+
+def test_sim_line_lift_pauses_after_grace() -> None:
+    player = FakePlayer()
+    led = FakeLed()
+    sessions = FakeSessions()
+    box = SimBox(
+        catalog_yaml="""
+tracks:
+  - uid: "04aabbccddeeff"
+    path: "stories/frog-prince.mp3"
+    title: "The Frog Prince"
+""",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+        player=player,
+        led=led,
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        sessions=sessions,
+    )
+
+    apply_sim_line(box, "place 04aabbccddeeff")
+    apply_sim_line(box, "lift")
+
+    assert player.pauses == 1
+    assert sessions.positions == {"04aabbccddeeff": 0.0}
+
+
+def test_sim_lines_stop_at_quit() -> None:
+    player = FakePlayer()
+    led = FakeLed()
+    sessions = FakeSessions()
+    box = SimBox(
+        catalog_yaml="""
+tracks:
+  - uid: "04aabbccddeeff"
+    path: "stories/frog-prince.mp3"
+    title: "The Frog Prince"
+""",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+        player=player,
+        led=led,
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        sessions=sessions,
+    )
+
+    run_sim_lines(box, ["place 04aabbccddeeff", "quit", "lift"])
+
+    assert player.plays == [("/var/lib/romini/library/stories/frog-prince.mp3", 0.0)]
+    assert player.pauses == 0

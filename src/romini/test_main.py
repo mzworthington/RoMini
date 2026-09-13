@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
+from io import StringIO
 from pathlib import Path
 
-from romini.__main__ import main
+from romini.__main__ import main, run
 
 
 @dataclass
@@ -72,5 +73,45 @@ def test_romini_core_main_loads_sim_from_env(tmp_path: Path, monkeypatch) -> Non
 
     box = main(player=player, led=led)
     box.place("04aabbccddeeff")
+
+    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_romini_core_main_runs_sim_lines(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    player = FakePlayer()
+    led = FakeLed()
+
+    main(player=player, led=led, lines=["place 04aabbccddeeff", "quit"])
+
+    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_romini_core_run_reads_stdin(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setattr(
+        "romini.__main__.sys.stdin",
+        StringIO("place 04aabbccddeeff\nquit\n"),
+    )
+    player = FakePlayer()
+    led = FakeLed()
+
+    run(player=player, led=led)
 
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
