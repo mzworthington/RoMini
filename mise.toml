@@ -1,0 +1,13 @@
+[tools]
+python = "3.12"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.bootstrap]
+description = "Install Python and project dependencies"
+run = "bin/bootstrap"
+
+[tasks.test]
+description = "Lint, format-check, and pytest"
+run = "make test"
