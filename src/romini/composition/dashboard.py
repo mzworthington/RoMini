@@ -1,7 +1,8 @@
 from pathlib import Path
 from shutil import disk_usage
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+import yaml
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -36,7 +37,29 @@ def create_dashboard(
 
     @app.get("/", response_class=HTMLResponse)
     def home() -> str:
-        return f"<p>free_bytes {storage.free_bytes}</p>"
+        rows = ""
+        if assign_catalog is not None:
+            data = yaml.safe_load(assign_catalog.read_text()) or {}
+            for track in data.get("tracks") or []:
+                rows += f"<li>{track.get('uid')} {track.get('title')}</li>"
+        return (
+            f"<p>free_bytes {storage.free_bytes}</p>"
+            f"<ul>{rows}</ul>"
+            '<form action="/tracks" method="post" enctype="multipart/form-data">'
+            '<input type="file" name="file">'
+            "<button>Upload</button>"
+            "</form>"
+            '<form action="/assign" method="post">'
+            '<input name="uid">'
+            '<input name="path">'
+            '<input name="title">'
+            "<button>Assign</button>"
+            "</form>"
+            '<form action="/play-mode" method="post">'
+            '<input name="play_mode">'
+            "<button>Set play mode</button>"
+            "</form>"
+        )
 
     @app.get("/storage")
     def storage_info() -> dict[str, int]:
@@ -64,9 +87,15 @@ def create_dashboard(
         title: str
 
     @app.post("/assign", status_code=204)
-    def assign_tag(body: AssignBody) -> None:
+    async def assign_tag(request: Request) -> None:
         if assign_catalog is None:
             raise HTTPException(status_code=404)
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = AssignBody.model_validate(await request.json())
+        else:
+            form = await request.form()
+            body = AssignBody(uid=str(form["uid"]), path=str(form["path"]), title=str(form["title"]))
         confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=assign_catalog)
 
     class PlayModeBody(BaseModel):
@@ -76,6 +105,14 @@ def create_dashboard(
     def switch_play_mode(body: PlayModeBody) -> None:
         if settings is None:
             raise HTTPException(status_code=404)
+        settings.remember_play_mode(body.play_mode)
+
+    @app.post("/play-mode", status_code=204)
+    async def switch_play_mode_form(request: Request) -> None:
+        if settings is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        body = PlayModeBody.model_validate({"play_mode": str(form["play_mode"])})
         settings.remember_play_mode(body.play_mode)
 
     return app

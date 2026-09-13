@@ -4,6 +4,7 @@ from pathlib import Path
 
 from romini.__main__ import main, run
 from romini.composition.nfc import FakeNfc
+from romini.composition.pi import MpvPlayer
 
 
 @dataclass
@@ -208,3 +209,39 @@ def test_romini_core_main_runs_catalog_ticks(tmp_path: Path, monkeypatch) -> Non
     box.place("04aabbccddeeff")
 
     assert player.plays == []
+
+
+def test_romini_core_main_nfc_ticks_poll_catalog(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    player = FakePlayer()
+    led = FakeLed()
+
+    def ticks() -> object:
+        yield None
+        (data / "catalog.yaml").write_text("tracks: []\n")
+        yield None
+
+    box = main(player=player, led=led, nfc=FakeNfc(), ticks=ticks())
+    box.place("04aabbccddeeff")
+
+    assert player.plays == []
+
+
+def test_romini_core_main_pi_profile_defaults_mpv_player(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+
+    box = main(led=FakeLed())
+
+    assert isinstance(box.player, MpvPlayer)

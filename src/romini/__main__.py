@@ -7,7 +7,9 @@ from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
-from romini.composition.nfc import Nfc, run_nfc_ticks
+from romini.composition.loop import run_core_ticks
+from romini.composition.nfc import Nfc
+from romini.composition.pi import MpvPlayer
 from romini.composition.sim import SimBox, load_sim_box_from_env
 from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.play_by_tag.place_figure import Player, StatusLed
@@ -57,7 +59,9 @@ def main(
     catalog_ticks: Iterable[object] | None = None,
 ) -> SimBox:
     box = load_sim_box_from_env(
-        player=player if player is not None else SilentPlayer(),
+        player=player
+        if player is not None
+        else (MpvPlayer() if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
         led=led if led is not None else SilentLed(),
     )
     if lines is not None:
@@ -75,7 +79,7 @@ def main(
         )
         box.dashboard = start_dashboard(app, host="127.0.0.1", port=int(dash_port))
     if nfc is not None and ticks is not None:
-        run_nfc_ticks(box, nfc, ticks)
+        run_core_ticks(box, nfc, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=ticks)
     if catalog_ticks is not None:
         run_catalog_ticks(box, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=catalog_ticks)
     return box
