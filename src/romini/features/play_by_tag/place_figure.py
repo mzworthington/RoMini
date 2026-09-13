@@ -38,6 +38,8 @@ class StatusLed(Protocol):
 class Sessions(Protocol):
     def remember(self, uid: str, position_sec: float) -> None: ...
 
+    def position_for(self, uid: str) -> float | None: ...
+
 
 class Mixer(Protocol):
     level: int
@@ -62,6 +64,7 @@ def on_figure_placed(
     library: Library,
     player: Player,
     led: StatusLed,
+    sessions: Sessions | None = None,
 ) -> None:
     if assign_mode:
         return
@@ -77,7 +80,10 @@ def on_figure_placed(
         return
     if player.is_playing():
         player.stop()
-    player.play(path, position_sec=0.0, uid=uid)
+    position = 0.0
+    if sessions is not None:
+        position = sessions.position_for(uid) or 0.0
+    player.play(path, position_sec=position, uid=uid)
     led.pulse()
 
 

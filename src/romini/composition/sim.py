@@ -2,8 +2,13 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
+from romini.composition.halt import LoggingHalt
+from romini.composition.mixer import MemoryMixer
+from romini.composition.sessions import MemorySessions
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import (
+    Halt,
+    Mixer,
     Player,
     PlayMode,
     Sessions,
@@ -25,6 +30,8 @@ class SimBox:
         play_mode: PlayMode,
         assign_mode: bool,
         sessions: Sessions | None = None,
+        mixer: Mixer | None = None,
+        halt: Halt | None = None,
     ) -> None:
         self.library = import_catalog(
             catalog_yaml,
@@ -35,7 +42,9 @@ class SimBox:
         self.led = led
         self.play_mode = play_mode
         self.assign_mode = assign_mode
-        self.sessions = sessions
+        self.sessions = sessions if sessions is not None else MemorySessions()
+        self.mixer = mixer if mixer is not None else MemoryMixer()
+        self.halt = halt if halt is not None else LoggingHalt()
 
     def place(self, uid: str) -> None:
         on_figure_placed(
@@ -45,6 +54,7 @@ class SimBox:
             library=self.library,
             player=self.player,
             led=self.led,
+            sessions=self.sessions,
         )
 
     def lift(self, uid: str, *, elapsed_sec: float, position_sec: float) -> None:
@@ -68,6 +78,7 @@ def load_sim_box(
     play_mode: PlayMode = PlayMode.PRESENCE,
     assign_mode: bool = False,
     sessions: Sessions | None = None,
+    mixer: Mixer | None = None,
 ) -> SimBox:
     library_root = data_dir / "library"
     catalog_yaml = (data_dir / "catalog.yaml").read_text()
@@ -80,6 +91,7 @@ def load_sim_box(
         play_mode=play_mode,
         assign_mode=assign_mode,
         sessions=sessions,
+        mixer=mixer,
     )
 
 
