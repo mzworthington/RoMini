@@ -3,11 +3,15 @@ from pathlib import Path
 
 import pytest
 
+from romini.composition.catalog import poll_catalog, run_catalog_ticks
+from romini.composition.gpio import GPIO_VOL_UP, apply_gpio_press
 from romini.composition.halt import LoggingHalt
 from romini.composition.http import apply_sim_http, start_sim_http
 from romini.composition.inject import apply_sim_line, run_sim_lines
-from romini.composition.nfc import FakeNfc, poll_nfc
+from romini.composition.nfc import NFC_POLL_SEC, FakeNfc, poll_nfc, run_nfc_ticks
 from romini.composition.sim import SimBox, load_sim_box, load_sim_box_from_env
+from romini.composition.sqlite_catalog import SqliteCatalog
+from romini.composition.sqlite_sessions import SqliteSessions
 from romini.features.play_by_tag.place_figure import PlayMode
 
 
@@ -643,6 +647,143 @@ def test_sim_place_after_lift_resumes_remembered_position(tmp_path: Path) -> Non
     assert player.plays == [(path, 0.0), (path, 14.5)]
 
 
+def test_load_sim_box_persists_position_in_sqlite(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    player = FakePlayer()
+    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
+    apply_sim_line(box, "place 04aabbccddeeff")
+    apply_sim_line(box, "lift 14.5")
+
+    player2 = FakePlayer()
+    box2 = load_sim_box(data_dir=data, player=player2, led=FakeLed())
+    apply_sim_line(box2, "place 04aabbccddeeff")
+
+    path = str(stories / "frog-prince.mp3")
+    assert player2.plays == [(path, 14.5)]
+
+
+def test_load_sim_box_persists_volume_in_sqlite(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    apply_sim_line(box, "vol up")
+
+    box2 = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+
+    assert box2.mixer.level == 1
+
+
+def test_load_sim_box_persists_play_mode_in_sqlite(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    load_sim_box(
+        data_dir=data,
+        player=FakePlayer(),
+        led=FakeLed(),
+        play_mode=PlayMode.TAP,
+    )
+
+    box2 = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+
+    assert box2.play_mode is PlayMode.TAP
+
+
+def test_load_sim_box_writes_state_sqlite(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+
+    assert (data / "state.sqlite").is_file()
+    assert not (data / "sessions.db").exists()
+
+
+def test_load_sim_box_unmaps_removed_yaml_uid_and_keeps_position(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    db = data / "state.sqlite"
+    assert SqliteCatalog(db).track_for("04aabbccddeeff") == str(stories / "frog-prince.mp3")
+    apply_sim_line(box, "place 04aabbccddeeff")
+    apply_sim_line(box, "lift 14.5")
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+
+    assert SqliteCatalog(db).track_for("04aabbccddeeff") is None
+    assert SqliteSessions(db).position_for("04aabbccddeeff") == 14.5
+
+
+def test_catalog_mtime_tick_unmaps_uid_without_restart(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    player = FakePlayer()
+    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
+    previous_mtime = (data / "catalog.yaml").stat().st_mtime
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    poll_catalog(box, data_dir=data, previous_mtime=previous_mtime)
+    apply_sim_line(box, "place 04aabbccddeeff")
+
+    assert player.plays == []
+
+
+def test_catalog_ticks_unmaps_after_yaml_change(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    player = FakePlayer()
+    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
+
+    def ticks() -> object:
+        yield None
+        (data / "catalog.yaml").write_text("tracks: []\n")
+        yield None
+
+    run_catalog_ticks(box, data_dir=data, ticks=ticks())
+    apply_sim_line(box, "place 04aabbccddeeff")
+
+    assert player.plays == []
+
+
+def test_gpio_vol_up_steps_the_mixer() -> None:
+    mixer = FakeMixer(level=10, ceiling=100)
+    box = SimBox(
+        catalog_yaml="tracks: []\n",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: False,
+        player=FakePlayer(),
+        led=FakeLed(),
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        mixer=mixer,
+    )
+
+    apply_gpio_press(box, GPIO_VOL_UP)
+
+    assert mixer.level == 11
+
+
 def test_sim_line_play_starts_selected_tap_track() -> None:
     player = FakePlayer()
     box = SimBox(
@@ -762,3 +903,36 @@ tracks:
     poll_nfc(box, nfc, previous_uid=seen)
 
     assert player.pauses == 1
+
+
+def test_nfc_ticks_lift_after_uid_clears() -> None:
+    player = FakePlayer()
+    box = SimBox(
+        catalog_yaml="""
+tracks:
+  - uid: "04aabbccddeeff"
+    path: "stories/frog-prince.mp3"
+    title: "The Frog Prince"
+""",
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+        player=player,
+        led=FakeLed(),
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+    )
+    nfc = FakeNfc(uid="04aabbccddeeff")
+
+    def ticks() -> None:
+        yield None
+        nfc.clear()
+        yield None
+
+    run_nfc_ticks(box, nfc, ticks())
+
+    assert player.plays == [("/var/lib/romini/library/stories/frog-prince.mp3", 0.0)]
+    assert player.pauses == 1
+
+
+def test_nfc_poll_interval_is_250_ms() -> None:
+    assert NFC_POLL_SEC == 0.25

@@ -1,9 +1,12 @@
 import os
 import sys
 from collections.abc import Iterable
+from pathlib import Path
 
+from romini.composition.catalog import run_catalog_ticks
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
+from romini.composition.nfc import Nfc, run_nfc_ticks
 from romini.composition.sim import SimBox, load_sim_box_from_env
 from romini.features.play_by_tag.place_figure import Player, StatusLed
 
@@ -47,6 +50,9 @@ def main(
     player: Player | None = None,
     led: StatusLed | None = None,
     lines: Iterable[str] | None = None,
+    nfc: Nfc | None = None,
+    ticks: Iterable[object] | None = None,
+    catalog_ticks: Iterable[object] | None = None,
 ) -> SimBox:
     box = load_sim_box_from_env(
         player=player if player is not None else SilentPlayer(),
@@ -57,6 +63,10 @@ def main(
     port = os.environ.get("ROMINI_HTTP_PORT")
     if port is not None:
         box.http = start_sim_http(box, host="127.0.0.1", port=int(port))
+    if nfc is not None and ticks is not None:
+        run_nfc_ticks(box, nfc, ticks)
+    if catalog_ticks is not None:
+        run_catalog_ticks(box, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=catalog_ticks)
     return box
 
 
