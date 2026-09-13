@@ -102,6 +102,11 @@ def on_play_pressed(*, player: Player) -> None:
     if player.is_playing():
         player.pause()
         return
+    uid = player.playing_uid()
+    path = player.playing_path()
+    if uid is not None and path is not None:
+        player.play(path, position_sec=0.0, uid=uid)
+        return
     selected = player.selected_track()
     if selected is None:
         return
