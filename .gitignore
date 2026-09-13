@@ -221,3 +221,4 @@ __marimo__/
 
 # pytest junit (CI)
 junit/
+/.waykit

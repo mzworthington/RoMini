@@ -115,3 +115,27 @@ def test_romini_core_run_reads_stdin(tmp_path: Path, monkeypatch) -> None:
     run(player=player, led=led)
 
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_romini_core_main_starts_sim_http(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
+    player = FakePlayer()
+    led = FakeLed()
+
+    box = main(player=player, led=led)
+    try:
+        status = box.http.post("/place/04aabbccddeeff")
+    finally:
+        box.http.close()
+
+    assert status == 204
+    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]

@@ -1,6 +1,8 @@
+import os
 import sys
 from collections.abc import Iterable
 
+from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
 from romini.composition.sim import SimBox, load_sim_box_from_env
 from romini.features.play_by_tag.place_figure import Player, StatusLed
@@ -52,6 +54,9 @@ def main(
     )
     if lines is not None:
         run_sim_lines(box, lines)
+    port = os.environ.get("ROMINI_HTTP_PORT")
+    if port is not None:
+        box.http = start_sim_http(box, host="127.0.0.1", port=int(port))
     return box
 
 

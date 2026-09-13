@@ -82,6 +82,9 @@ class FakeSessions:
     def remember(self, uid: str, position_sec: float) -> None:
         self.positions[uid] = position_sec
 
+    def position_for(self, uid: str) -> float | None:
+        return self.positions.get(uid)
+
 
 @dataclass
 class FakeMixer:
@@ -116,6 +119,24 @@ def test_mapped_figure_starts_the_story_in_presence_mode() -> None:
 
     assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
     assert led.pulses == 1
+
+
+def test_unmapped_figure_stays_silent() -> None:
+    library = FakeLibrary(tracks={})
+    player = FakePlayer()
+    led = FakeLed()
+
+    on_figure_placed(
+        "04UNMAPPED",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+
+    assert player.plays == []
+    assert led.pulses == 0
 
 
 def test_lift_pauses_after_grace() -> None:
@@ -205,6 +226,45 @@ def test_same_figure_returns_within_grace_does_not_restart() -> None:
     assert sessions.positions == {}
 
 
+def test_figure_returns_after_grace_resumes_remembered_position() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    led = FakeLed()
+    sessions = FakeSessions()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+        sessions=sessions,
+    )
+    on_figure_lifted(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        elapsed_sec=2.1,
+        position_sec=14.5,
+        player=player,
+        sessions=sessions,
+    )
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+        sessions=sessions,
+    )
+
+    assert player.plays == [
+        ("/var/lib/romini/tracks/bear.mp3", 0.0),
+        ("/var/lib/romini/tracks/bear.mp3", 14.5),
+    ]
+
+
 def test_tap_selects_the_track_without_starting_playback() -> None:
     library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
     player = FakePlayer()
@@ -239,6 +299,35 @@ def test_play_button_starts_the_selected_tap_track() -> None:
     on_play_pressed(player=player)
 
     assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
+
+
+def test_lift_in_tap_does_not_pause_the_track() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    led = FakeLed()
+    sessions = FakeSessions()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+    on_play_pressed(player=player)
+    on_figure_lifted(
+        "04AABBCC",
+        play_mode=PlayMode.TAP,
+        elapsed_sec=2.1,
+        position_sec=14.5,
+        player=player,
+        sessions=sessions,
+    )
+
+    assert player.pauses == 0
+    assert player.is_playing() is True
+    assert sessions.positions == {}
 
 
 def test_play_button_pauses_when_a_track_is_playing() -> None:
