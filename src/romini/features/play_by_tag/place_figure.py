@@ -123,6 +123,12 @@ def on_volume_up(*, mixer: Mixer) -> None:
     mixer.set_level(mixer.level + 1)
 
 
+def on_volume_down(*, mixer: Mixer) -> None:
+    if mixer.level <= 0:
+        return
+    mixer.set_level(mixer.level - 1)
+
+
 def on_track_ended(*, player: Player) -> None:
     player.stop()
 

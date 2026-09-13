@@ -9,6 +9,7 @@ from romini.features.play_by_tag.place_figure import (
     on_play_long_pressed,
     on_play_pressed,
     on_track_ended,
+    on_volume_down,
     on_volume_up,
 )
 
@@ -286,6 +287,14 @@ def test_volume_up_never_exceeds_the_ceiling() -> None:
     on_volume_up(mixer=mixer)
 
     assert mixer.level == 100
+
+
+def test_volume_down_never_goes_below_zero() -> None:
+    mixer = FakeMixer(level=0, ceiling=100)
+
+    on_volume_down(mixer=mixer)
+
+    assert mixer.level == 0
 
 
 def test_track_end_stops_and_does_not_restart() -> None:
