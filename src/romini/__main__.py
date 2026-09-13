@@ -103,8 +103,6 @@ def main(
         else (MpvPlayer() if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
         led=led if led is not None else default_led(),
     )
-    if lines is not None:
-        run_sim_lines(box, lines)
     port = os.environ.get("ROMINI_HTTP_PORT")
     if port is not None:
         box.http = start_sim_http(box, host="127.0.0.1", port=int(port))
@@ -121,6 +119,8 @@ def main(
             host="0.0.0.0" if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else "127.0.0.1",
             port=int(dash_port),
         )
+    if lines is not None:
+        run_sim_lines(box, lines)
     if nfc is not None and ticks is not None:
         run_core_ticks(box, nfc, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=ticks)
     if catalog_ticks is not None:

@@ -76,6 +76,14 @@ class FakeLed:
 
 
 @dataclass
+class FakeEarcon:
+    plays: list[str] = field(default_factory=list)
+
+    def play_earcon(self, path: str) -> None:
+        self.plays.append(path)
+
+
+@dataclass
 class FakeSessions:
     positions: dict[str, float] = field(default_factory=dict)
 
@@ -119,6 +127,25 @@ def test_mapped_figure_starts_the_story_in_presence_mode() -> None:
 
     assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
     assert led.pulses == 1
+
+
+def test_mapped_figure_plays_connect_earcon() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    led = FakeLed()
+    earcon = FakeEarcon()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+        earcon=earcon,
+    )
+
+    assert earcon.plays == ["romini/connect.wav"]
 
 
 def test_unmapped_figure_stays_silent() -> None:

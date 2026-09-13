@@ -35,7 +35,7 @@ where = ["src"]
 include = ["romini", "romini.*"]
 
 [tool.setuptools.package-data]
-romini = ["ready.wav"]
+romini = ["*.wav"]
 
 [tool.pytest.ini_options]
 testpaths = ["src/romini"]

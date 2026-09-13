@@ -2,7 +2,7 @@ from typing import Protocol
 
 from romini.features.play_by_tag.place_figure import PlayMode
 
-READY_EARCON_PATH = "romini/ready.wav"
+READY_EARCON_PATH = "romini/hello_romy.wav"
 
 
 class EarconPlayer(Protocol):

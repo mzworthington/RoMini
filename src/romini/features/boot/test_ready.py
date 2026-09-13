@@ -81,9 +81,58 @@ def test_power_returns_in_presence_resumes_mapped_figure() -> None:
     assert story.plays == [("/var/lib/romini/library/bear.mp3", 14.5)]
 
 
+def test_startup_earcon_is_hello_romy() -> None:
+    from importlib.resources import files
+
+    assert READY_EARCON_PATH == "romini/hello_romy.wav"
+    wav = files("romini").joinpath("hello_romy.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"
+
+
 def test_ready_wav_is_packaged() -> None:
     from importlib.resources import files
 
     wav = files("romini").joinpath("ready.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"
+
+
+def test_connect_wav_is_packaged() -> None:
+    from importlib.resources import files
+
+    wav = files("romini").joinpath("connect.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"
+
+
+def test_disconnect_wav_is_packaged() -> None:
+    from importlib.resources import files
+
+    wav = files("romini").joinpath("disconnect.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"
+
+
+def test_volume_up_wav_is_packaged() -> None:
+    from importlib.resources import files
+
+    wav = files("romini").joinpath("volume_up.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"
+
+
+def test_volume_down_wav_is_packaged() -> None:
+    from importlib.resources import files
+
+    wav = files("romini").joinpath("volume_down.wav")
+    assert wav.is_file()
+    assert wav.read_bytes()[:4] == b"RIFF"
+
+
+def test_halt_wav_is_packaged() -> None:
+    from importlib.resources import files
+
+    wav = files("romini").joinpath("halt.wav")
     assert wav.is_file()
     assert wav.read_bytes()[:4] == b"RIFF"

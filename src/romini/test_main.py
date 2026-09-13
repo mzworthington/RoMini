@@ -143,6 +143,36 @@ def test_romini_core_main_starts_sim_http(tmp_path: Path, monkeypatch) -> None:
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
 
 
+def test_romini_core_starts_sim_http_before_stdin_lines(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
+    order: list[str] = []
+
+    def start_http(box, *, host: str, port: int):
+        order.append("http")
+
+        class Listener:
+            port = 0
+
+            def close(self) -> None:
+                return
+
+        return Listener()
+
+    def lines() -> object:
+        order.append("lines")
+        yield "quit"
+
+    monkeypatch.setattr("romini.__main__.start_sim_http", start_http)
+    main(player=FakePlayer(), led=FakeLed(), lines=lines())
+
+    assert order == ["http", "lines"]
+
+
 def test_romini_core_main_starts_dashboard(tmp_path: Path, monkeypatch) -> None:
     import json
     from urllib.request import urlopen
