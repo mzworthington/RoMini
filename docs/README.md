@@ -14,4 +14,4 @@
 
 Grilling (2026-09-13) locked play modes, buttons, overlay timing, public git + PAT, powered speaker, no track loop, YAML catalog + SQLite sessions.
 
-**No application code yet.** Next coding step when requested: TDD presence play on `sim`.
+Application code lives under `src/romini/`. Inner loop: [development.md](./development.md).

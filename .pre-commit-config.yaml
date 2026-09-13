@@ -1,0 +1,30 @@
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.6
+    hooks:
+      - id: prettier
+        files: '^(\.github/|\.pre-commit-config\.yaml$|\.prettierrc\.json$)'
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: .venv/bin/python -m pytest -q
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: conventional-commit
+        name: conventional commit subject
+        entry: .githooks/commit-msg
+        language: system
+        stages: [commit-msg]

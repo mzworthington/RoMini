@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh",
+        "matcher": "Write|StrReplace|Delete|EditNotebook|Shell"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh",
+        "matcher": "Shell"
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/waykit-tdd-guard.sh",
+        "loop_limit": 1
+      }
+    ]
+  }
+}

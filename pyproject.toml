@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=84.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "romini"
+version = "0.1.0"
+description = "Screen-free NFC audio player for Raspberry Pi"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Matthew Worthington" }]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.6.0",
+    "pre-commit>=4.6.2",
+    "pytest>=8.3.0",
+    "python-semantic-release>=10.6.2",
+    "ruff>=0.16.6",
+]
+
+[project.urls]
+Repository = "https://github.com/mzworthington/RoMini"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["romini", "romini.*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/romini"]
+pythonpath = ["src"]
+addopts = "--import-mode=importlib"
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+build_command = ".venv/bin/python -m build --sdist --wheel"
+tag_format = "v{version}"
+commit_message = "chore(release): {version}"
+allow_zero_version = true
+
+[tool.semantic_release.changelog]
+mode = "update"
+exclude_commit_patterns = ["^chore\\(release\\):"]
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+output_format = "md"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = true
+dist_glob_patterns = ["dist/*"]
+
+[tool.semantic_release.remote]
+type = "github"
