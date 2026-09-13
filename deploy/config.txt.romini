@@ -1,0 +1,1 @@
+dtoverlay=gpio-shutdown,gpio_pin=17

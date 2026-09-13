@@ -147,8 +147,6 @@ def start_dashboard(app: FastAPI, *, host: str, port: int) -> DashboardListener:
 
     import uvicorn
 
-    if host not in {"127.0.0.1", "localhost", "::1"}:
-        raise ValueError("dashboard binds localhost only")
     if environ.get("ROMINI_PROFILE", "sim") == "sim" and host not in {"127.0.0.1", "localhost", "::1"}:
         raise ValueError("dashboard binds localhost only")
 

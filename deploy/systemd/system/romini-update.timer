@@ -1,0 +1,11 @@
+[Unit]
+Description=RoMini update timer
+
+[Timer]
+Unit=romini-update.service
+OnBootSec=5min
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

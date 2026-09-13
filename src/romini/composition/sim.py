@@ -5,6 +5,7 @@ from pathlib import Path
 from romini.composition.halt import LoggingHalt
 from romini.composition.mixer import MemoryMixer
 from romini.composition.pi import SystemdHalt
+from romini.composition.provision import ensure_data_tree
 from romini.composition.sessions import MemorySessions
 from romini.composition.sqlite_catalog import SqliteCatalog
 from romini.composition.sqlite_mixer import SqliteMixer
@@ -87,6 +88,7 @@ def load_sim_box(
     mixer: Mixer | None = None,
 ) -> SimBox:
     library_root = data_dir / "library"
+    ensure_data_tree(data_dir)
     catalog_yaml = (data_dir / "catalog.yaml").read_text()
     db = data_dir / "state.sqlite"
     conn = open_state(db)

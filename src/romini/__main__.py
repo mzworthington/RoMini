@@ -5,6 +5,7 @@ from pathlib import Path
 
 from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
+from romini.composition.gpio import GpioLed, RpiGpioLedDriver
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
 from romini.composition.loop import run_core_ticks
@@ -49,6 +50,22 @@ class SilentLed:
         return
 
 
+def load_rpi_gpio() -> object:
+    import RPi.GPIO as GPIO
+
+    return GPIO
+
+
+def default_led() -> StatusLed:
+    if os.environ.get("ROMINI_PROFILE", "sim") != "pi":
+        return SilentLed()
+    try:
+        gpio = load_rpi_gpio()
+    except ImportError:
+        return SilentLed()
+    return GpioLed(RpiGpioLedDriver(gpio))
+
+
 def main(
     *,
     player: Player | None = None,
@@ -62,7 +79,7 @@ def main(
         player=player
         if player is not None
         else (MpvPlayer() if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
-        led=led if led is not None else SilentLed(),
+        led=led if led is not None else default_led(),
     )
     if lines is not None:
         run_sim_lines(box, lines)
@@ -77,7 +94,11 @@ def main(
             assign_catalog=PathCatalog(data / "catalog.yaml"),
             settings=SqliteSettings(box.state),
         )
-        box.dashboard = start_dashboard(app, host="127.0.0.1", port=int(dash_port))
+        box.dashboard = start_dashboard(
+            app,
+            host="0.0.0.0" if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else "127.0.0.1",
+            port=int(dash_port),
+        )
     if nfc is not None and ticks is not None:
         run_core_ticks(box, nfc, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=ticks)
     if catalog_ticks is not None:
