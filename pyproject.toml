@@ -10,7 +10,9 @@ readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Matthew Worthington" }]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0.3,<7",
+]
 
 [project.optional-dependencies]
 dev = [
