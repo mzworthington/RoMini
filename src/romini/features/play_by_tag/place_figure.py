@@ -54,6 +54,11 @@ class Halt(Protocol):
 
 PRESENCE_LIFT_GRACE_SEC = 2.0
 ASSIGN_IDLE_SEC = 60.0
+CONNECT_EARCON_PATH = "romini/connect.wav"
+
+
+class Earcon(Protocol):
+    def play_earcon(self, path: str) -> None: ...
 
 
 def on_figure_placed(
@@ -65,6 +70,7 @@ def on_figure_placed(
     player: Player,
     led: StatusLed,
     sessions: Sessions | None = None,
+    earcon: Earcon | None = None,
 ) -> None:
     if assign_mode:
         return
@@ -83,6 +89,8 @@ def on_figure_placed(
     position = 0.0
     if sessions is not None:
         position = sessions.position_for(uid) or 0.0
+    if earcon is not None:
+        earcon.play_earcon(CONNECT_EARCON_PATH)
     player.play(path, position_sec=position, uid=uid)
     led.pulse()
 
