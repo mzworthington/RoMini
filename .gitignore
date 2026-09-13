@@ -216,3 +216,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Waykit session MCP profile name (names only)
+.wk-mcp-profile.stamp
