@@ -28,7 +28,7 @@ dev = [
 ]
 
 [project.scripts]
-romini-core = "romini.__main__:main"
+romini-core = "romini.__main__:entry"
 
 [tool.setuptools.packages.find]
 where = ["src"]
