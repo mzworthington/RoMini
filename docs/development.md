@@ -54,7 +54,7 @@ make test         # ruff check + format --check, pytest
 Python is formatted with **ruff format** (the Python equivalent of Prettier). YAML and JSON use Prettier via pre-commit. Hooks: ruff + Prettier on commit; pytest on **pre-push**; conventional commit subjects on **commit-msg**. CI (`.github/workflows/ci.yml`) runs the same `make test` on PRs and `main`; merge to `main` with `feat`/`fix` under `src/` or `pyproject.toml` cuts a GitHub Release tag and updates `CHANGELOG.md` via python-semantic-release.
 
 1. Red-green domain and slice tests with fakes (TDD guard). First catalog case: mapped Figure in `presence` (`src/romini/features/play_by_tag/`).
-2. Run `romini-core` with `ROMINI_PROFILE=sim` and `ROMINI_DATA` pointing at a gitignored `var/romini/` (`load_sim_box_from_env` loads `catalog.yaml` + `library/`; no blocking daemon loop yet).
+2. `ROMINI_PROFILE=sim ROMINI_DATA=./var/romini romini-core` (or `python -m romini`) loads `catalog.yaml` + `library/` and exits; no NFC poll loop yet.
 3. Open the dashboard on localhost **or** drop `catalog.yaml` + files under `$ROMINI_DATA`. Use the **sim panel** (only in `sim`) to place a canned UID.
 4. Breadboard: same binary, `ROMINI_PROFILE=pi`, [pi-setup.md](./pi-setup.md) — domain unchanged.
 

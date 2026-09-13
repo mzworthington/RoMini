@@ -23,8 +23,8 @@ dev = [
     "ruff>=0.16.6",
 ]
 
-[project.urls]
-Repository = "https://github.com/mzworthington/RoMini"
+[project.scripts]
+romini-core = "romini.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
