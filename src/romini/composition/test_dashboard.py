@@ -118,3 +118,100 @@ def test_dashboard_home_shows_free_space() -> None:
 
     assert response.status_code == 200
     assert "1024" in response.text
+
+
+def test_dashboard_home_has_upload_form() -> None:
+    from fastapi.testclient import TestClient
+
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024))
+    response = TestClient(app).get("/")
+
+    assert 'action="/tracks"' in response.text
+    assert 'type="file"' in response.text
+
+
+def test_dashboard_home_has_assign_form() -> None:
+    from fastapi.testclient import TestClient
+
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024))
+    response = TestClient(app).get("/")
+
+    assert 'action="/assign"' in response.text
+    assert 'name="uid"' in response.text
+    assert 'name="path"' in response.text
+    assert 'name="title"' in response.text
+
+
+def test_dashboard_assign_form_writes_catalog_yaml(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+
+    class PathCatalog:
+        def read_text(self) -> str:
+            return catalog_path.read_text()
+
+        def write_text(self, text: str) -> None:
+            catalog_path.write_text(text)
+
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(),
+    )
+    response = TestClient(app).post(
+        "/assign",
+        data={
+            "uid": "04aabbccddeeff",
+            "path": "stories/frog-prince.mp3",
+            "title": "The Frog Prince",
+        },
+    )
+
+    assert response.status_code == 204
+    library = import_catalog(
+        catalog_path.read_text(),
+        library_root="/var/lib/romini/library",
+        audio_exists=lambda path: path == "stories/frog-prince.mp3",
+    )
+    assert library.track_for("04aabbccddeeff") == "/var/lib/romini/library/stories/frog-prince.mp3"
+
+
+def test_dashboard_home_has_play_mode_form() -> None:
+    from fastapi.testclient import TestClient
+
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024))
+    response = TestClient(app).get("/")
+
+    assert 'action="/play-mode"' in response.text
+    assert 'name="play_mode"' in response.text
+
+
+def test_dashboard_play_mode_form_persists(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    settings = SqliteSettings(tmp_path / "state.sqlite")
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024), settings=settings)
+    response = TestClient(app).post("/play-mode", data={"play_mode": "tap"})
+
+    assert response.status_code == 204
+    assert settings.play_mode() is PlayMode.TAP
+
+
+def test_dashboard_home_lists_catalog_titles(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+    )
+    response = TestClient(app).get("/")
+
+    assert "The Frog Prince" in response.text
+    assert "04aabbccddeeff" in response.text
