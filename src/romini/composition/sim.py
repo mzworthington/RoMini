@@ -4,6 +4,7 @@ from pathlib import Path
 
 from romini.composition.halt import LoggingHalt
 from romini.composition.mixer import MemoryMixer
+from romini.composition.pi import SystemdHalt
 from romini.composition.sessions import MemorySessions
 from romini.composition.sqlite_catalog import SqliteCatalog
 from romini.composition.sqlite_mixer import SqliteMixer
@@ -118,9 +119,12 @@ def load_sim_box_from_env(
     sessions: Sessions | None = None,
 ) -> SimBox:
     profile = os.environ.get("ROMINI_PROFILE", "sim")
-    if profile != "sim":
+    if profile not in {"sim", "pi"}:
         raise ValueError(f"unsupported profile: {profile}")
     data = os.environ.get("ROMINI_DATA")
     if not data:
         raise ValueError("ROMINI_DATA is required")
-    return load_sim_box(data_dir=Path(data), player=player, led=led, sessions=sessions)
+    box = load_sim_box(data_dir=Path(data), player=player, led=led, sessions=sessions)
+    if profile == "pi":
+        box.halt = SystemdHalt()
+    return box

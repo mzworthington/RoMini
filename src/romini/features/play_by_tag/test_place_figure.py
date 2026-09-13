@@ -139,6 +139,33 @@ def test_unmapped_figure_stays_silent() -> None:
     assert led.pulses == 0
 
 
+def test_assign_mode_does_not_start_a_story_until_confirm() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    led = FakeLed()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=True,
+        library=library,
+        player=player,
+        led=led,
+    )
+    assert player.plays == []
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.PRESENCE,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+
+    assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
+
+
 def test_lift_pauses_after_grace() -> None:
     player = FakePlayer()
     sessions = FakeSessions()
