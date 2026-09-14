@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img" aria-labelledby="romini-logo-title">
+  <title id="romini-logo-title">RoMini Storybox</title>
+  <defs>
+    <radialGradient id="rominiBgGlow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#FFF7ED" />
+      <stop offset="100%" stop-color="#FED7AA" stop-opacity="0.4" />
+    </radialGradient>
+    <linearGradient id="rominiHeadphoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8E53" />
+      <stop offset="100%" stop-color="#FF5252" />
+    </linearGradient>
+    <filter id="rominiSoftShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <circle cx="250" cy="250" r="230" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="8" />
+  <circle cx="250" cy="235" r="205" fill="url(#rominiBgGlow)" />
+  <g fill="#F7B731">
+    <path d="M 85 190 Q 95 190 95 180 Q 95 190 105 190 Q 95 190 95 200 Q 95 190 85 190 Z" />
+    <path d="M 395 170 Q 407 170 407 158 Q 407 170 419 170 Q 407 170 407 182 Q 407 170 395 170 Z" />
+    <circle cx="110" cy="150" r="4" fill="#FF8E53" />
+    <circle cx="390" cy="210" r="4" fill="#FF8E53" />
+  </g>
+  <path d="M 140 220 A 120 120 0 0 1 360 220" fill="none" stroke="#334155" stroke-width="14" stroke-linecap="round"/>
+  <path d="M 150 210 Q 130 330 180 340 Q 250 355 320 340 Q 370 330 350 210 Z" fill="#3D2314" />
+  <ellipse cx="250" cy="245" rx="88" ry="84" fill="#E5B887" />
+  <ellipse cx="195" cy="265" rx="14" ry="9" fill="#FF8A8A" opacity="0.5" />
+  <ellipse cx="305" cy="265" rx="14" ry="9" fill="#FF8A8A" opacity="0.5" />
+  <ellipse cx="205" cy="245" rx="7" ry="9" fill="#2C1810" />
+  <circle cx="203" cy="242" r="2.5" fill="#FFFFFF" />
+  <ellipse cx="295" cy="245" rx="7" ry="9" fill="#2C1810" />
+  <circle cx="293" cy="242" r="2.5" fill="#FFFFFF" />
+  <path d="M 238 270 Q 250 280 262 270" fill="none" stroke="#2C1810" stroke-width="3.5" stroke-linecap="round" />
+  <g fill="#4A2E18">
+    <path d="M 160 210 C 160 140, 340 140, 340 210 C 340 170, 160 170, 160 210 Z" />
+    <path d="M 162 205 C 180 230, 200 232, 215 210 C 230 235, 260 235, 280 210 C 295 232, 325 230, 338 205 C 345 170, 155 170, 162 205 Z" />
+    <path d="M 162 205 Q 155 260 170 290 Q 160 240 170 215 Z" />
+    <path d="M 338 205 Q 345 260 330 290 Q 340 240 330 215 Z" />
+  </g>
+  <g filter="url(#rominiSoftShadow)">
+    <rect x="125" y="210" width="28" height="58" rx="14" fill="url(#rominiHeadphoneGrad)" />
+    <rect x="145" y="220" width="8" height="38" rx="4" fill="#334155" />
+    <circle cx="139" cy="239" r="6" fill="#FFFFFF" opacity="0.6"/>
+    <rect x="347" y="210" width="28" height="58" rx="14" fill="url(#rominiHeadphoneGrad)" />
+    <rect x="347" y="220" width="8" height="38" rx="4" fill="#334155" />
+    <circle cx="361" cy="239" r="6" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  <g transform="translate(250, 420)">
+    <text text-anchor="middle" font-family="system-ui, -apple-system, Nunito, Comfortaa, sans-serif" font-weight="900" font-size="44" letter-spacing="1">
+      <tspan fill="#1E293B">Ro</tspan><tspan fill="#FF5252">Mini</tspan>
+    </text>
+    <text y="24" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="12" fill="#94A3B8" letter-spacing="3">
+      STORYBOX
+    </text>
+  </g>
+</svg>
