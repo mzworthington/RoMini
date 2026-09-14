@@ -1,3 +1,5 @@
+import yaml
+
 from romini.features.library.assign import confirm_assign
 from romini.features.library.import_catalog import import_catalog
 
@@ -29,3 +31,18 @@ def test_assign_confirm_lists_tag_and_track_in_catalog() -> None:
         audio_exists=lambda path: path == "stories/frog-prince.mp3",
     )
     assert library.track_for("04aabbccddeeff") == "/var/lib/romini/library/stories/frog-prince.mp3"
+
+
+def test_assign_confirm_preserves_registered_tags() -> None:
+    catalog = FakeCatalogFile()
+    catalog.text = "tags:\n  - uid: 04aabbccddeeff\n    name: Frog Prince\ntracks: []\n"
+
+    confirm_assign(
+        uid="04aabbccddeeff",
+        path="stories/frog-prince.mp3",
+        title="The Frog Prince",
+        catalog=catalog,
+    )
+
+    data = yaml.safe_load(catalog.text) or {}
+    assert data["tags"] == [{"uid": "04aabbccddeeff", "name": "Frog Prince"}]

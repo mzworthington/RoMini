@@ -417,3 +417,23 @@ def test_romini_core_entry_keeps_serving_after_stdin_eof(tmp_path: Path, monkeyp
     listeners[0].close()
     worker.join(timeout=2)
     assert not worker.is_alive()
+
+
+def test_romini_core_dashboard_has_register_form(tmp_path: Path, monkeypatch) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/") as resp:
+            body = resp.read().decode()
+    finally:
+        box.dashboard.close()
+
+    assert 'action="/register-mode"' in body

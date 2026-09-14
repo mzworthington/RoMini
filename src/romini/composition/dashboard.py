@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.features.library.add_track import Catalog, Notices, Storage, add_track
 from romini.features.library.assign import CatalogFile, confirm_assign
+from romini.features.library.register_tag import name_tag
 from romini.features.play_by_tag.place_figure import PlayMode
 
 DASHBOARD_STYLE = """
@@ -79,6 +80,10 @@ class FigurePad(Protocol):
     def place(self, uid: str) -> None: ...
 
 
+class RegisterMode(Protocol):
+    assign_mode: bool
+
+
 def _library_paths(storage: object) -> list[str]:
     listing = getattr(storage, "paths", None)
     if not callable(listing):
@@ -127,12 +132,14 @@ def create_dashboard(
     assign_catalog: CatalogFile | None = None,
     settings: SqliteSettings | None = None,
     pad: FigurePad | None = None,
+    register: RegisterMode | None = None,
 ) -> FastAPI:
     app = FastAPI()
 
     @app.get("/", response_class=HTMLResponse)
     def home() -> str:
         tracks: list[dict] = []
+        tags: list[dict] = []
         if assign_catalog is not None:
             data = yaml.safe_load(assign_catalog.read_text()) or {}
             tracks = [
@@ -142,6 +149,7 @@ def create_dashboard(
                 or str(track.get("title") or "").strip()
                 or str(track.get("path") or "").strip()
             ]
+            tags = [tag for tag in data.get("tags") or [] if str(tag.get("uid") or "").strip()]
         play_mode = PlayMode.PRESENCE.value
         if settings is not None:
             remembered = settings.play_mode()
@@ -153,6 +161,12 @@ def create_dashboard(
             f'<option value="{escape(path, quote=True)}">{escape(path)}</option>' for path in _library_paths(storage)
         )
         path_hint = '<p class="hint">Upload a track first</p>' if not path_options else ""
+        uid_options = "".join(
+            f'<option value="{escape(str(tag.get("uid") or ""), quote=True)}">'
+            f"{escape(str(tag.get('name') or tag.get('uid') or ''))}</option>"
+            for tag in tags
+        )
+        uid_hint = '<p class="hint">Register a figure first</p>' if not uid_options else ""
         if tracks:
             place_th = "<th>Place</th>" if pad is not None else ""
             body = "".join(_catalog_row(track, pad=pad) for track in tracks)
@@ -165,11 +179,67 @@ def create_dashboard(
             )
         else:
             library = '<p class="empty">No stories yet. Upload a track, then assign a figure.</p>'
+        tags_html = ""
+        if tags:
+            rows = "".join(
+                "<tr>"
+                f"<td>{escape(str(tag.get('uid') or ''))}</td>"
+                "<td>"
+                f'<form action="/tags/{escape(str(tag.get("uid") or ""), quote=True)}/name" method="post">'
+                f'<label for="tag-name-{escape(str(tag.get("uid") or ""), quote=True)}">Name</label>'
+                f'<input id="tag-name-{escape(str(tag.get("uid") or ""), quote=True)}" name="name" type="text" '
+                f'value="{escape(str(tag.get("name") or ""), quote=True)}">'
+                "<button>Save name</button>"
+                "</form>"
+                "</td>"
+                "</tr>"
+                for tag in tags
+            )
+            tags_html = (
+                "<table>"
+                "<caption>Figures</caption>"
+                "<thead><tr><th>UID</th><th>Name</th></tr></thead>"
+                f"<tbody>{rows}</tbody>"
+                "</table>"
+            )
+        register_section = ""
+        refresh_meta = ""
+        present_section = ""
+        if pad is not None:
+            present_section = """
+<section>
+<h2>Present a figure</h2>
+<form action="/present" method="post">
+<label for="present-uid">UID</label>
+<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false">
+<button>Present</button>
+</form>
+</section>
+"""
+        if register is not None:
+            off_sel = "" if register.assign_mode else " selected"
+            on_sel = " selected" if register.assign_mode else ""
+            if register.assign_mode:
+                refresh_meta = '<meta http-equiv="refresh" content="2">'
+            register_section = f"""
+<section>
+<h2>Register figures</h2>
+<form action="/register-mode" method="post">
+<label for="register">NFC register</label>
+<select id="register" name="register">
+<option value="off"{off_sel}>Off</option>
+<option value="on"{on_sel}>On — place a figure on the box</option>
+</select>
+<button>Save</button>
+</form>
+</section>
+"""
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+{refresh_meta}
 <title>RoMini</title>
 <style>{DASHBOARD_STYLE}</style>
 </head>
@@ -183,6 +253,9 @@ def create_dashboard(
 <h2>Library</h2>
 {library}
 </section>
+{tags_html}
+{register_section}
+{present_section}
 <section>
 <h2>Upload a track</h2>
 <form action="/tracks" method="post" enctype="multipart/form-data">
@@ -194,8 +267,11 @@ def create_dashboard(
 <section>
 <h2>Assign a figure</h2>
 <form action="/assign" method="post">
-<label for="uid">Tag UID</label>
-<input id="uid" name="uid" type="text" autocomplete="off" spellcheck="false">
+<label for="uid">Figure</label>
+<select id="uid" name="uid">
+{uid_options}
+</select>
+{uid_hint}
 <label for="title">Title</label>
 <input id="title" name="title" type="text">
 <label for="path">File in library</label>
@@ -282,6 +358,30 @@ def create_dashboard(
         if pad is None:
             raise HTTPException(status_code=404)
         pad.place(uid)
+        return RedirectResponse("/", status_code=303)
+
+    @app.post("/present")
+    async def present_figure(request: Request) -> RedirectResponse:
+        if pad is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        pad.place(str(form["uid"]))
+        return RedirectResponse("/", status_code=303)
+
+    @app.post("/register-mode")
+    async def switch_register_mode(request: Request) -> RedirectResponse:
+        if register is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        register.assign_mode = str(form.get("register")) == "on"
+        return RedirectResponse("/", status_code=303)
+
+    @app.post("/tags/{uid}/name")
+    async def name_registered_tag(uid: str, request: Request) -> RedirectResponse:
+        if assign_catalog is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        name_tag(uid=uid, name=str(form.get("name") or ""), catalog=assign_catalog)
         return RedirectResponse("/", status_code=303)
 
     return app

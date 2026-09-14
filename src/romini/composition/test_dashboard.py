@@ -396,3 +396,167 @@ def test_dashboard_pi_profile_may_bind_lan(monkeypatch) -> None:
         assert listener.port > 0
     finally:
         listener.close()
+
+
+def test_dashboard_register_mode_enters_assign_mode() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakeRegister:
+        assign_mode = False
+
+    register = FakeRegister()
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024), register=register)
+    response = TestClient(app).post("/register-mode", data={"register": "on"}, follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+    assert register.assign_mode is True
+
+
+def test_dashboard_home_has_register_form() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakeRegister:
+        assign_mode = False
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=FakeRegister())).get("/").text
+
+    assert 'action="/register-mode"' in html
+    assert 'for="register"' in html
+    assert 'name="register"' in html
+
+
+def test_dashboard_home_lists_registered_tags(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: Frog Prince\ntracks: []\n")
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert "Frog Prince" in html
+    assert "04aabbccddeeff" in html
+
+
+def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: Frog Prince\ntracks: []\n")
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert '<select id="uid" name="uid">' in html
+    assert '<option value="04aabbccddeeff">Frog Prince</option>' in html
+
+
+def test_dashboard_names_a_registered_tag(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: ''\ntracks: []\n")
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+    )
+    response = TestClient(app).post(
+        "/tags/04aabbccddeeff/name",
+        data={"name": "Frog Prince"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "Frog Prince" in catalog_path.read_text()
+
+
+def test_dashboard_figures_have_name_form(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: ''\ntracks: []\n")
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert 'action="/tags/04aabbccddeeff/name"' in html
+    assert 'name="name"' in html
+    assert 'for="tag-name-04aabbccddeeff"' in html
+
+
+def test_dashboard_register_on_refreshes_home() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakeRegister:
+        assign_mode = True
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=FakeRegister())).get("/").text
+
+    assert 'http-equiv="refresh"' in html
+    assert 'content="2"' in html
+
+
+def test_dashboard_sim_has_present_uid_form() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakePad:
+        def place(self, uid: str) -> None:
+            return
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=FakePad())).get("/").text
+
+    assert 'action="/present"' in html
+    assert 'id="present-uid"' in html
+    assert 'for="present-uid"' in html
+
+
+def test_dashboard_present_places_the_uid() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakePad:
+        def __init__(self) -> None:
+            self.uids: list[str] = []
+
+        def place(self, uid: str) -> None:
+            self.uids.append(uid)
+
+    pad = FakePad()
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=pad)).post(
+        "/present",
+        data={"uid": "04aabbccddeeff"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+    assert pad.uids == ["04aabbccddeeff"]

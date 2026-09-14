@@ -116,6 +116,7 @@ flowchart TB
 | Presence play | Figure down → play; lift past grace → pause |
 | Tap play | Tap selects Track; lift does not pause; play button transports |
 | Assign tag | Parent links Tag; blocks child play until done or 60s |
+| Register figures | Parent taps a Figure; catalog `tags` lists UID; name on dashboard; assign dropdown |
 | Catalog import | Drop or edit `catalog.yaml`; box maps Tags without dashboard |
 | Ingest track | Parent adds audio on the LAN; dashboard writes catalog + files |
 | Volume | 16mm ± with software ceiling |

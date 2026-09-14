@@ -126,6 +126,7 @@ def main(
             assign_catalog=PathCatalog(data / "catalog.yaml"),
             settings=SqliteSettings(box.state),
             pad=box if os.environ.get("ROMINI_PROFILE", "sim") == "sim" else None,
+            register=box,
         )
         box.dashboard = start_dashboard(
             app,
