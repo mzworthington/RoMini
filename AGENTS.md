@@ -23,6 +23,7 @@ Start from `~/.agents/AGENTS.md` (thin index). **Do not** bulk-read philosophy, 
 | SOP / handover lookup | kit-knowledge MCP when installed |
 | Durable project facts | memory MCP (glossary, SLOs, prefs - never secrets) |
 | Linear backlog / user stories | `skills/agent-user-stories` |
+| Bedtime story / Romy script | `.cursor/skills/romy-storyteller` |
 
 For **bugs / failed jobs / live symptoms**, use `agent-debug`. Do not open the full feature lifecycle unless RCA needs a new capability.
 

@@ -13,6 +13,7 @@ Start here: **[guide.md](./guide.md)** (laptop `sim`, what we emulate, Pi bring-
 | [pi-setup.md](./pi-setup.md) | Flash and bring-up (detail) |
 | [development.md](./development.md) | Laptop `sim` profile |
 | [library-catalog.md](./library-catalog.md) | YAML Tag → Track drop-in |
+| [stories/](./stories/) | Bedtime scripts for Romy |
 | [ADRs/README.md](./ADRs/README.md) | Hard-to-reverse choices |
 
 Application code lives under `src/romini/`. Console script: `romini-core`.
