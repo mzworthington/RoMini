@@ -1,4 +1,3 @@
-from html import escape
 from pathlib import Path
 from shutil import disk_usage
 from typing import Protocol
@@ -6,6 +5,7 @@ from typing import Protocol
 import yaml
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from romini.adapters.sqlite.settings import SqliteSettings
@@ -15,170 +15,8 @@ from romini.features.library.register_tag import name_tag
 from romini.features.play_by_tag.place_figure import PlayMode
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
-FONTS_HREF = (
-    "https://fonts.googleapis.com/css2?family=Nunito:wght@700;900"
-    "&amp;family=Quicksand:wght@500;600;700&amp;display=swap"
-)
-
-DASHBOARD_STYLE = """
-:root {
-  --story-coral: #FF6B6B;
-  --magic-ochre: #F7B731;
-  --olive-sun: #E5B887;
-  --warm-chestnut: #4A2E18;
-  --midnight-navy: #1E293B;
-  --cloud-foam: #F8FAFC;
-  color-scheme: light;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font: 600 1.125rem/1.45 Quicksand, system-ui, sans-serif;
-  color: var(--midnight-navy);
-  background:
-    radial-gradient(900px 420px at 50% -80px, #FFF7ED 0%, transparent 70%),
-    var(--cloud-foam);
-}
-main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
-.board {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  align-items: stretch;
-}
-.board > section {
-  flex: 1 1 20rem;
-  margin: 0;
-  min-width: 0;
-}
-.masthead {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin: 0 0 1.25rem;
-}
-.mark {
-  width: 7rem;
-  height: 7rem;
-  object-fit: cover;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  flex-shrink: 0;
-}
-h1, h2, caption {
-  font-family: Nunito, Comfortaa, system-ui, sans-serif;
-}
-h1 {
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  margin: 0;
-}
-h1 span { color: #FF5252; }
-.tag {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #94A3B8;
-}
-.lede { color: #64748B; margin: 0.45rem 0 0; font-weight: 600; }
-section {
-  margin: 0 0 1.5rem;
-  padding: 1.1rem 1.15rem;
-  background: #FFFFFF;
-  border: 1px solid #F1F5F9;
-  border-radius: 1rem;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
-  overflow-x: auto;
-}
-@media (max-width: 40rem) {
-  .masthead { align-items: flex-start; }
-  .mark { width: 5.5rem; height: 5.5rem; }
-  th, td { padding: 0.4rem 0.3rem; }
-}
-h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.75rem; }
-label { display: block; font-weight: 700; margin: 0.7rem 0 0.3rem; }
-input, select, button { font: inherit; }
-input[type="text"], input[type="file"], select {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #E2E8F0;
-  border-radius: 0.65rem;
-  background: #fff;
-  color: var(--midnight-navy);
-}
-button {
-  min-height: 2.75rem;
-  margin-top: 0.85rem;
-  padding: 0.4rem 0.9rem;
-  border: 0;
-  border-radius: 0.65rem;
-  background: var(--story-coral);
-  color: #fff;
-  font-weight: 700;
-}
-button:hover { filter: brightness(0.96); }
-:focus-visible {
-  outline: 3px solid var(--magic-ochre);
-  outline-offset: 2px;
-}
-table { width: 100%; border-collapse: collapse; font-size: 1rem; position: relative; }
-th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
-th { color: #64748B; font-weight: 700; }
-caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-td form { margin: 0; }
-td button { margin: 0; min-height: 2.25rem; }
-.empty, .hint { color: #64748B; margin: 0.4rem 0 0; font-weight: 500; }
-.hint { font-size: 0.95rem; }
-.status {
-  margin: 0 0 1.25rem;
-  padding: 0.65rem 0.8rem;
-  background: #FFF7ED;
-  border-radius: 0.65rem;
-  border-left: 4px solid var(--magic-ochre);
-  font-weight: 700;
-}
-"""
-
-
-REGISTER_POLL = """
-<script>
-(function () {
-  function busy() {
-    var el = document.activeElement;
-    if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return true;
-    var fields = document.querySelectorAll("input, textarea, select");
-    for (var i = 0; i < fields.length; i++) {
-      var field = fields[i];
-      if (field.type === "file") {
-        if (field.files && field.files.length) return true;
-        continue;
-      }
-      if (field.value !== field.defaultValue) return true;
-    }
-    return false;
-  }
-  setInterval(function () {
-    if (busy()) return;
-    location.reload();
-  }, 2000);
-})();
-</script>
-"""
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
 def format_free_space(n: int) -> str:
@@ -219,16 +57,6 @@ def _library_paths(storage: object) -> list[str]:
     if not callable(listing):
         return []
     return [str(path) for path in listing()]
-
-
-def _catalog_row(track: dict[str, object], *, pad: FigurePad | None) -> str:
-    uid = escape(str(track.get("uid") or ""))
-    title = escape(str(track.get("title") or ""))
-    path = escape(str(track.get("path") or ""))
-    place = ""
-    if pad is not None:
-        place = f'<td><form action="/place/{uid}" method="post"><button>Place</button></form></td>'
-    return f"<tr><td>{uid}</td><td>{title}</td><td>{path}</td>{place}</tr>"
 
 
 class DiskStorage:
@@ -293,184 +121,51 @@ def create_dashboard(
         return brand_asset("mark.svg")
 
     @app.get("/", response_class=HTMLResponse)
-    def home(request: Request) -> str:
-        tracks: list[dict] = []
-        tags: list[dict] = []
+    def home(request: Request) -> HTMLResponse:
+        tracks: list[dict[str, str]] = []
+        tags: list[dict[str, str]] = []
         if assign_catalog is not None:
             data = yaml.safe_load(assign_catalog.read_text()) or {}
             tracks = [
-                track
+                {
+                    "uid": str(track.get("uid") or ""),
+                    "title": str(track.get("title") or ""),
+                    "path": str(track.get("path") or ""),
+                }
                 for track in data.get("tracks") or []
                 if str(track.get("uid") or "").strip()
                 or str(track.get("title") or "").strip()
                 or str(track.get("path") or "").strip()
             ]
-            tags = [tag for tag in data.get("tags") or [] if str(tag.get("uid") or "").strip()]
+            tags = [
+                {"uid": str(tag.get("uid") or ""), "name": str(tag.get("name") or "")}
+                for tag in data.get("tags") or []
+                if str(tag.get("uid") or "").strip()
+            ]
         play_mode = PlayMode.PRESENCE.value
         if settings is not None:
             remembered = settings.play_mode()
             if remembered is not None:
                 play_mode = remembered.value
-        presence_sel = " selected" if play_mode == PlayMode.PRESENCE.value else ""
-        tap_sel = " selected" if play_mode == PlayMode.TAP.value else ""
-        path_options = "".join(
-            f'<option value="{escape(path, quote=True)}">{escape(path)}</option>' for path in _library_paths(storage)
-        )
-        path_hint = '<p class="hint">Upload a track first</p>' if not path_options else ""
-        uid_options = "".join(
-            f'<option value="{escape(str(tag.get("uid") or ""), quote=True)}">'
-            f"{escape(str(tag.get('name') or tag.get('uid') or ''))}</option>"
-            for tag in tags
-        )
-        uid_hint = '<p class="hint">Register a figure first</p>' if not uid_options else ""
-        if tracks:
-            place_th = "<th>Place</th>" if pad is not None else ""
-            body = "".join(_catalog_row(track, pad=pad) for track in tracks)
-            library = (
-                "<table>"
-                "<caption>Library</caption>"
-                f"<thead><tr><th>UID</th><th>Title</th><th>Path</th>{place_th}</tr></thead>"
-                f"<tbody>{body}</tbody>"
-                "</table>"
-            )
-        else:
-            library = '<p class="empty">No stories yet. Upload a track, then assign a figure.</p>'
-        tags_html = ""
-        if tags:
-            rows = "".join(
-                "<tr>"
-                f"<td>{escape(str(tag.get('uid') or ''))}</td>"
-                "<td>"
-                f'<form action="/tags/{escape(str(tag.get("uid") or ""), quote=True)}/name" method="post">'
-                f'<label for="tag-name-{escape(str(tag.get("uid") or ""), quote=True)}">Name</label>'
-                f'<input id="tag-name-{escape(str(tag.get("uid") or ""), quote=True)}" name="name" type="text" '
-                f'value="{escape(str(tag.get("name") or ""), quote=True)}">'
-                "<button>Save name</button>"
-                "</form>"
-                "</td>"
-                "</tr>"
-                for tag in tags
-            )
-            tags_html = (
-                "<section>"
-                "<h2>Figures</h2>"
-                "<table>"
-                "<caption>Figures</caption>"
-                "<thead><tr><th>UID</th><th>Name</th></tr></thead>"
-                f"<tbody>{rows}</tbody>"
-                "</table>"
-                "</section>"
-            )
-        register_section = ""
-        refresh_meta = ""
-        present_section = ""
-        if pad is not None:
-            present_section = """
-<section>
-<h2>Present a figure</h2>
-<form action="/present" method="post">
-<label for="present-uid">UID</label>
-<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>
-<button>Present</button>
-</form>
-</section>
-"""
-        if register is not None:
-            off_sel = "" if register.assign_mode else " selected"
-            on_sel = " selected" if register.assign_mode else ""
-            if register.assign_mode:
-                refresh_meta = REGISTER_POLL
-            register_section = f"""
-<section>
-<h2>Register figures</h2>
-<form action="/register-mode" method="post">
-<label for="register">NFC register</label>
-<select id="register" name="register">
-<option value="off"{off_sel}>Off</option>
-<option value="on"{on_sel}>On — place a figure on the box</option>
-</select>
-<button>Save</button>
-</form>
-</section>
-"""
         notice_key = request.query_params.get("notice", "")
-        notice_text = HOME_NOTICES.get(notice_key, "")
-        status = f'<p class="status" role="status">{escape(notice_text)}</p>' if notice_text else ""
-        return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-{refresh_meta}
-<title>RoMini</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="{FONTS_HREF}" rel="stylesheet">
-<style>{DASHBOARD_STYLE}</style>
-</head>
-<body>
-<main>
-<header class="masthead">
-<img class="mark" src="/mark.svg" width="112" height="112" alt="">
-<div>
-<h1>Ro<span>Mini</span></h1>
-<p class="tag">Storybox</p>
-<p class="lede">{escape(format_free_space(storage.free_bytes))} on the box</p>
-</div>
-</header>
-{status}
-<section>
-<h2>Library</h2>
-{library}
-</section>
-<div class="board">
-{tags_html}
-{register_section}
-{present_section}
-<section>
-<h2>Upload a track</h2>
-<form action="/tracks" method="post" enctype="multipart/form-data">
-<label for="file">Audio file</label>
-<input id="file" type="file" name="file" accept="audio/*" required>
-<button>Upload</button>
-</form>
-</section>
-<section>
-<h2>Assign a figure</h2>
-<form action="/assign" method="post">
-<label for="uid">Figure</label>
-<select id="uid" name="uid" required>
-{uid_options}
-</select>
-{uid_hint}
-<label for="title">Title</label>
-<input id="title" name="title" type="text" required>
-<label for="path">File in library</label>
-<select id="path" name="path" required>
-{path_options}
-</select>
-{path_hint}
-<button>Assign</button>
-</form>
-</section>
-<section>
-<h2>Play mode</h2>
-<form action="/play-mode" method="post">
-<label for="play_mode">How figures start a story</label>
-<select id="play_mode" name="play_mode">
-<option value="presence"{presence_sel}>Presence — plays while the figure sits on the box</option>
-<option value="tap"{tap_sel}>Tap — tap the figure, then use the buttons</option>
-</select>
-<p class="hint">Presence is the default. Tap is for buttons after a tap.</p>
-<button>Save play mode</button>
-</form>
-</section>
-</div>
-</main>
-</body>
-</html>
-"""
+        return templates.TemplateResponse(
+            request,
+            "home.html",
+            {
+                "free_space": format_free_space(storage.free_bytes),
+                "notice": HOME_NOTICES.get(notice_key, ""),
+                "tracks": tracks,
+                "tags": tags,
+                "library_paths": _library_paths(storage),
+                "play_mode": play_mode,
+                "presence": PlayMode.PRESENCE.value,
+                "tap": PlayMode.TAP.value,
+                "pad": pad is not None,
+                "register": register is not None,
+                "assign_mode": bool(register.assign_mode) if register is not None else False,
+                "poll": register is not None and register.assign_mode,
+            },
+        )
 
     @app.get("/storage")
     def storage_info() -> dict[str, int]:
