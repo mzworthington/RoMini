@@ -876,3 +876,55 @@ def test_dashboard_upload_form_returns_to_home_with_notice() -> None:
 
     assert response.status_code == 303
     assert response.headers["location"] == "/?notice=uploaded"
+
+
+def test_dashboard_home_uses_romini_brand() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert "--story-coral: #FF6B6B" in html
+    assert "--magic-ochre: #F7B731" in html
+    assert "--olive-sun: #E5B887" in html
+    assert "--warm-chestnut: #4A2E18" in html
+    assert "--midnight-navy: #1E293B" in html
+    assert "--cloud-foam: #F8FAFC" in html
+    assert "Nunito" in html
+    assert "Quicksand" in html
+    assert 'src="/mark.svg"' in html
+    assert 'href="/favicon.svg"' in html
+    assert "Storybox" in html
+
+
+def test_dashboard_serves_logo() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/logo.svg")
+
+    assert response.status_code == 200
+    assert "image/svg" in response.headers["content-type"]
+    assert b"<svg" in response.content
+    assert b"#E5B887" in response.content
+    assert b"#4A2E18" in response.content
+
+
+def test_dashboard_serves_mark() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/mark.svg")
+
+    assert response.status_code == 200
+    assert "image/svg" in response.headers["content-type"]
+    assert b"#E5B887" in response.content
+    assert b"STORYBOX" not in response.content
+
+
+def test_dashboard_serves_favicon() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/favicon.svg")
+
+    assert response.status_code == 200
+    assert "image/svg" in response.headers["content-type"]
+    assert b"#FF6B6B" in response.content
+    assert b"#F7B731" in response.content
