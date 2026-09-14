@@ -194,6 +194,35 @@ def test_romini_core_main_starts_dashboard(tmp_path: Path, monkeypatch) -> None:
     assert "free_bytes" in body
 
 
+def test_romini_core_dashboard_place_starts_the_track(tmp_path: Path, monkeypatch) -> None:
+    from urllib.request import Request, urlopen
+
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+    player = FakePlayer()
+
+    box = main(player=player, led=FakeLed())
+    try:
+        req = Request(f"http://127.0.0.1:{box.dashboard.port}/place/04aabbccddeeff", method="POST", data=b"")
+        with urlopen(req) as resp:
+            status = resp.status
+            body = resp.read().decode()
+    finally:
+        box.dashboard.close()
+
+    assert status == 200
+    assert "Place" in body
+    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
 def test_romini_core_main_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"
@@ -352,3 +381,39 @@ def test_romini_core_entry_on_pi_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> 
     entry(player=player, led=FakeLed())
 
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_romini_core_entry_keeps_serving_after_stdin_eof(tmp_path: Path, monkeypatch) -> None:
+    from threading import Event, Thread
+    from time import sleep
+
+    from romini.__main__ import entry
+    from romini.composition.http import start_sim_http
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
+    monkeypatch.setattr("romini.__main__.sys.stdin", StringIO(""))
+
+    ready = Event()
+    listeners: list = []
+
+    def start(box, *, host: str, port: int):
+        listener = start_sim_http(box, host=host, port=port)
+        listeners.append(listener)
+        ready.set()
+        return listener
+
+    monkeypatch.setattr("romini.__main__.start_sim_http", start)
+    worker = Thread(target=lambda: entry(player=FakePlayer(), led=FakeLed()), daemon=True)
+    worker.start()
+    assert ready.wait(timeout=2)
+    sleep(0.2)
+
+    assert worker.is_alive()
+    listeners[0].close()
+    worker.join(timeout=2)
+    assert not worker.is_alive()

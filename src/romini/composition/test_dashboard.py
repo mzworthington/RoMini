@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.dashboard import DiskStorage, create_dashboard
-from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import PlayMode
 
@@ -14,6 +14,9 @@ class FakeStorage:
 
     def put(self, filename: str, audio: bytes) -> None:
         self.files[filename] = audio
+
+    def paths(self) -> list[str]:
+        return sorted(self.files)
 
 
 @dataclass
@@ -110,6 +113,18 @@ def test_disk_storage_puts_audio_and_reports_free_space(tmp_path: Path) -> None:
     assert storage.free_bytes > 0
 
 
+def test_disk_storage_lists_nested_library_files(tmp_path: Path) -> None:
+    root = tmp_path / "library"
+    (root / "stories").mkdir(parents=True)
+    (root / "frog.mp3").write_bytes(b"id3")
+    (root / "stories" / "frog-prince.mp3").write_bytes(b"id3")
+    (root / ".DS_Store").write_bytes(b"skip")
+
+    storage = DiskStorage(root)
+
+    assert storage.paths() == ["frog.mp3", "stories/frog-prince.mp3"]
+
+
 def test_dashboard_home_shows_free_space() -> None:
     from fastapi.testclient import TestClient
 
@@ -117,7 +132,27 @@ def test_dashboard_home_shows_free_space() -> None:
     response = TestClient(app).get("/")
 
     assert response.status_code == 200
-    assert "1024" in response.text
+    assert "1.0 KB free" in response.text
+
+
+def test_dashboard_home_is_labelled_for_a_parent() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert "<h1" in html
+    assert "<main" in html
+    assert "<label" in html
+    assert 'for="uid"' in html
+    assert 'for="path"' in html
+    assert 'for="title"' in html
+    assert 'for="file"' in html
+    assert 'for="play_mode"' in html
+    assert "<select" in html
+    assert 'value="presence"' in html
+    assert 'value="tap"' in html
+    assert "free_bytes" not in html
+    assert "bytes free" in html or "KB free" in html
 
 
 def test_dashboard_home_has_upload_form() -> None:
@@ -140,6 +175,28 @@ def test_dashboard_home_has_assign_form() -> None:
     assert 'name="uid"' in response.text
     assert 'name="path"' in response.text
     assert 'name="title"' in response.text
+
+
+def test_dashboard_assign_path_lists_library_files() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(
+        free_bytes=1024,
+        files={"frog.mp3": b"id3", "stories/frog-prince.mp3": b"id3"},
+    )
+    html = TestClient(create_dashboard(storage=storage)).get("/").text
+
+    assert '<select id="path" name="path">' in html
+    assert '<option value="frog.mp3">' in html
+    assert '<option value="stories/frog-prince.mp3">' in html
+
+
+def test_dashboard_assign_path_empty_when_library_has_no_files() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert "Upload a track first" in html
 
 
 def test_dashboard_assign_form_writes_catalog_yaml(tmp_path: Path) -> None:
@@ -215,6 +272,117 @@ def test_dashboard_home_lists_catalog_titles(tmp_path: Path) -> None:
 
     assert "The Frog Prince" in response.text
     assert "04aabbccddeeff" in response.text
+
+
+def test_dashboard_home_lists_catalog_table(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+    )
+    response = TestClient(app).get("/")
+
+    assert "<table>" in response.text
+    assert "<th>UID</th>" in response.text
+    assert "<th>Title</th>" in response.text
+    assert "<th>Path</th>" in response.text
+    assert "stories/frog-prince.mp3" in response.text
+
+
+def test_dashboard_catalog_table_has_caption(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+    )
+    response = TestClient(app).get("/")
+
+    assert "<caption>Library</caption>" in response.text
+
+
+def test_dashboard_escapes_catalog_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog.mp3"\n    title: "Frog & Prince"\n'
+    )
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+    )
+    response = TestClient(app).get("/")
+
+    assert "Frog &amp; Prince" in response.text
+
+
+def test_dashboard_home_has_place_form_for_each_track(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class FakePad:
+        def place(self, uid: str) -> None:
+            return
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+        pad=FakePad(),
+    )
+    response = TestClient(app).get("/")
+
+    assert 'action="/place/04aabbccddeeff"' in response.text
+    assert "Place" in response.text
+
+
+def test_dashboard_place_starts_the_mapped_track(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class FakePad:
+        def __init__(self) -> None:
+            self.uids: list[str] = []
+
+        def place(self, uid: str) -> None:
+            self.uids.append(uid)
+
+    pad = FakePad()
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+        pad=pad,
+    )
+    response = TestClient(app).post("/place/04aabbccddeeff", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+    assert pad.uids == ["04aabbccddeeff"]
 
 
 def test_dashboard_pi_profile_may_bind_lan(monkeypatch) -> None:

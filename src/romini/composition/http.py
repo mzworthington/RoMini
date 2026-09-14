@@ -49,6 +49,9 @@ class SimHttpListener:
         except HTTPError as exc:
             return exc.code
 
+    def wait(self) -> None:
+        self._thread.join()
+
     def close(self) -> None:
         self._server.shutdown()
         self._server.server_close()
@@ -62,6 +65,27 @@ def start_sim_http(box: SimBox, *, host: str, port: int) -> SimHttpListener:
         raise ValueError("sim HTTP binds localhost only")
 
     class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            path = self.path.split("?", 1)[0]
+            if path != "/":
+                self.send_response(404)
+                self.end_headers()
+                return
+            body = (
+                b"<!DOCTYPE html><title>RoMini sim</title>"
+                b"<p>POST /place/&lt;uid&gt; /remove /vol/up /vol/down /play /halt</p>"
+                b'<form method="post" action="/remove"><button>remove</button></form>'
+                b'<form method="post" action="/vol/up"><button>vol up</button></form>'
+                b'<form method="post" action="/vol/down"><button>vol down</button></form>'
+                b'<form method="post" action="/play"><button>play</button></form>'
+                b'<form method="post" action="/halt"><button>halt</button></form>'
+            )
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
         def do_POST(self) -> None:
             status = apply_sim_http(box, "POST", self.path)
             self.send_response(status)

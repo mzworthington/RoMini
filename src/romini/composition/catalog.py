@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from pathlib import Path
 
+from romini.adapters.sqlite.catalog import SqliteCatalog
 from romini.composition.sim import SimBox
-from romini.composition.sqlite_catalog import SqliteCatalog
 from romini.features.library.import_catalog import import_catalog
 
 

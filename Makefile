@@ -1,6 +1,6 @@
 VENV := .venv
 
-.PHONY: help bootstrap lint format test build
+.PHONY: help bootstrap lint format test build sim
 
 help:
 	@echo "bootstrap  Install venv and hooks"
@@ -8,6 +8,7 @@ help:
 	@echo "format     ruff format (Python prettier)"
 	@echo "test       lint, format check, pytest"
 	@echo "build      sdist and wheel"
+	@echo "sim        Laptop sim (dashboard 8080, injectors 8081)"
 
 bootstrap:
 	./bin/bootstrap
@@ -29,3 +30,6 @@ test: lint
 build: $(VENV)/bin/python
 	rm -rf build/ dist/ *.egg-info
 	./$(VENV)/bin/python -m build --sdist --wheel
+
+sim:
+	./bin/sim

@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pytest
 
+from romini.adapters.sqlite.catalog import SqliteCatalog
+from romini.adapters.sqlite.sessions import SqliteSessions
 from romini.composition.catalog import poll_catalog, run_catalog_ticks
 from romini.composition.gpio import (
     GPIO_HALT,
@@ -20,8 +22,6 @@ from romini.composition.loop import run_core_ticks
 from romini.composition.nfc import NFC_POLL_SEC, FakeNfc, poll_nfc, run_nfc_ticks
 from romini.composition.pi import SystemdHalt
 from romini.composition.sim import SimBox, load_sim_box, load_sim_box_from_env
-from romini.composition.sqlite_catalog import SqliteCatalog
-from romini.composition.sqlite_sessions import SqliteSessions
 from romini.features.play_by_tag.place_figure import PlayMode
 
 
@@ -594,6 +594,23 @@ def test_sim_http_listen_place_starts_the_track(tmp_path: Path) -> None:
 
     assert status == 204
     assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+
+
+def test_sim_http_listen_get_root_is_ok(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            status = resp.status
+    finally:
+        listener.close()
+
+    assert status == 200
 
 
 def test_sim_http_refuses_non_localhost(tmp_path: Path) -> None:
