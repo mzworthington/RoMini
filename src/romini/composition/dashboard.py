@@ -5,7 +5,7 @@ from typing import Protocol
 
 import yaml
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
 from romini.adapters.sqlite.settings import SqliteSettings
@@ -62,6 +62,13 @@ td form { margin: 0; }
 td button { margin: 0; min-height: 2.25rem; }
 .empty, .hint { color: #57534e; margin: 0.4rem 0 0; font-weight: 400; }
 .hint { font-size: 0.95rem; }
+.status {
+  margin: 0 0 1.25rem;
+  padding: 0.65rem 0.8rem;
+  background: #e8f0ee;
+  border-radius: 0.45rem;
+  font-weight: 600;
+}
 """
 
 
@@ -82,6 +89,20 @@ class FigurePad(Protocol):
 
 class RegisterMode(Protocol):
     assign_mode: bool
+
+
+HOME_NOTICES = {
+    "assigned": "Figure assigned",
+    "play-mode": "Play mode saved",
+    "uploaded": "Track stored",
+    "full": "Storage is full",
+    "register-on": "Place a figure on the box",
+    "register-off": "Register off",
+    "named": "Figure named",
+    "presented": "Figure presented",
+    "placed": "Figure placed",
+    "needed": "Fill in the required fields",
+}
 
 
 def _library_paths(storage: object) -> list[str]:
@@ -124,6 +145,14 @@ class DiskStorage:
         return files
 
 
+def _notice_home(key: str) -> RedirectResponse:
+    return RedirectResponse(f"/?notice={key}", status_code=303)
+
+
+def _has_required(*values: str) -> bool:
+    return all(value.strip() for value in values)
+
+
 def create_dashboard(
     *,
     storage: Storage,
@@ -137,7 +166,7 @@ def create_dashboard(
     app = FastAPI()
 
     @app.get("/", response_class=HTMLResponse)
-    def home() -> str:
+    def home(request: Request) -> str:
         tracks: list[dict] = []
         tags: list[dict] = []
         if assign_catalog is not None:
@@ -211,7 +240,7 @@ def create_dashboard(
 <h2>Present a figure</h2>
 <form action="/present" method="post">
 <label for="present-uid">UID</label>
-<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false">
+<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>
 <button>Present</button>
 </form>
 </section>
@@ -234,6 +263,9 @@ def create_dashboard(
 </form>
 </section>
 """
+        notice_key = request.query_params.get("notice", "")
+        notice_text = HOME_NOTICES.get(notice_key, "")
+        status = f'<p class="status" role="status">{escape(notice_text)}</p>' if notice_text else ""
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -249,6 +281,7 @@ def create_dashboard(
 <h1>RoMini</h1>
 <p class="lede">{escape(format_free_space(storage.free_bytes))} on the box</p>
 </header>
+{status}
 <section>
 <h2>Library</h2>
 {library}
@@ -260,7 +293,7 @@ def create_dashboard(
 <h2>Upload a track</h2>
 <form action="/tracks" method="post" enctype="multipart/form-data">
 <label for="file">Audio file</label>
-<input id="file" type="file" name="file" accept="audio/*">
+<input id="file" type="file" name="file" accept="audio/*" required>
 <button>Upload</button>
 </form>
 </section>
@@ -268,14 +301,14 @@ def create_dashboard(
 <h2>Assign a figure</h2>
 <form action="/assign" method="post">
 <label for="uid">Figure</label>
-<select id="uid" name="uid">
+<select id="uid" name="uid" required>
 {uid_options}
 </select>
 {uid_hint}
 <label for="title">Title</label>
-<input id="title" name="title" type="text">
+<input id="title" name="title" type="text" required>
 <label for="path">File in library</label>
-<select id="path" name="path">
+<select id="path" name="path" required>
 {path_options}
 </select>
 {path_hint}
@@ -303,12 +336,14 @@ def create_dashboard(
     def storage_info() -> dict[str, int]:
         return {"free_bytes": storage.free_bytes}
 
-    @app.post("/tracks", status_code=201)
-    async def upload_track(file: UploadFile = File()) -> dict[str, bool]:
+    @app.post("/tracks", response_model=None)
+    async def upload_track(file: UploadFile | None = File(None)) -> RedirectResponse:
         class Quiet:
             def tell(self, message: str) -> None:
                 return
 
+        if file is None or not (file.filename or "").strip():
+            return _notice_home("needed")
         audio = await file.read()
         stored = add_track(
             audio=audio,
@@ -317,24 +352,31 @@ def create_dashboard(
             notices=notices if notices is not None else Quiet(),
             catalog=catalog,
         )
-        return {"stored": stored}
+        notice = "uploaded" if stored else "full"
+        return _notice_home(notice)
 
     class AssignBody(BaseModel):
         uid: str
         path: str
         title: str
 
-    @app.post("/assign", status_code=204)
-    async def assign_tag(request: Request) -> None:
+    @app.post("/assign", response_model=None)
+    async def assign_tag(request: Request) -> Response:
         if assign_catalog is None:
             raise HTTPException(status_code=404)
         content_type = request.headers.get("content-type", "")
         if "application/json" in content_type:
             body = AssignBody.model_validate(await request.json())
-        else:
-            form = await request.form()
-            body = AssignBody(uid=str(form["uid"]), path=str(form["path"]), title=str(form["title"]))
+            if not _has_required(body.uid, body.path, body.title):
+                raise HTTPException(status_code=422)
+            confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=assign_catalog)
+            return Response(status_code=204)
+        form = await request.form()
+        body = AssignBody(uid=str(form["uid"]), path=str(form["path"]), title=str(form["title"]))
+        if not _has_required(body.uid, body.path, body.title):
+            return _notice_home("needed")
         confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=assign_catalog)
+        return _notice_home("assigned")
 
     class PlayModeBody(BaseModel):
         play_mode: PlayMode
@@ -345,28 +387,32 @@ def create_dashboard(
             raise HTTPException(status_code=404)
         settings.remember_play_mode(body.play_mode)
 
-    @app.post("/play-mode", status_code=204)
-    async def switch_play_mode_form(request: Request) -> None:
+    @app.post("/play-mode", response_model=None)
+    async def switch_play_mode_form(request: Request) -> RedirectResponse:
         if settings is None:
             raise HTTPException(status_code=404)
         form = await request.form()
         body = PlayModeBody.model_validate({"play_mode": str(form["play_mode"])})
         settings.remember_play_mode(body.play_mode)
+        return _notice_home("play-mode")
 
     @app.post("/place/{uid}")
     def place_figure(uid: str) -> RedirectResponse:
         if pad is None:
             raise HTTPException(status_code=404)
         pad.place(uid)
-        return RedirectResponse("/", status_code=303)
+        return _notice_home("placed")
 
     @app.post("/present")
     async def present_figure(request: Request) -> RedirectResponse:
         if pad is None:
             raise HTTPException(status_code=404)
         form = await request.form()
-        pad.place(str(form["uid"]))
-        return RedirectResponse("/", status_code=303)
+        uid = str(form["uid"]).strip()
+        if not uid:
+            return _notice_home("needed")
+        pad.place(uid)
+        return _notice_home("presented")
 
     @app.post("/register-mode")
     async def switch_register_mode(request: Request) -> RedirectResponse:
@@ -374,7 +420,8 @@ def create_dashboard(
             raise HTTPException(status_code=404)
         form = await request.form()
         register.assign_mode = str(form.get("register")) == "on"
-        return RedirectResponse("/", status_code=303)
+        notice = "register-on" if register.assign_mode else "register-off"
+        return _notice_home(notice)
 
     @app.post("/tags/{uid}/name")
     async def name_registered_tag(uid: str, request: Request) -> RedirectResponse:
@@ -382,7 +429,7 @@ def create_dashboard(
             raise HTTPException(status_code=404)
         form = await request.form()
         name_tag(uid=uid, name=str(form.get("name") or ""), catalog=assign_catalog)
-        return RedirectResponse("/", status_code=303)
+        return _notice_home("named")
 
     return app
 

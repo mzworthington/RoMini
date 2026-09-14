@@ -54,7 +54,8 @@ def test_dashboard_uploads_a_track() -> None:
     app = create_dashboard(storage=storage, notices=notices, catalog=catalog)
     response = TestClient(app).post("/tracks", files={"file": ("frog.mp3", b"id3", "audio/mpeg")})
 
-    assert response.status_code == 201
+    assert response.status_code == 200
+    assert "Track stored" in response.text
     assert storage.files == {"frog.mp3": b"id3"}
     assert catalog.paths == ["frog.mp3"]
 
@@ -92,6 +93,33 @@ def test_dashboard_assign_writes_catalog_yaml(tmp_path: Path) -> None:
         audio_exists=lambda path: path == "stories/frog-prince.mp3",
     )
     assert library.track_for("04aabbccddeeff") == "/var/lib/romini/library/stories/frog-prince.mp3"
+
+
+def test_dashboard_assign_json_blank_title_does_not_write(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+
+    class PathCatalog:
+        def read_text(self) -> str:
+            return catalog_path.read_text()
+
+        def write_text(self, text: str) -> None:
+            catalog_path.write_text(text)
+
+    response = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(),
+        )
+    ).post(
+        "/assign",
+        json={"uid": "04aabbccddeeff", "path": "stories/frog-prince.mp3", "title": ""},
+    )
+
+    assert response.status_code == 422
+    assert catalog_path.read_text() == "tracks: []\n"
 
 
 def test_dashboard_switches_play_mode(tmp_path: Path) -> None:
@@ -165,6 +193,28 @@ def test_dashboard_home_has_upload_form() -> None:
     assert 'type="file"' in response.text
 
 
+def test_dashboard_upload_file_is_required() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'id="file" type="file" name="file" accept="audio/*" required>' in html
+
+
+def test_dashboard_upload_blank_file_does_not_store() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024)
+    catalog = FakeCatalog()
+    response = TestClient(create_dashboard(storage=storage, catalog=catalog)).post(
+        "/tracks", files={"file": ("", b"", "application/octet-stream")}
+    )
+
+    assert "Fill in the required fields" in response.text
+    assert storage.files == {}
+    assert catalog.paths == []
+
+
 def test_dashboard_home_has_assign_form() -> None:
     from fastapi.testclient import TestClient
 
@@ -177,6 +227,16 @@ def test_dashboard_home_has_assign_form() -> None:
     assert 'name="title"' in response.text
 
 
+def test_dashboard_assign_form_marks_required_fields() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'id="uid" name="uid" required>' in html
+    assert 'id="title" name="title" type="text" required>' in html
+    assert 'id="path" name="path" required>' in html
+
+
 def test_dashboard_assign_path_lists_library_files() -> None:
     from fastapi.testclient import TestClient
 
@@ -186,7 +246,7 @@ def test_dashboard_assign_path_lists_library_files() -> None:
     )
     html = TestClient(create_dashboard(storage=storage)).get("/").text
 
-    assert '<select id="path" name="path">' in html
+    assert '<select id="path" name="path" required>' in html
     assert '<option value="frog.mp3">' in html
     assert '<option value="stories/frog-prince.mp3">' in html
 
@@ -225,13 +285,107 @@ def test_dashboard_assign_form_writes_catalog_yaml(tmp_path: Path) -> None:
         },
     )
 
-    assert response.status_code == 204
+    assert response.status_code == 200
+    assert "Figure assigned" in response.text
     library = import_catalog(
         catalog_path.read_text(),
         library_root="/var/lib/romini/library",
         audio_exists=lambda path: path == "stories/frog-prince.mp3",
     )
     assert library.track_for("04aabbccddeeff") == "/var/lib/romini/library/stories/frog-prince.mp3"
+
+
+def test_dashboard_assign_blank_title_does_not_write(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+
+    class PathCatalog:
+        def read_text(self) -> str:
+            return catalog_path.read_text()
+
+        def write_text(self, text: str) -> None:
+            catalog_path.write_text(text)
+
+    response = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(),
+        )
+    ).post(
+        "/assign",
+        data={
+            "uid": "04aabbccddeeff",
+            "path": "stories/frog-prince.mp3",
+            "title": "",
+        },
+    )
+
+    assert "Fill in the required fields" in response.text
+    assert catalog_path.read_text() == "tracks: []\n"
+
+
+def test_dashboard_assign_blank_uid_does_not_write(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+
+    class PathCatalog:
+        def read_text(self) -> str:
+            return catalog_path.read_text()
+
+        def write_text(self, text: str) -> None:
+            catalog_path.write_text(text)
+
+    response = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(),
+        )
+    ).post(
+        "/assign",
+        data={
+            "uid": "",
+            "path": "stories/frog-prince.mp3",
+            "title": "The Frog Prince",
+        },
+    )
+
+    assert "Fill in the required fields" in response.text
+    assert catalog_path.read_text() == "tracks: []\n"
+
+
+def test_dashboard_assign_blank_path_does_not_write(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+
+    class PathCatalog:
+        def read_text(self) -> str:
+            return catalog_path.read_text()
+
+        def write_text(self, text: str) -> None:
+            catalog_path.write_text(text)
+
+    response = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(),
+        )
+    ).post(
+        "/assign",
+        data={
+            "uid": "04aabbccddeeff",
+            "path": "",
+            "title": "The Frog Prince",
+        },
+    )
+
+    assert "Fill in the required fields" in response.text
+    assert catalog_path.read_text() == "tracks: []\n"
 
 
 def test_dashboard_home_has_play_mode_form() -> None:
@@ -251,7 +405,8 @@ def test_dashboard_play_mode_form_persists(tmp_path: Path) -> None:
     app = create_dashboard(storage=FakeStorage(free_bytes=1024), settings=settings)
     response = TestClient(app).post("/play-mode", data={"play_mode": "tap"})
 
-    assert response.status_code == 204
+    assert response.status_code == 200
+    assert "Play mode saved" in response.text
     assert settings.play_mode() is PlayMode.TAP
 
 
@@ -381,8 +536,24 @@ def test_dashboard_place_starts_the_mapped_track(tmp_path: Path) -> None:
     response = TestClient(app).post("/place/04aabbccddeeff", follow_redirects=False)
 
     assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.headers["location"] == "/?notice=placed"
     assert pad.uids == ["04aabbccddeeff"]
+
+
+def test_dashboard_place_returns_with_notice() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakePad:
+        def place(self, uid: str) -> None:
+            return
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=FakePad())).post(
+        "/place/04aabbccddeeff",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=placed"
 
 
 def test_dashboard_pi_profile_may_bind_lan(monkeypatch) -> None:
@@ -409,8 +580,22 @@ def test_dashboard_register_mode_enters_assign_mode() -> None:
     response = TestClient(app).post("/register-mode", data={"register": "on"}, follow_redirects=False)
 
     assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.headers["location"] == "/?notice=register-on"
     assert register.assign_mode is True
+
+
+def test_dashboard_register_mode_off_returns_with_notice() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakeRegister:
+        assign_mode = True
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=FakeRegister())).post(
+        "/register-mode", data={"register": "off"}, follow_redirects=False
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=register-off"
 
 
 def test_dashboard_home_has_register_form() -> None:
@@ -466,7 +651,7 @@ def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
         .text
     )
 
-    assert '<select id="uid" name="uid">' in html
+    assert '<select id="uid" name="uid" required>' in html
     assert '<option value="04aabbccddeeff">Frog Prince</option>' in html
 
 
@@ -489,6 +674,28 @@ def test_dashboard_names_a_registered_tag(tmp_path: Path) -> None:
 
     assert response.status_code == 303
     assert "Frog Prince" in catalog_path.read_text()
+
+
+def test_dashboard_name_returns_with_notice(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: ''\ntracks: []\n")
+    response = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(catalog_path),
+        )
+    ).post(
+        "/tags/04aabbccddeeff/name",
+        data={"name": "Frog Prince"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=named"
 
 
 def test_dashboard_figures_have_name_form(tmp_path: Path) -> None:
@@ -540,6 +747,38 @@ def test_dashboard_sim_has_present_uid_form() -> None:
     assert 'for="present-uid"' in html
 
 
+def test_dashboard_present_uid_is_required() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakePad:
+        def place(self, uid: str) -> None:
+            return
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=FakePad())).get("/").text
+
+    assert 'id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>' in html
+
+
+def test_dashboard_present_blank_uid_does_not_place() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakePad:
+        def __init__(self) -> None:
+            self.uids: list[str] = []
+
+        def place(self, uid: str) -> None:
+            self.uids.append(uid)
+
+    pad = FakePad()
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=pad)).post(
+        "/present",
+        data={"uid": ""},
+    )
+
+    assert "Fill in the required fields" in response.text
+    assert pad.uids == []
+
+
 def test_dashboard_present_places_the_uid() -> None:
     from fastapi.testclient import TestClient
 
@@ -558,5 +797,82 @@ def test_dashboard_present_places_the_uid() -> None:
     )
 
     assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.headers["location"] == "/?notice=presented"
     assert pad.uids == ["04aabbccddeeff"]
+
+
+def test_dashboard_present_returns_with_notice() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakePad:
+        def place(self, uid: str) -> None:
+            return
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=FakePad())).post(
+        "/present",
+        data={"uid": "04aabbccddeeff"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=presented"
+
+
+def test_dashboard_home_shows_notice_after_action() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/?notice=assigned").text
+
+    assert 'role="status"' in html
+    assert "Figure assigned" in html
+
+
+def test_dashboard_assign_form_returns_to_home_with_notice(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+    app = create_dashboard(
+        storage=FakeStorage(free_bytes=1024),
+        assign_catalog=PathCatalog(catalog_path),
+    )
+    response = TestClient(app).post(
+        "/assign",
+        data={
+            "uid": "04aabbccddeeff",
+            "path": "stories/frog-prince.mp3",
+            "title": "The Frog Prince",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=assigned"
+
+
+def test_dashboard_play_mode_form_returns_to_home_with_notice(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    settings = SqliteSettings(tmp_path / "state.sqlite")
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), settings=settings)).post(
+        "/play-mode", data={"play_mode": "tap"}, follow_redirects=False
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=play-mode"
+
+
+def test_dashboard_upload_form_returns_to_home_with_notice() -> None:
+    from fastapi.testclient import TestClient
+
+    app = create_dashboard(storage=FakeStorage(free_bytes=1024), catalog=FakeCatalog())
+    response = TestClient(app).post(
+        "/tracks",
+        files={"file": ("frog.mp3", b"id3", "audio/mpeg")},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=uploaded"
