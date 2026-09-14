@@ -5,7 +5,7 @@ from typing import Protocol
 
 import yaml
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
 from romini.adapters.sqlite.settings import SqliteSettings
@@ -14,60 +14,132 @@ from romini.features.library.assign import CatalogFile, confirm_assign
 from romini.features.library.register_tag import name_tag
 from romini.features.play_by_tag.place_figure import PlayMode
 
+ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+FONTS_HREF = (
+    "https://fonts.googleapis.com/css2?family=Nunito:wght@700;900"
+    "&amp;family=Quicksand:wght@500;600;700&amp;display=swap"
+)
+
 DASHBOARD_STYLE = """
-:root { color-scheme: light; }
+:root {
+  --story-coral: #FF6B6B;
+  --magic-ochre: #F7B731;
+  --olive-sun: #E5B887;
+  --warm-chestnut: #4A2E18;
+  --midnight-navy: #1E293B;
+  --cloud-foam: #F8FAFC;
+  color-scheme: light;
+}
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font: 1.125rem/1.45 system-ui, sans-serif;
-  color: #1c1917;
-  background: #f4efe6;
+  font: 600 1.125rem/1.45 Quicksand, system-ui, sans-serif;
+  color: var(--midnight-navy);
+  background:
+    radial-gradient(900px 420px at 50% -80px, #FFF7ED 0%, transparent 70%),
+    var(--cloud-foam);
 }
 main { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
-h1 { font-size: 1.75rem; font-weight: 650; margin: 0 0 0.25rem; }
-.lede { color: #57534e; margin: 0 0 1.5rem; }
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+}
+.mark {
+  width: 7rem;
+  height: 7rem;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+h1, h2, caption {
+  font-family: Nunito, Comfortaa, system-ui, sans-serif;
+}
+h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+h1 span { color: #FF5252; }
+.tag {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #94A3B8;
+}
+.lede { color: #64748B; margin: 0.45rem 0 0; font-weight: 600; }
 section {
   margin: 0 0 1.5rem;
   padding: 1.1rem 1.15rem;
-  background: #fffdf8;
-  border: 1px solid #e7e0d4;
-  border-radius: 0.75rem;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-radius: 1rem;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+  overflow-x: auto;
 }
-h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
-label { display: block; font-weight: 600; margin: 0.7rem 0 0.3rem; }
+@media (max-width: 40rem) {
+  .masthead { align-items: flex-start; }
+  .mark { width: 5.5rem; height: 5.5rem; }
+  th, td { padding: 0.4rem 0.3rem; }
+}
+h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.75rem; }
+label { display: block; font-weight: 700; margin: 0.7rem 0 0.3rem; }
 input, select, button { font: inherit; }
 input[type="text"], input[type="file"], select {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.4rem 0.6rem;
-  border: 1px solid #d6cfc3;
-  border-radius: 0.45rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.65rem;
   background: #fff;
+  color: var(--midnight-navy);
 }
 button {
   min-height: 2.75rem;
   margin-top: 0.85rem;
   padding: 0.4rem 0.9rem;
   border: 0;
-  border-radius: 0.45rem;
-  background: #1d4e4a;
+  border-radius: 0.65rem;
+  background: var(--story-coral);
   color: #fff;
-  font-weight: 650;
+  font-weight: 700;
 }
-table { width: 100%; border-collapse: collapse; font-size: 1rem; }
-th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid #e7e0d4; vertical-align: middle; }
-th { color: #57534e; font-weight: 600; }
-caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+button:hover { filter: brightness(0.96); }
+:focus-visible {
+  outline: 3px solid var(--magic-ochre);
+  outline-offset: 2px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 1rem; position: relative; }
+th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+th { color: #64748B; font-weight: 700; }
+caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 td form { margin: 0; }
 td button { margin: 0; min-height: 2.25rem; }
-.empty, .hint { color: #57534e; margin: 0.4rem 0 0; font-weight: 400; }
+.empty, .hint { color: #64748B; margin: 0.4rem 0 0; font-weight: 500; }
 .hint { font-size: 0.95rem; }
 .status {
   margin: 0 0 1.25rem;
   padding: 0.65rem 0.8rem;
-  background: #e8f0ee;
-  border-radius: 0.45rem;
-  font-weight: 600;
+  background: #FFF7ED;
+  border-radius: 0.65rem;
+  border-left: 4px solid var(--magic-ochre);
+  font-weight: 700;
 }
 """
 
@@ -165,6 +237,24 @@ def create_dashboard(
 ) -> FastAPI:
     app = FastAPI()
 
+    def brand_asset(name: str) -> FileResponse:
+        path = ASSETS_DIR / name
+        if not path.is_file():
+            raise HTTPException(status_code=404)
+        return FileResponse(path, media_type="image/svg+xml")
+
+    @app.get("/logo.svg")
+    def logo() -> FileResponse:
+        return brand_asset("logo.svg")
+
+    @app.get("/favicon.svg")
+    def favicon() -> FileResponse:
+        return brand_asset("favicon.svg")
+
+    @app.get("/mark.svg")
+    def mark() -> FileResponse:
+        return brand_asset("mark.svg")
+
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request) -> str:
         tracks: list[dict] = []
@@ -225,11 +315,14 @@ def create_dashboard(
                 for tag in tags
             )
             tags_html = (
+                "<section>"
+                "<h2>Figures</h2>"
                 "<table>"
                 "<caption>Figures</caption>"
                 "<thead><tr><th>UID</th><th>Name</th></tr></thead>"
                 f"<tbody>{rows}</tbody>"
                 "</table>"
+                "</section>"
             )
         register_section = ""
         refresh_meta = ""
@@ -273,13 +366,21 @@ def create_dashboard(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {refresh_meta}
 <title>RoMini</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{FONTS_HREF}" rel="stylesheet">
 <style>{DASHBOARD_STYLE}</style>
 </head>
 <body>
 <main>
-<header>
-<h1>RoMini</h1>
+<header class="masthead">
+<img class="mark" src="/mark.svg" width="112" height="112" alt="">
+<div>
+<h1>Ro<span>Mini</span></h1>
+<p class="tag">Storybox</p>
 <p class="lede">{escape(format_free_space(storage.free_bytes))} on the box</p>
+</div>
 </header>
 {status}
 <section>

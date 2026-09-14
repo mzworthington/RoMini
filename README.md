@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.svg" alt="RoMini Storybox" width="280">
+</p>
+
 # RoMini
 
 Screen-free NFC audio player for a Raspberry Pi. Figures start Tracks; the parent maps Tags on the house LAN.
@@ -9,6 +13,14 @@ make test
 ```
 
 **Run it:** [docs/guide.md](docs/guide.md) — laptop `sim` (`./bin/sim`), emulation limits and Pi bring-up.
+
+## Parent dashboard
+
+`./bin/sim` serves the catalog at `http://127.0.0.1:8080`. On the box, Avahi is `http://romini.local`.
+
+<p align="center">
+  <img src="docs/brand/dashboard.png" alt="RoMini parent dashboard" width="720">
+</p>
 
 | Doc | Role |
 |-----|------|
