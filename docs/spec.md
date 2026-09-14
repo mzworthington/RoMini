@@ -25,7 +25,8 @@ flowchart LR
 | PlaybackSession | Position in seconds for a UID. Track ends do not loop. | PlaybackSession |
 | Play mode | `presence` or `tap`. Default `presence`. | settings |
 | Assign mode | Parent is linking a Tag to a Track. Child play does not start. | — |
-| Catalog | YAML file of Tracks and Tag UIDs on the data volume. Source of truth for mappings. | Library / TagMapping |
+| Register mode | Parent is collecting Tag UIDs into the catalog. Same mute as Assign mode. | — |
+| Catalog | YAML file of Tracks, registered Tags, and Tag UIDs on the data volume. Source of truth for mappings. | Library / TagMapping |
 
 ## Defaults
 
@@ -170,6 +171,36 @@ Feature: Assign tag
 ```
 
 ```gherkin
+Feature: Register figures
+  The parent teaches the box which Tags exist, then names them, then maps a Tag to a Track.
+
+  Scenario: Register persists a new Tag
+    Given the parent is in Register mode
+    When the parent places a Figure on the box
+    Then the catalog lists that Tag UID
+    And the box does not start a story Track
+    And the status light blinks
+    And the box plays the connect earcon
+
+  Scenario: Register keeps an existing name
+    Given the parent is in Register mode
+    And that Tag already has a name
+    When the parent places the same Figure
+    Then the catalog still has one row for that Tag
+    And the name is unchanged
+
+  Scenario: Parent names a registered Tag
+    Given a Tag UID is listed in the catalog
+    When the parent saves a name for that Tag
+    Then the catalog stores that name with the UID
+
+  Scenario: Assign picks a registered Tag
+    Given registered Tags are listed in the catalog
+    When the parent assigns a Tag to a Track
+    Then the catalog maps that Tag UID to the Track
+```
+
+```gherkin
 Feature: Halt
   The household can sleep the box without yanking power.
 
@@ -217,7 +248,7 @@ Feature: Library
 | Accessibility | Parent dashboard on a laptop/phone browser; no child screen. Unknown WCAG target — treat as simple large controls. |
 | Security / privacy | House WPA Wi-Fi. No HTTP PIN. Playback needs no internet. PAT stays on the box, never in git. Sim-only injectors off on the box. |
 | Performance | Play start 500 ms; boot 20 s; NFC poll 250 ms. Device measurements, not CI load tests. |
-| Browser | Parent: add Track, assign Tag, switch Play mode, see free space. |
+| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, see free space. |
 
 ## Behaviour catalog notes
 

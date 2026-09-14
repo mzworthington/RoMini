@@ -1,6 +1,6 @@
 # Library catalog (YAML)
 
-Source of truth for **Tracks and Tag mappings**. Live playback position, volume, and Play mode stay in SQLite ([ADR-0007](./ADRs/0007-yaml-catalog-sqlite-session.md)).
+Source of truth for **Tracks, registered Tags, and Tag mappings**. Live playback position, volume, and Play mode stay in SQLite ([ADR-0007](./ADRs/0007-yaml-catalog-sqlite-session.md)).
 
 Path on the box: `/var/lib/romini/catalog.yaml` (data volume). Audio files sit beside it under `/var/lib/romini/library/`. `path` is relative to `library/`.
 
@@ -19,13 +19,16 @@ Parent dashboard assign/upload updates this file, then imports, so the SD copy r
 
 ```yaml
 # /var/lib/romini/catalog.yaml
-tracks:
+tags:
   - uid: "04aabbccddeeff"   # NTAG203 UID, lowercase hex, no separators
+    name: "Frog Prince"     # optional until the parent names it
+tracks:
+  - uid: "04aabbccddeeff"
     path: "stories/frog-prince.mp3"
     title: "The Frog Prince"
     artist: null              # optional
 ```
 
-UID must be unique. A second row with the same `uid` is rejected.
+`tags` is the inventory of Figures the box has seen. `tracks[].uid` is still the play mapping. Register writes `tags` on tap (name may be blank). Assign copies a registered UID onto a Track row. UID must be unique in each array. A second `tracks` row with the same `uid` is rejected.
 
 On a laptop `sim` profile, the same file lives under `$ROMINI_DATA/catalog.yaml`.

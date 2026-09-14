@@ -34,6 +34,20 @@ def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
     ]
 
 
+def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    def popen(cmd: list[str], *args, **kwargs) -> object:
+        calls.append(cmd)
+        return object()
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    MpvPlayer().play_earcon("romini/connect.wav")
+
+    assert calls[0][:2] == ["mpv", "--ao=alsa"]
+    assert calls[0][-1].endswith("connect.wav")
+
+
 def test_pn532_nfc_reads_uid_as_lowercase_hex() -> None:
     class Reader:
         def read_passive_target(self) -> bytes:

@@ -13,6 +13,7 @@ from romini.composition.pi import SystemdHalt
 from romini.composition.provision import ensure_data_tree
 from romini.composition.sessions import MemorySessions
 from romini.features.library.import_catalog import import_catalog
+from romini.features.library.register_tag import register_tag
 from romini.features.play_by_tag.place_figure import (
     Halt,
     Mixer,
@@ -54,6 +55,16 @@ class SimBox:
         self.halt = halt if halt is not None else LoggingHalt()
 
     def place(self, uid: str) -> None:
+        if self.assign_mode:
+            catalog = getattr(self, "catalog_file", None)
+            if catalog is not None:
+                register_tag(
+                    uid=uid,
+                    catalog=catalog,
+                    led=self.led,
+                    earcon=getattr(self, "earcon", None),
+                )
+            return
         on_figure_placed(
             uid,
             play_mode=self.play_mode,
@@ -115,6 +126,8 @@ def load_sim_box(
     )
     SqliteCatalog(conn).replace_tracks(box.library.tracks)
     box.state = conn
+    box.catalog_file = data_dir / "catalog.yaml"
+    box.earcon = player if hasattr(player, "play_earcon") else None
     return box
 
 

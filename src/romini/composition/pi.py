@@ -48,6 +48,14 @@ class MpvPlayer:
     def playing_path(self) -> str | None:
         return self._path
 
+    def play_earcon(self, path: str) -> None:
+        from importlib.resources import files
+
+        name = path.rsplit("/", 1)[-1]
+        wav = files("romini").joinpath(name)
+        audio = str(wav) if wav.is_file() else path
+        subprocess.Popen(["mpv", "--ao=alsa", audio])
+
 
 class MpvIpcStatus:
     def __init__(self, connect=None, path: str = "/tmp/romini-mpv.sock") -> None:

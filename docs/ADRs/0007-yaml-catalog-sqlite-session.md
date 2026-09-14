@@ -18,7 +18,7 @@ Mappings can be written on a laptop and copied onto the data volume. The parent 
 
 ## Considered Options
 
-* Option A: **Catalog YAML** is source of truth for Track metadata and Tag mappings. On boot and when the file changes, an import adapter upserts into SQLite. SQLite holds PlaybackSession, volume, and `play_mode`. Dashboard assign **writes the YAML** then imports (no silent SQLite-only mapping).
+* Option A: **Catalog YAML** is source of truth for Track metadata, registered Tags, and Tag mappings. On boot and when the file changes, an import adapter upserts into SQLite. SQLite holds PlaybackSession, volume, and `play_mode`. Dashboard assign and register **write the YAML** then import (no silent SQLite-only mapping).
 * Option B: SQLite only (dashboard/API). No drop-in file.
 * Option C: YAML only; no SQLite. Positions in the same YAML or a sidecar JSON.
 

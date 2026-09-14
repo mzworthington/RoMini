@@ -1084,3 +1084,41 @@ tracks:
 
 def test_nfc_poll_interval_is_250_ms() -> None:
     assert NFC_POLL_SEC == 0.25
+
+
+def test_sim_place_in_register_mode_lists_tag_and_does_not_play(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    stories = data / "library" / "stories"
+    stories.mkdir(parents=True)
+    (stories / "frog-prince.mp3").write_bytes(b"id3")
+    (data / "catalog.yaml").write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    player = FakePlayer()
+    led = FakeLed()
+    box = load_sim_box(data_dir=data, player=player, led=led, assign_mode=True)
+
+    box.place("04deadbeef0001")
+
+    assert player.plays == []
+    assert led.pulses == 1
+    catalog = (data / "catalog.yaml").read_text()
+    assert "04deadbeef0001" in catalog
+    assert "tags:" in catalog
+
+
+def test_core_ticks_leave_register_mode_after_idle(tmp_path: Path) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed(), assign_mode=True)
+
+    run_core_ticks(
+        box,
+        FakeNfc(),
+        data_dir=data,
+        ticks=[None] * 240,
+        sleep=lambda _: None,
+    )
+
+    assert box.assign_mode is False
