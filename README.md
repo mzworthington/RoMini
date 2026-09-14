@@ -5,9 +5,10 @@ Screen-free NFC audio player for a Raspberry Pi. Figures start Tracks; the paren
 ```bash
 ./bin/bootstrap
 make test
+./bin/sim
 ```
 
-**Run it:** [docs/guide.md](docs/guide.md) — laptop `sim`, emulation limits and Pi bring-up.
+**Run it:** [docs/guide.md](docs/guide.md) — laptop `sim` (`./bin/sim`), emulation limits and Pi bring-up.
 
 | Doc | Role |
 |-----|------|

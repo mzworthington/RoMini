@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+if [[ ! -d "$ROOT/.venv" ]]; then
+  "$ROOT/bin/bootstrap"
+fi
+
+export ROMINI_PROFILE="${ROMINI_PROFILE:-sim}"
+export ROMINI_DATA="${ROMINI_DATA:-$ROOT/var/romini}"
+export ROMINI_DASHBOARD_PORT="${ROMINI_DASHBOARD_PORT:-8080}"
+export ROMINI_HTTP_PORT="${ROMINI_HTTP_PORT:-8081}"
+
+mkdir -p "$ROMINI_DATA"
+
+CORE="${ROMINI_CORE:-$ROOT/.venv/bin/romini-core}"
+
+echo "Dashboard: http://127.0.0.1:${ROMINI_DASHBOARD_PORT}"
+echo "Sim HTTP:  http://127.0.0.1:${ROMINI_HTTP_PORT}"
+
+exec "$CORE" </dev/null

@@ -24,7 +24,7 @@ Python is formatted with **ruff format**. GitHub YAML/JSON use Prettier via pre-
 
 1. Red-green domain and slice tests with fakes (TDD guard). Catalog case: `src/romini/features/play_by_tag/`.
 2. `ROMINI_PROFILE=sim ROMINI_DATA=./var/romini .venv/bin/romini-core` — TTY injectors on stdin ([guide.md](./guide.md) §1.3).
-3. Dashboard + sim HTTP: set `ROMINI_DASHBOARD_PORT` and `ROMINI_HTTP_PORT`, close stdin (`</dev/null`).
+3. Dashboard + sim HTTP: `./bin/sim` (ports 8080 / 8081, stdin closed).
 4. Breadboard: same binary, `ROMINI_PROFILE=pi` — [guide.md](./guide.md) §3.
 
 ## Sim injectors

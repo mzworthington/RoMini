@@ -3,6 +3,7 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
+from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
 from romini.composition.gpio import GpioLed, RpiGpioLedDriver
@@ -12,7 +13,6 @@ from romini.composition.loop import run_core_ticks
 from romini.composition.nfc import FakeNfc, Nfc
 from romini.composition.pi import MpvPlayer, Pn532Nfc
 from romini.composition.sim import SimBox, load_sim_box_from_env
-from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.play_by_tag.place_figure import Player, StatusLed
 
 
@@ -82,10 +82,22 @@ def default_ticks():
         yield None
 
 
-def entry(*, player: Player | None = None, led: StatusLed | None = None) -> SimBox:
+def serve_until_stopped(box: SimBox) -> None:
+    http = getattr(box, "http", None)
+    if http is not None:
+        http.wait()
+        return
+    dashboard = getattr(box, "dashboard", None)
+    if dashboard is not None:
+        dashboard.wait()
+
+
+def entry(*, player: Player | None = None, led: StatusLed | None = None) -> None:
     if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
-        return main(player=player, led=led, nfc=default_nfc(), ticks=default_ticks())
-    return run(player=player, led=led)
+        main(player=player, led=led, nfc=default_nfc(), ticks=default_ticks())
+        return
+    box = run(player=player, led=led)
+    serve_until_stopped(box)
 
 
 def main(
@@ -113,6 +125,7 @@ def main(
             storage=DiskStorage(data / "library"),
             assign_catalog=PathCatalog(data / "catalog.yaml"),
             settings=SqliteSettings(box.state),
+            pad=box if os.environ.get("ROMINI_PROFILE", "sim") == "sim" else None,
         )
         box.dashboard = start_dashboard(
             app,

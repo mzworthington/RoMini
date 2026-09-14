@@ -2,16 +2,16 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
+from romini.adapters.sqlite.catalog import SqliteCatalog
+from romini.adapters.sqlite.mixer import SqliteMixer
+from romini.adapters.sqlite.schema import ensure_schema, open_state
+from romini.adapters.sqlite.sessions import SqliteSessions
+from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.halt import LoggingHalt
 from romini.composition.mixer import MemoryMixer
 from romini.composition.pi import SystemdHalt
 from romini.composition.provision import ensure_data_tree
 from romini.composition.sessions import MemorySessions
-from romini.composition.sqlite_catalog import SqliteCatalog
-from romini.composition.sqlite_mixer import SqliteMixer
-from romini.composition.sqlite_schema import ensure_schema, open_state
-from romini.composition.sqlite_sessions import SqliteSessions
-from romini.composition.sqlite_settings import SqliteSettings
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import (
     Halt,
