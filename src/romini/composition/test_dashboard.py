@@ -946,3 +946,21 @@ def test_dashboard_serves_favicon() -> None:
     assert "image/svg" in response.headers["content-type"]
     assert b"#FF6B6B" in response.content
     assert b"#F7B731" in response.content
+
+
+def test_dashboard_home_renders_from_jinja_template() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition import dashboard as dashmod
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    source = Path(dashmod.__file__).read_text()
+    template = Path(dashmod.__file__).parent / "templates" / "home.html"
+
+    assert template.is_file()
+    assert "{{" in template.read_text()
+    assert "<!DOCTYPE html>" not in source
+    assert "DASHBOARD_STYLE" not in source
+    assert "REGISTER_POLL" not in source
+    assert "<main" in html
+    assert "1.0 KB free" in html

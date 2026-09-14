@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% if poll %}
+<script>
+{% include "register_poll.js" %}
+</script>
+{% endif %}
+<title>RoMini</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>{% include "dashboard.css" %}</style>
+</head>
+<body>
+<main>
+<header class="masthead">
+<img class="mark" src="/mark.svg" width="112" height="112" alt="">
+<div>
+<h1>Ro<span>Mini</span></h1>
+<p class="tag">Storybox</p>
+<p class="lede">{{ free_space }} on the box</p>
+</div>
+</header>
+{% if notice %}
+<p class="status" role="status">{{ notice }}</p>
+{% endif %}
+<section>
+<h2>Library</h2>
+{% if tracks %}
+<table>
+<caption>Library</caption>
+<thead><tr><th>UID</th><th>Title</th><th>Path</th>{% if pad %}<th>Place</th>{% endif %}</tr></thead>
+<tbody>
+{% for track in tracks %}
+<tr><td>{{ track.uid }}</td><td>{{ track.title }}</td><td>{{ track.path }}</td>{% if pad %}<td><form action="/place/{{ track.uid }}" method="post"><button>Place</button></form></td>{% endif %}</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No stories yet. Upload a track, then assign a figure.</p>
+{% endif %}
+</section>
+<div class="board">
+{% if tags %}
+<section>
+<h2>Figures</h2>
+<table>
+<caption>Figures</caption>
+<thead><tr><th>UID</th><th>Name</th></tr></thead>
+<tbody>
+{% for tag in tags %}
+<tr>
+<td>{{ tag.uid }}</td>
+<td>
+<form action="/tags/{{ tag.uid }}/name" method="post">
+<label for="tag-name-{{ tag.uid }}">Name</label>
+<input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
+<button>Save name</button>
+</form>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</section>
+{% endif %}
+{% if register %}
+<section>
+<h2>Register figures</h2>
+<form action="/register-mode" method="post">
+<label for="register">NFC register</label>
+<select id="register" name="register">
+<option value="off"{% if not assign_mode %} selected{% endif %}>Off</option>
+<option value="on"{% if assign_mode %} selected{% endif %}>On — place a figure on the box</option>
+</select>
+<button>Save</button>
+</form>
+</section>
+{% endif %}
+{% if pad %}
+<section>
+<h2>Present a figure</h2>
+<form action="/present" method="post">
+<label for="present-uid">UID</label>
+<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>
+<button>Present</button>
+</form>
+</section>
+{% endif %}
+<section>
+<h2>Upload a track</h2>
+<form action="/tracks" method="post" enctype="multipart/form-data">
+<label for="file">Audio file</label>
+<input id="file" type="file" name="file" accept="audio/*" required>
+<button>Upload</button>
+</form>
+</section>
+<section>
+<h2>Assign a figure</h2>
+<form action="/assign" method="post">
+<label for="uid">Figure</label>
+<select id="uid" name="uid" required>
+{% for tag in tags %}
+<option value="{{ tag.uid }}">{{ tag.name or tag.uid }}</option>
+{% endfor %}
+</select>
+{% if not tags %}
+<p class="hint">Register a figure first</p>
+{% endif %}
+<label for="title">Title</label>
+<input id="title" name="title" type="text" required>
+<label for="path">File in library</label>
+<select id="path" name="path" required>
+{% for path in library_paths %}
+<option value="{{ path }}">{{ path }}</option>
+{% endfor %}
+</select>
+{% if not library_paths %}
+<p class="hint">Upload a track first</p>
+{% endif %}
+<button>Assign</button>
+</form>
+</section>
+<section>
+<h2>Play mode</h2>
+<form action="/play-mode" method="post">
+<label for="play_mode">How figures start a story</label>
+<select id="play_mode" name="play_mode">
+<option value="presence"{% if play_mode == presence %} selected{% endif %}>Presence — plays while the figure sits on the box</option>
+<option value="tap"{% if play_mode == tap %} selected{% endif %}>Tap — tap the figure, then use the buttons</option>
+</select>
+<p class="hint">Presence is the default. Tap is for buttons after a tap.</p>
+<button>Save play mode</button>
+</form>
+</section>
+</div>
+</main>
+</body>
+</html>
