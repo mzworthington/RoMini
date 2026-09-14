@@ -39,7 +39,18 @@ body {
     radial-gradient(900px 420px at 50% -80px, #FFF7ED 0%, transparent 70%),
     var(--cloud-foam);
 }
-main { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+.board > section {
+  flex: 1 1 20rem;
+  margin: 0;
+  min-width: 0;
+}
 .masthead {
   display: flex;
   align-items: center;
@@ -141,6 +152,32 @@ td button { margin: 0; min-height: 2.25rem; }
   border-left: 4px solid var(--magic-ochre);
   font-weight: 700;
 }
+"""
+
+
+REGISTER_POLL = """
+<script>
+(function () {
+  function busy() {
+    var el = document.activeElement;
+    if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return true;
+    var fields = document.querySelectorAll("input, textarea, select");
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      if (field.type === "file") {
+        if (field.files && field.files.length) return true;
+        continue;
+      }
+      if (field.value !== field.defaultValue) return true;
+    }
+    return false;
+  }
+  setInterval(function () {
+    if (busy()) return;
+    location.reload();
+  }, 2000);
+})();
+</script>
 """
 
 
@@ -342,7 +379,7 @@ def create_dashboard(
             off_sel = "" if register.assign_mode else " selected"
             on_sel = " selected" if register.assign_mode else ""
             if register.assign_mode:
-                refresh_meta = '<meta http-equiv="refresh" content="2">'
+                refresh_meta = REGISTER_POLL
             register_section = f"""
 <section>
 <h2>Register figures</h2>
@@ -387,6 +424,7 @@ def create_dashboard(
 <h2>Library</h2>
 {library}
 </section>
+<div class="board">
 {tags_html}
 {register_section}
 {present_section}
@@ -428,6 +466,7 @@ def create_dashboard(
 <button>Save play mode</button>
 </form>
 </section>
+</div>
 </main>
 </body>
 </html>

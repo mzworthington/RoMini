@@ -222,3 +222,7 @@ __marimo__/
 # pytest junit (CI)
 junit/
 /.waykit
+
+# Local bedtime stories (keep the index)
+docs/stories/*
+!docs/stories/README.md

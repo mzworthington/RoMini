@@ -451,6 +451,19 @@ def test_dashboard_home_lists_catalog_table(tmp_path: Path) -> None:
     assert "stories/frog-prince.mp3" in response.text
 
 
+def test_dashboard_home_lays_out_actions_in_a_flex_board_below_library() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'class="board"' in html
+    library = html.index("<h2>Library</h2>")
+    board = html.index('class="board"')
+    upload = html.index("<h2>Upload a track</h2>")
+    assert library < board < upload
+    assert "flex-wrap: wrap" in html
+
+
 def test_dashboard_catalog_table_has_caption(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -729,8 +742,13 @@ def test_dashboard_register_on_refreshes_home() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=FakeRegister())).get("/").text
 
-    assert 'http-equiv="refresh"' in html
-    assert 'content="2"' in html
+    assert 'http-equiv="refresh"' not in html
+    assert "setInterval" in html
+    assert "2000" in html
+    assert "location.reload" in html
+    assert "activeElement" in html
+    assert "defaultValue" in html
+    assert 'querySelectorAll("input, textarea, select")' in html
 
 
 def test_dashboard_sim_has_present_uid_form() -> None:
