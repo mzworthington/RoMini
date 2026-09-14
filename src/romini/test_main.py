@@ -60,6 +60,26 @@ class FakeLed:
         self.flashes += 1
 
 
+def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, monkeypatch) -> None:
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        assert getattr(box, "http", None) is None
+        assert getattr(box, "dashboard", None) is None
+    finally:
+        http = getattr(box, "http", None)
+        if http is not None:
+            http.close()
+        dashboard = getattr(box, "dashboard", None)
+        if dashboard is not None:
+            dashboard.close()
+
+
 def test_romini_core_main_loads_sim_from_env(tmp_path: Path, monkeypatch) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"
