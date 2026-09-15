@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from romini.composition.pi import MpvPlayer, Pn532Nfc, SystemdHalt
 
 
@@ -13,9 +15,8 @@ def test_systemd_halt_runs_systemctl_poweroff(monkeypatch) -> None:
     assert calls == [["systemctl", "poweroff"]]
 
 
-def test_mpv_player_starts_track_on_alsa(monkeypatch, tmp_path) -> None:
-    runtime = tmp_path / "run"
-    runtime.mkdir()
+def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
+    runtime = Path("/run/romini")
     monkeypatch.setenv("RUNTIME_DIRECTORY", str(runtime))
     calls: list[list[str]] = []
 
