@@ -33,11 +33,11 @@
 <section>
 <h2>Box buttons</h2>
 <div class="controls">
-<form method="post" action="/vol/down"><button>Quieter</button></form>
-<form method="post" action="/vol/up"><button>Louder</button></form>
-<form method="post" action="/play"><button>Play</button></form>
-<form method="post" action="/halt"><button>Halt</button></form>
-<form method="post" action="/remove"><button>Lift</button></form>
+<form method="post" action="/vol/down" data-inject><button>Quieter</button></form>
+<form method="post" action="/vol/up" data-inject><button>Louder</button></form>
+<form method="post" action="/play" data-inject><button>Play</button></form>
+<form method="post" action="/halt" data-inject><button>Halt</button></form>
+<form method="post" action="/remove" data-inject><button>Lift</button></form>
 </div>
 </section>
 <details class="injectors">
@@ -50,6 +50,12 @@ document.getElementById('nfc-present').addEventListener('change',function(){
 var uid=document.getElementById('nfc-uid').value.trim();
 if(this.checked&&!uid){this.checked=false;return;}
 fetch(this.checked?'/place/'+encodeURIComponent(uid):'/remove',{method:'POST'});
+});
+document.querySelectorAll('form[data-inject]').forEach(function(form){
+form.addEventListener('submit',function(e){
+e.preventDefault();
+fetch(form.action,{method:'POST'});
+});
 });
 </script>
 </body>
