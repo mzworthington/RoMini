@@ -31,5 +31,8 @@ build: $(VENV)/bin/python
 	rm -rf build/ dist/ *.egg-info
 	./$(VENV)/bin/python -m build --sdist --wheel
 
+clean:
+	rm -rf var/romini
+
 sim:
 	./bin/sim

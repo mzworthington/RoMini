@@ -3,7 +3,7 @@ from shutil import disk_usage
 from typing import Literal, Protocol
 
 import yaml
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -89,6 +89,14 @@ def _notice_home(key: str) -> RedirectResponse:
 
 def _has_required(*values: str) -> bool:
     return all(value.strip() for value in values)
+
+
+AUDIO_SUFFIXES = {".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"}
+
+
+def _is_audio_track(filename: str) -> bool:
+    name = filename.replace("\\", "/").strip()
+    return bool(name) and Path(name).suffix.lower() in AUDIO_SUFFIXES
 
 
 def create_dashboard(
@@ -177,22 +185,32 @@ def create_dashboard(
         return {"free_bytes": storage.free_bytes}
 
     @app.post("/tracks", response_model=None)
-    async def upload_track(file: UploadFile | None = File(None)) -> RedirectResponse:
+    async def upload_track(request: Request) -> RedirectResponse:
         class Quiet:
             def tell(self, message: str) -> None:
                 return
 
-        if file is None or not (file.filename or "").strip():
+        form = await request.form()
+        uploads = [
+            item for item in form.getlist("file") if getattr(item, "filename", None) and str(item.filename).strip()
+        ]
+        if not uploads:
             return _notice_home("needed")
-        audio = await file.read()
-        stored = add_track(
-            audio=audio,
-            filename=file.filename or "track.bin",
-            storage=storage,
-            notices=notices if notices is not None else Quiet(),
-            catalog=catalog,
-        )
-        notice = "uploaded" if stored else "full"
+        stored_any = False
+        for item in uploads:
+            filename = str(item.filename or "")
+            if not _is_audio_track(filename):
+                continue
+            audio = await item.read()
+            stored = add_track(
+                audio=audio,
+                filename=filename,
+                storage=storage,
+                notices=notices if notices is not None else Quiet(),
+                catalog=catalog,
+            )
+            stored_any = stored_any or stored
+        notice = "uploaded" if stored_any else "full"
         return _notice_home(notice)
 
     class AssignBody(BaseModel):

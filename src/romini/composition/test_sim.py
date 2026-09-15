@@ -613,6 +613,26 @@ def test_sim_http_listen_get_root_is_ok(tmp_path: Path) -> None:
     assert status == 200
 
 
+def test_sim_http_page_has_nfc_tag_input_and_on_plate_toggle(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    assert '<label for="nfc-uid">NFC tag</label>' in html
+    assert '<input id="nfc-uid" name="uid" type="text"' in html
+    assert '<label for="nfc-present">On plate</label>' in html
+    assert '<input id="nfc-present" type="checkbox"' in html
+
+
 def test_sim_http_refuses_non_localhost(tmp_path: Path) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"

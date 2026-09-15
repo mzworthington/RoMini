@@ -123,8 +123,10 @@ button:hover { filter: brightness(0.96); }
 }
 table { width: 100%; border-collapse: collapse; font-size: 1rem; position: relative; }
 th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+th:last-child, td:last-child { text-align: right; width: 1%; white-space: nowrap; }
+td:has(input) { width: 100%; }
 th { color: #64748B; font-weight: 700; }
-caption {
+caption, td label {
   position: absolute;
   width: 1px;
   height: 1px;

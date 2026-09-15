@@ -60,6 +60,44 @@ def test_dashboard_uploads_a_track() -> None:
     assert catalog.paths == ["frog.mp3"]
 
 
+def test_dashboard_uploads_all_tracks_in_a_directory() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024)
+    catalog = FakeCatalog()
+    app = create_dashboard(storage=storage, catalog=catalog)
+    response = TestClient(app).post(
+        "/tracks",
+        files=[
+            ("file", ("stories/frog.mp3", b"id3", "audio/mpeg")),
+            ("file", ("stories/bear.m4a", b"m4a", "audio/mp4")),
+        ],
+    )
+
+    assert response.status_code == 200
+    assert "Track stored" in response.text
+    assert storage.files == {"stories/frog.mp3": b"id3", "stories/bear.m4a": b"m4a"}
+    assert catalog.paths == ["stories/frog.mp3", "stories/bear.m4a"]
+
+
+def test_dashboard_directory_upload_skips_non_audio() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024)
+    catalog = FakeCatalog()
+    TestClient(create_dashboard(storage=storage, catalog=catalog)).post(
+        "/tracks",
+        files=[
+            ("file", ("stories/frog.mp3", b"id3", "audio/mpeg")),
+            ("file", ("stories/.DS_Store", b"skip", "application/octet-stream")),
+            ("file", ("stories/notes.txt", b"nope", "text/plain")),
+        ],
+    )
+
+    assert storage.files == {"stories/frog.mp3": b"id3"}
+    assert catalog.paths == ["stories/frog.mp3"]
+
+
 def test_dashboard_assign_writes_catalog_yaml(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -199,6 +237,15 @@ def test_dashboard_upload_file_is_required() -> None:
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
     assert 'id="file" type="file" name="file" accept="audio/*" required>' in html
+
+
+def test_dashboard_upload_form_has_a_folder_picker() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert '<label for="folder">Folder of tracks</label>' in html
+    assert 'id="folder" type="file" name="file" accept="audio/*" webkitdirectory multiple>' in html
 
 
 def test_dashboard_upload_blank_file_does_not_store() -> None:
@@ -734,6 +781,15 @@ def test_dashboard_figures_have_name_form(tmp_path: Path) -> None:
     assert 'for="tag-name-04aabbccddeeff"' in html
 
 
+def test_dashboard_tables_right_align_last_column_and_stretch_inputs() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert "th:last-child, td:last-child { text-align: right; width: 1%; white-space: nowrap; }" in html
+    assert "td:has(input) { width: 100%; }" in html
+
+
 def test_dashboard_register_on_refreshes_home() -> None:
     from fastapi.testclient import TestClient
 
@@ -940,12 +996,17 @@ def test_dashboard_serves_mark() -> None:
 def test_dashboard_serves_favicon() -> None:
     from fastapi.testclient import TestClient
 
-    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/favicon.svg")
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
+    response = client.get("/favicon.svg")
+    mark = client.get("/mark.svg").content
 
     assert response.status_code == 200
     assert "image/svg" in response.headers["content-type"]
-    assert b"#FF6B6B" in response.content
-    assert b"#F7B731" in response.content
+    assert b"#E5B887" in response.content
+    assert b"#4A2E18" in response.content
+    assert b"data:image/png" in response.content
+    assert b"data:image/png" in mark
+    assert len(response.content) < len(mark)
 
 
 def test_dashboard_home_renders_from_jinja_template() -> None:
