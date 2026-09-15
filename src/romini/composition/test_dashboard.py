@@ -964,3 +964,141 @@ def test_dashboard_home_renders_from_jinja_template() -> None:
     assert "REGISTER_POLL" not in source
     assert "<main" in html
     assert "1.0 KB free" in html
+
+
+@dataclass
+class FakeMixer:
+    level: int
+    ceiling: int = 100
+
+    def set_level(self, level: int) -> None:
+        self.level = level
+
+
+def test_dashboard_home_hides_volume_without_a_mixer() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert ">Volume<" not in html
+    assert 'action="/volume"' not in html
+
+
+def test_dashboard_home_shows_volume_when_mixer_is_wired() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=FakeMixer(level=10))).get("/").text
+
+    assert "<h2>Volume</h2>" in html
+    assert "10 of 100" in html
+    assert 'action="/volume"' in html
+    assert 'name="step" value="down"' in html
+    assert 'name="step" value="up"' in html
+    assert ">Quieter<" in html
+    assert ">Louder<" in html
+    assert 'id="volume-level"' in html
+    assert 'for="volume-level"' in html
+    assert 'type="range"' in html
+    assert 'max="100"' in html
+    assert 'value="10"' in html
+    assert "power button" in html.lower()
+
+
+def test_dashboard_volume_quieter_steps_the_mixer() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=10)
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer)).post(
+        "/volume",
+        data={"step": "down"},
+    )
+
+    assert mixer.level == 9
+    assert "Volume saved" in response.text
+    assert "9 of 100" in response.text
+
+
+def test_dashboard_volume_louder_steps_the_mixer() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=10)
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer)).post(
+        "/volume",
+        data={"step": "up"},
+    )
+
+    assert mixer.level == 11
+    assert "Volume saved" in response.text
+    assert "11 of 100" in response.text
+
+
+def test_dashboard_volume_set_jumps_to_the_level() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=10)
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer)).post(
+        "/volume",
+        data={"level": "42"},
+    )
+
+    assert mixer.level == 42
+    assert "Volume saved" in response.text
+    assert "42 of 100" in response.text
+
+
+def test_dashboard_volume_set_clamps_to_the_ceiling() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=10, ceiling=100)
+    TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer)).post(
+        "/volume",
+        data={"level": "200"},
+    )
+
+    assert mixer.level == 100
+
+
+def test_dashboard_volume_louder_at_ceiling_stays() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=100, ceiling=100)
+    TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer)).post(
+        "/volume",
+        data={"step": "up"},
+    )
+
+    assert mixer.level == 100
+
+
+def test_dashboard_volume_quieter_at_zero_stays() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=0)
+    TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer)).post(
+        "/volume",
+        data={"step": "down"},
+    )
+
+    assert mixer.level == 0
+
+
+def test_dashboard_volume_without_mixer_is_missing() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).post(
+        "/volume",
+        data={"step": "up"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_dashboard_volume_form_returns_to_home_with_notice() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=FakeMixer(level=10))).post(
+        "/volume", data={"step": "up"}, follow_redirects=False
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=volume"

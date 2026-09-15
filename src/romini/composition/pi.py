@@ -1,3 +1,4 @@
+import json
 import subprocess
 
 
@@ -7,17 +8,25 @@ class SystemdHalt:
 
 
 class MpvPlayer:
-    def __init__(self, ipc=None) -> None:
+    def __init__(self, ipc=None, mixer=None) -> None:
         self._ipc = ipc
+        self.mixer = mixer
         self._playing = False
         self._uid: str | None = None
         self._path: str | None = None
         self._selected: tuple[str, str] | None = None
 
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        subprocess.Popen(
-            ["mpv", "--ao=alsa", "--input-ipc-server=/tmp/romini-mpv.sock", f"--start={position_sec}", path]
-        )
+        cmd = [
+            "mpv",
+            "--ao=alsa",
+            "--input-ipc-server=/tmp/romini-mpv.sock",
+            f"--start={position_sec}",
+        ]
+        if self.mixer is not None:
+            cmd.append(f"--volume={self.mixer.level}")
+        cmd.append(path)
+        subprocess.Popen(cmd)
         self._playing = True
         self._uid = uid
         self._path = path
@@ -47,6 +56,18 @@ class MpvPlayer:
 
     def playing_path(self) -> str | None:
         return self._path
+
+    def set_volume(self, level: int) -> None:
+        payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))
+        if self._ipc is not None:
+            self._ipc(payload)
+            return
+        try:
+            sock = _unix_connect("/tmp/romini-mpv.sock")
+            sock.sendall(payload.encode() + b"\n")
+            sock.close()
+        except OSError:
+            return
 
     def play_earcon(self, path: str) -> None:
         from importlib.resources import files

@@ -8,7 +8,7 @@ from romini.adapters.sqlite.schema import ensure_schema, open_state
 from romini.adapters.sqlite.sessions import SqliteSessions
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.halt import LoggingHalt
-from romini.composition.mixer import MemoryMixer
+from romini.composition.mixer import LiveMixer, MemoryMixer
 from romini.composition.pi import SystemdHalt
 from romini.composition.provision import ensure_data_tree
 from romini.composition.sessions import MemorySessions
@@ -51,7 +51,13 @@ class SimBox:
         self.play_mode = play_mode
         self.assign_mode = assign_mode
         self.sessions = sessions if sessions is not None else MemorySessions()
-        self.mixer = mixer if mixer is not None else MemoryMixer()
+        mixer = mixer if mixer is not None else MemoryMixer()
+        apply = getattr(player, "set_volume", None)
+        if callable(apply):
+            mixer = LiveMixer(mixer, apply)
+        self.mixer = mixer
+        if hasattr(player, "mixer"):
+            player.mixer = mixer
         self.halt = halt if halt is not None else LoggingHalt()
 
     def place(self, uid: str) -> None:

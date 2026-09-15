@@ -12,7 +12,7 @@ In an age dominated by bright tablets and touchscreen interfaces, RoMini returns
 
 - **Tap-to-Play Tactile Audio:** Instant playback triggered by physical figurines and NFC tokens with sub-500ms latency.
 - **Smart Resume & Debounce:** Remembers playback progress per figure; presence mode pauses on lift after a short grace.
-- **Physical volume and transport:** Large 16mm buttons for volume, play/pause, restart, and a graceful halt.
+- **Physical halt, dashboard volume:** A large 16mm halt button with LED. The first box has no vol±; parents set loudness on the local dashboard under a software ceiling. Play/pause and volume buttons can be added later.
 - **Offline listening:** No internet required for playback (no ads, no tracking). Software updates, when used, come from public GitHub Releases.
 - **Parent catalog:** YAML on the data volume maps figures to files; the dashboard writes the same file.
 - **Yank-safe box:** Overlay filesystem plus a data partition so power loss is less likely to kill the OS; USB power back on starts the player with a light and a ready sound.

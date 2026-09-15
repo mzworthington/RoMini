@@ -1,6 +1,6 @@
 from pathlib import Path
 from shutil import disk_usage
-from typing import Protocol
+from typing import Literal, Protocol
 
 import yaml
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
@@ -12,7 +12,7 @@ from romini.adapters.sqlite.settings import SqliteSettings
 from romini.features.library.add_track import Catalog, Notices, Storage, add_track
 from romini.features.library.assign import CatalogFile, confirm_assign
 from romini.features.library.register_tag import name_tag
-from romini.features.play_by_tag.place_figure import PlayMode
+from romini.features.play_by_tag.place_figure import Mixer, PlayMode, on_volume_down, on_volume_set, on_volume_up
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -49,6 +49,7 @@ HOME_NOTICES = {
     "presented": "Figure presented",
     "placed": "Figure placed",
     "needed": "Fill in the required fields",
+    "volume": "Volume saved",
 }
 
 
@@ -99,6 +100,7 @@ def create_dashboard(
     settings: SqliteSettings | None = None,
     pad: FigurePad | None = None,
     register: RegisterMode | None = None,
+    mixer: Mixer | None = None,
 ) -> FastAPI:
     app = FastAPI()
 
@@ -164,6 +166,9 @@ def create_dashboard(
                 "register": register is not None,
                 "assign_mode": bool(register.assign_mode) if register is not None else False,
                 "poll": register is not None and register.assign_mode,
+                "mixer": mixer is not None,
+                "volume_level": mixer.level if mixer is not None else 0,
+                "volume_ceiling": mixer.ceiling if mixer is not None else 100,
             },
         )
 
@@ -230,6 +235,33 @@ def create_dashboard(
         body = PlayModeBody.model_validate({"play_mode": str(form["play_mode"])})
         settings.remember_play_mode(body.play_mode)
         return _notice_home("play-mode")
+
+    class VolumeBody(BaseModel):
+        step: Literal["up", "down"] | None = None
+        level: int | None = None
+
+    @app.post("/volume", response_model=None)
+    async def set_volume(request: Request) -> RedirectResponse:
+        if mixer is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        payload: dict[str, object] = {}
+        step = str(form.get("step") or "").strip()
+        if step:
+            payload["step"] = step
+        raw_level = form.get("level")
+        if raw_level is not None and str(raw_level).strip():
+            payload["level"] = raw_level
+        body = VolumeBody.model_validate(payload)
+        if body.step == "up":
+            on_volume_up(mixer=mixer)
+        elif body.step == "down":
+            on_volume_down(mixer=mixer)
+        elif body.level is not None:
+            on_volume_set(mixer=mixer, level=body.level)
+        else:
+            return _notice_home("needed")
+        return _notice_home("volume")
 
     @app.post("/place/{uid}")
     def place_figure(uid: str) -> RedirectResponse:

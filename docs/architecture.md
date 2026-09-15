@@ -81,6 +81,7 @@ flowchart TB
   http --> ingest
   yamlWatch --> ingest
   http --> settings
+  http --> volume
   play --> domain
   pause --> domain
   tap --> domain
@@ -119,7 +120,7 @@ flowchart TB
 | Register figures | Parent taps a Figure; catalog `tags` lists UID; name on dashboard; assign dropdown |
 | Catalog import | Drop or edit `catalog.yaml`; box maps Tags without dashboard |
 | Ingest track | Parent adds audio on the LAN; dashboard writes catalog + files |
-| Volume | 16mm ± with software ceiling |
+| Volume | Dashboard quieter/louder/level with software ceiling; 16mm ± later |
 | Transport | Play/pause; long-press restarts |
 | Graceful halt | Short-press → persist → flash → poweroff |
 
@@ -147,7 +148,7 @@ gpio-style `bin/update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota
 
 ## 6. Parent dashboard
 
-`http://romini.local` on house WPA when Avahi + port 80 are on. Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`**. Play mode switch lives here (SQLite, not YAML). Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
+`http://romini.local` on house WPA when Avahi + port 80 are on. Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
 
 ## 7. Runtime
 
@@ -185,7 +186,7 @@ PR: `pre-commit --all-files` + `make test` (ruff, pytest). `main`: semantic-rele
 
 1. Domain + presence/tap slices on `sim` — done ([spec.md](./spec.md)).
 2. Breadboard: PN532 SPI + mpv into powered speaker — soak.
-3. Four buttons in `run_core_ticks`, halt wake, boot earcon on device — soak / remaining GPIO poll.
+3. Halt + LED in `run_core_ticks`, halt wake, boot earcon on device — soak / remaining GPIO poll. Volume on the dashboard for the first box; physical vol± later.
 4. Dashboard + provision files + updater skip-while-playing — laptop complete; overlay on device.
 5. Birthday: `library/` + `catalog.yaml` + affixed Tags.
 
