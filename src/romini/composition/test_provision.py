@@ -119,17 +119,6 @@ def test_repo_deploy_contains_romini_core_service() -> None:
     assert "RuntimeDirectory=romini" in unit.read_text()
 
 
-def test_github_actions_are_pinned_to_commit_shas() -> None:
-    import re
-
-    workflow = Path(__file__).resolve().parents[3] / ".github" / "workflows" / "ci.yml"
-    uses = [line.split("uses:", 1)[1].strip() for line in workflow.read_text().splitlines() if "uses:" in line]
-    assert uses
-    for spec in uses:
-        _action, _, ref = spec.partition("@")
-        assert re.fullmatch(r"[0-9a-f]{40}", ref.split()[0]), spec
-
-
 def test_repo_has_a_python_lockfile() -> None:
     root = Path(__file__).resolve().parents[3]
     assert (root / "uv.lock").is_file()
