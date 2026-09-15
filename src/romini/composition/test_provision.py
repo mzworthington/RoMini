@@ -37,6 +37,7 @@ def test_romini_core_service_starts_on_boot() -> None:
     assert "ROMINI_DATA=/var/lib/romini" in ROMINI_CORE_SERVICE
     assert "ROMINI_DASHBOARD_PORT=80" in ROMINI_CORE_SERVICE
     assert "WantedBy=multi-user.target" in ROMINI_CORE_SERVICE
+    assert "RuntimeDirectory=romini" in ROMINI_CORE_SERVICE
 
 
 def test_romini_update_timer_runs_bin_update() -> None:
@@ -115,3 +116,20 @@ def test_repo_deploy_contains_romini_core_service() -> None:
     unit = Path(__file__).resolve().parents[3] / "deploy" / "systemd" / "system" / "romini-core.service"
     assert "romini-core" in unit.read_text()
     assert "WantedBy=multi-user.target" in unit.read_text()
+    assert "RuntimeDirectory=romini" in unit.read_text()
+
+
+def test_github_actions_are_pinned_to_commit_shas() -> None:
+    import re
+
+    workflow = Path(__file__).resolve().parents[3] / ".github" / "workflows" / "ci.yml"
+    uses = [line.split("uses:", 1)[1].strip() for line in workflow.read_text().splitlines() if "uses:" in line]
+    assert uses
+    for spec in uses:
+        _action, _, ref = spec.partition("@")
+        assert re.fullmatch(r"[0-9a-f]{40}", ref.split()[0]), spec
+
+
+def test_repo_has_a_python_lockfile() -> None:
+    root = Path(__file__).resolve().parents[3]
+    assert (root / "uv.lock").is_file()

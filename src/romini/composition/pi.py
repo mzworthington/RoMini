@@ -1,5 +1,16 @@
 import json
 import subprocess
+from os import environ
+from pathlib import Path
+
+
+def mpv_ipc_socket() -> str:
+    runtime = environ.get("RUNTIME_DIRECTORY") or environ.get("XDG_RUNTIME_DIR")
+    if runtime:
+        return str(Path(runtime) / "mpv.sock")
+    home = Path.home() / ".romini"
+    home.mkdir(mode=0o700, exist_ok=True)
+    return str(home / "mpv.sock")
 
 
 class SystemdHalt:
@@ -20,7 +31,7 @@ class MpvPlayer:
         cmd = [
             "mpv",
             "--ao=alsa",
-            "--input-ipc-server=/tmp/romini-mpv.sock",
+            f"--input-ipc-server={mpv_ipc_socket()}",
             f"--start={position_sec}",
         ]
         if self.mixer is not None:
@@ -63,7 +74,7 @@ class MpvPlayer:
             self._ipc(payload)
             return
         try:
-            sock = _unix_connect("/tmp/romini-mpv.sock")
+            sock = _unix_connect(mpv_ipc_socket())
             sock.sendall(payload.encode() + b"\n")
             sock.close()
         except OSError:
@@ -79,9 +90,9 @@ class MpvPlayer:
 
 
 class MpvIpcStatus:
-    def __init__(self, connect=None, path: str = "/tmp/romini-mpv.sock") -> None:
+    def __init__(self, connect=None, path: str | None = None) -> None:
         self._connect = connect
-        self._path = path
+        self._path = path if path is not None else mpv_ipc_socket()
 
     def is_playing(self) -> bool:
         import json

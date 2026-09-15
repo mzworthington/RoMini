@@ -15,7 +15,7 @@ def poll_catalog(
     path = data_dir / "catalog.yaml"
     mtime = path.stat().st_mtime
     if previous_mtime is not None and mtime <= previous_mtime:
-        return mtime
+        return previous_mtime
     library_root = data_dir / "library"
     box.library = import_catalog(
         path.read_text(),
