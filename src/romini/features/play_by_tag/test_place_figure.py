@@ -10,6 +10,7 @@ from romini.features.play_by_tag.place_figure import (
     on_play_pressed,
     on_track_ended,
     on_volume_down,
+    on_volume_set,
     on_volume_up,
 )
 
@@ -458,6 +459,30 @@ def test_volume_down_never_goes_below_zero() -> None:
     on_volume_down(mixer=mixer)
 
     assert mixer.level == 0
+
+
+def test_volume_set_clamps_to_the_ceiling() -> None:
+    mixer = FakeMixer(level=10, ceiling=100)
+
+    on_volume_set(mixer=mixer, level=140)
+
+    assert mixer.level == 100
+
+
+def test_volume_set_clamps_below_zero() -> None:
+    mixer = FakeMixer(level=10, ceiling=100)
+
+    on_volume_set(mixer=mixer, level=-4)
+
+    assert mixer.level == 0
+
+
+def test_volume_set_stores_the_level() -> None:
+    mixer = FakeMixer(level=10, ceiling=100)
+
+    on_volume_set(mixer=mixer, level=42)
+
+    assert mixer.level == 42
 
 
 def test_track_end_stops_and_does_not_restart() -> None:

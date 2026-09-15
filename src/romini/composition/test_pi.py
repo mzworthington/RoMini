@@ -34,6 +34,28 @@ def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
     ]
 
 
+def test_mpv_player_play_uses_mixer_level(monkeypatch) -> None:
+    from romini.composition.mixer import MemoryMixer
+
+    calls: list[list[str]] = []
+
+    def popen(cmd: list[str], *args, **kwargs) -> object:
+        calls.append(cmd)
+        return object()
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    MpvPlayer(mixer=MemoryMixer(level=42)).play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
+
+    assert "--volume=42" in calls[0]
+
+
+def test_mpv_player_set_volume_sends_ipc() -> None:
+    sent: list[str] = []
+    MpvPlayer(ipc=sent.append).set_volume(42)
+
+    assert sent == ['{"command":["set_property","volume",42]}']
+
+
 def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
     calls: list[list[str]] = []
 

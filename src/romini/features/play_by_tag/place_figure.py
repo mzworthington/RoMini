@@ -148,6 +148,10 @@ def on_volume_down(*, mixer: Mixer) -> None:
     mixer.set_level(mixer.level - 1)
 
 
+def on_volume_set(*, mixer: Mixer, level: int) -> None:
+    mixer.set_level(max(0, min(mixer.ceiling, level)))
+
+
 def on_track_ended(*, player: Player) -> None:
     player.stop()
 
