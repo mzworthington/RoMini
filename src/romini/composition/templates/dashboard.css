@@ -88,6 +88,24 @@ input[type="text"], input[type="file"], select {
   background: #fff;
   color: var(--midnight-navy);
 }
+input[type="range"] {
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0;
+  accent-color: var(--story-coral);
+}
+.volume-now {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+.volume-steps {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.85rem 0 0;
+}
+.volume-steps form { flex: 1; margin: 0; }
+.volume-steps button { width: 100%; margin-top: 0; }
 button {
   min-height: 2.75rem;
   margin-top: 0.85rem;

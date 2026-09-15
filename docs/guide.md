@@ -116,7 +116,7 @@ Then `place 04aabbccddeeff`. Domain starts the Track; you will not hear it on `s
 
 Creates `var/romini` if needed, sets `ROMINI_PROFILE=sim`, binds the parent dashboard on **8080** and sim injectors on **8081**, and closes stdin so HTTP starts immediately. Override with `ROMINI_DATA`, `ROMINI_DASHBOARD_PORT`, or `ROMINI_HTTP_PORT`.
 
-- Parent UI: `http://127.0.0.1:8080` — free space, library table (UID, title, path), registered figures (name a Tag), Register mode, upload, assign (figure dropdown + file picker from `$ROMINI_DATA/library`), play mode. On `sim`, each row has **Place**, plus **Present UID** for an unknown figure (same as `POST /present`).
+- Parent UI: `http://127.0.0.1:8080` — free space, **volume** (quieter / louder / level), library table (UID, title, path), registered figures (name a Tag), Register mode, upload, assign (figure dropdown + file picker from `$ROMINI_DATA/library`), play mode. On `sim`, each row has **Place**, plus **Present UID** for an unknown figure (same as `POST /present`).
 - Sim injectors (localhost only; refused on `pi`):
 
 ```bash
@@ -128,7 +128,7 @@ curl -sS -X POST http://127.0.0.1:8081/play
 curl -sS -X POST http://127.0.0.1:8081/halt
 ```
 
-Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST /register-mode`, `POST /tags/<uid>/name`, `PUT`/`POST /play-mode`, on `sim` `POST /place/<uid>` and `POST /present`. Assign, register, and upload write `catalog.yaml`. Play mode is SQLite, not YAML.
+Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST /register-mode`, `POST /tags/<uid>/name`, `PUT`/`POST /play-mode`, `POST /volume`, on `sim` `POST /place/<uid>` and `POST /present`. Assign, register, and upload write `catalog.yaml`. Play mode and volume are SQLite, not YAML.
 
 ### 1.5 What `sim` covers
 
