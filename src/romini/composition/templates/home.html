@@ -45,6 +45,28 @@
 {% endif %}
 </section>
 <div class="board">
+{% if mixer %}
+<section>
+<h2>Volume</h2>
+<p class="volume-now" aria-live="polite">{{ volume_level }} of {{ volume_ceiling }}</p>
+<p class="hint">The first box has a power button only. Set how loud stories play here. A software ceiling keeps it from going past {{ volume_ceiling }}.</p>
+<div class="volume-steps">
+<form action="/volume" method="post">
+<input type="hidden" name="step" value="down">
+<button>Quieter</button>
+</form>
+<form action="/volume" method="post">
+<input type="hidden" name="step" value="up">
+<button>Louder</button>
+</form>
+</div>
+<form action="/volume" method="post">
+<label for="volume-level">Level</label>
+<input id="volume-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}">
+<button>Set volume</button>
+</form>
+</section>
+{% endif %}
 {% if tags %}
 <section>
 <h2>Figures</h2>

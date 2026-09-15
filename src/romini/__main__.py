@@ -127,6 +127,7 @@ def main(
             settings=SqliteSettings(box.state),
             pad=box if os.environ.get("ROMINI_PROFILE", "sim") == "sim" else None,
             register=box,
+            mixer=box.mixer,
         )
         box.dashboard = start_dashboard(
             app,

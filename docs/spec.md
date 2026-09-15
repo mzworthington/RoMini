@@ -124,12 +124,19 @@ Feature: Tap play
 
 ```gherkin
 Feature: Transport and volume
-  Physical buttons work in both Play modes.
+  Physical buttons work in both Play modes. The first box has halt only; the parent sets volume on the dashboard.
 
   Scenario: Volume up never exceeds the ceiling
     Given the volume is at the ceiling
     When the listener presses volume up
     Then the loudness does not increase
+
+  Scenario: Parent sets volume on the dashboard
+    Given the box has a power button only
+    When the parent sets the volume on the dashboard
+    Then the box stores that level
+    And the level stays at or below the software ceiling
+```
 
   Scenario: Track ends
     Given a Track is playing
@@ -248,7 +255,7 @@ Feature: Library
 | Accessibility | Parent dashboard on a laptop/phone browser; no child screen. Unknown WCAG target — treat as simple large controls. |
 | Security / privacy | House WPA Wi-Fi. No HTTP PIN. Playback needs no internet. PAT stays on the box, never in git. Sim-only injectors off on the box. |
 | Performance | Play start 500 ms; boot 20 s; NFC poll 250 ms. Device measurements, not CI load tests. |
-| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, see free space. |
+| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, set volume, see free space. |
 
 ## Behaviour catalog notes
 
@@ -269,6 +276,6 @@ No tests exist yet. Design should **add** unit/slice cases for every scenario ab
 - Player aggregates and ports as in [architecture.md](./architecture.md).
 - SQLite WAL: playback position, volume, `play_mode`, and a **cache** of the catalog. Catalog YAML is source of truth for Tag → Track ([library-catalog.md](./library-catalog.md), [ADR-0007](./ADRs/0007-yaml-catalog-sqlite-session.md)).
 - Paths relative to the data volume Library directory.
-- `pi` GPIOs: halt 17, LED 27, vol− 22, vol+ 23, play/pause 24 ([hardware.md](./hardware.md)).
+- `pi` GPIOs: halt 17, LED 27; vol− 22, vol+ 23, play/pause 24 are specified for later buttons ([hardware.md](./hardware.md)). First iteration: halt only; volume is set on the dashboard.
 - Overlay + `romini-data` before any box can be yanked; bench may stay read-write.
 - Ready earcon ships **in the wheel**, not in `catalog.yaml`.

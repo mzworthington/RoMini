@@ -727,6 +727,21 @@ def test_load_sim_box_persists_volume_in_sqlite(tmp_path: Path) -> None:
     assert box2.mixer.level == 1
 
 
+def test_load_sim_box_applies_volume_to_mpv_player(tmp_path: Path) -> None:
+    from romini.composition.pi import MpvPlayer
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    sent: list[str] = []
+    player = MpvPlayer(ipc=sent.append)
+    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
+    apply_sim_line(box, "vol up")
+
+    assert player.mixer is box.mixer
+    assert sent == ['{"command":["set_property","volume",1]}']
+
+
 def test_load_sim_box_persists_play_mode_in_sqlite(tmp_path: Path) -> None:
     data = tmp_path / "romini"
     (data / "library").mkdir(parents=True)
