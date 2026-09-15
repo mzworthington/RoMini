@@ -263,7 +263,7 @@ sudo systemctl enable --now romini-update.timer
 
 Unit env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`, `EnvironmentFile=-/etc/romini/env`.
 
-`bin/update` execs `python -m romini.composition.update`. OTA **skips** while mpv reports playing (`/tmp/romini-mpv.sock`, `pause == false`).
+`bin/update` execs `python -m romini.composition.update`. OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`, `pause == false`).
 
 ### 3.8 Checks
 

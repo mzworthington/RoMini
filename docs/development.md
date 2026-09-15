@@ -40,7 +40,7 @@ Halt logs instead of `systemctl poweroff`.
 
 - **Tests:** `FakePlayer` records play/pause/seek; no mpv.
 - **Console `sim`:** `SilentPlayer` (no speakers). Missing mpv is not a test failure.
-- **Pi / breadboard:** `MpvPlayer` via `Popen` (`--ao=alsa`, `--volume=` from the Mixer, IPC `/tmp/romini-mpv.sock`).
+- **Pi / breadboard:** `MpvPlayer` via `Popen` (`--ao=alsa`, `--volume=` from the Mixer, IPC `$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`).
 
 ## CI
 

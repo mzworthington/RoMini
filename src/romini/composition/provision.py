@@ -16,6 +16,8 @@ Environment=ROMINI_PROFILE=pi
 Environment=ROMINI_DATA=/var/lib/romini
 Environment=ROMINI_DASHBOARD_PORT=80
 EnvironmentFile=-/etc/romini/env
+RuntimeDirectory=romini
+RuntimeDirectoryMode=0700
 ExecStart=/var/lib/romini/install/venv/bin/romini-core
 Restart=always
 RestartSec=10

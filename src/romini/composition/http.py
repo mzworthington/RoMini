@@ -42,7 +42,7 @@ class SimHttpListener:
         return self._server.server_port
 
     def post(self, path: str) -> int:
-        req = Request(f"http://{self._host}:{self.port}{path}", method="POST", data=b"")
+        req = Request(f"http://{self._host}:{self.port}{path}", method="POST", data=b"")  # NOSONAR python:S5332
         try:
             with urlopen(req) as resp:
                 return resp.status

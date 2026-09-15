@@ -13,7 +13,10 @@ def test_systemd_halt_runs_systemctl_poweroff(monkeypatch) -> None:
     assert calls == [["systemctl", "poweroff"]]
 
 
-def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
+def test_mpv_player_starts_track_on_alsa(monkeypatch, tmp_path) -> None:
+    runtime = tmp_path / "run"
+    runtime.mkdir()
+    monkeypatch.setenv("RUNTIME_DIRECTORY", str(runtime))
     calls: list[list[str]] = []
 
     def popen(cmd: list[str], *args, **kwargs) -> object:
@@ -23,15 +26,17 @@ def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
     MpvPlayer().play("/var/lib/romini/library/frog.mp3", position_sec=14.5, uid="04AABBCC")
 
+    sock = runtime / "mpv.sock"
     assert calls == [
         [
             "mpv",
             "--ao=alsa",
-            "--input-ipc-server=/tmp/romini-mpv.sock",
+            f"--input-ipc-server={sock}",
             "--start=14.5",
             "/var/lib/romini/library/frog.mp3",
         ]
     ]
+    assert "/tmp/" not in str(sock)
 
 
 def test_mpv_player_play_uses_mixer_level(monkeypatch) -> None:
