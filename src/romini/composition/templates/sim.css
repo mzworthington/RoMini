@@ -1,0 +1,58 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.controls form {
+  flex: 1 1 8rem;
+  margin: 0;
+}
+.controls button {
+  width: 100%;
+  margin-top: 0;
+}
+.plate {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  min-height: 3.25rem;
+  padding: 0.9rem 1rem;
+  border: 2px dashed #E2E8F0;
+  border-radius: 1rem;
+  background: #fff;
+  cursor: pointer;
+}
+.controls form[action="/halt"] button {
+  background: var(--warm-chestnut);
+}
+.plate:has(#nfc-present:checked) {
+  border-style: solid;
+  border-color: var(--story-coral);
+  background: #FFF7ED;
+}
+.plate label {
+  margin: 0;
+  flex: 1;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+#nfc-present {
+  width: 1.5rem;
+  height: 1.5rem;
+  accent-color: var(--story-coral);
+  flex-shrink: 0;
+}
+.injectors {
+  margin-top: 0.5rem;
+}
+.injectors summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.injectors p {
+  margin: 0.6rem 0 0;
+  color: #64748B;
+  font: 500 0.95rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}

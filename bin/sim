@@ -17,6 +17,35 @@ mkdir -p "$ROMINI_DATA"
 
 CORE="${ROMINI_CORE:-$ROOT/.venv/bin/romini-core}"
 
+stop_ours_on_port() {
+  local port="$1"
+  local pids pid args n
+  pids="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null || true)"
+  if [[ -z "$pids" ]]; then
+    return 0
+  fi
+  for pid in $pids; do
+    args="$(ps -p "$pid" -o args= 2>/dev/null || true)"
+    if [[ "$args" != *romini-core* ]]; then
+      echo "Port ${port} already in use by PID ${pid}${args:+: ${args}}" >&2
+      exit 1
+    fi
+    kill "$pid" 2>/dev/null || true
+  done
+  n=0
+  while lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; do
+    n=$((n + 1))
+    if [[ "$n" -ge 50 ]]; then
+      echo "Port ${port} still in use after stopping romini-core" >&2
+      exit 1
+    fi
+    sleep 0.05
+  done
+}
+
+stop_ours_on_port "$ROMINI_DASHBOARD_PORT"
+stop_ours_on_port "$ROMINI_HTTP_PORT"
+
 echo "Dashboard: http://127.0.0.1:${ROMINI_DASHBOARD_PORT}"
 echo "Sim HTTP:  http://127.0.0.1:${ROMINI_HTTP_PORT}"
 

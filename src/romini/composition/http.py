@@ -1,11 +1,34 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
+from pathlib import Path
 from threading import Thread
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from romini.composition.inject import apply_sim_line
 from romini.composition.sim import SimBox
+
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+SIM_ASSETS = {
+    "/favicon.svg": "image/svg+xml",
+    "/mark.svg": "image/svg+xml",
+}
+
+
+def sim_home_page() -> bytes:
+    css = (TEMPLATES_DIR / "dashboard.css").read_text() + (TEMPLATES_DIR / "sim.css").read_text()
+    return (TEMPLATES_DIR / "sim.html").read_text().replace("{{ css }}", css).encode()
+
+
+def sim_asset(path: str) -> tuple[bytes, str] | None:
+    media_type = SIM_ASSETS.get(path)
+    if media_type is None:
+        return None
+    file = ASSETS_DIR / path.lstrip("/")
+    if not file.is_file():
+        return None
+    return file.read_bytes(), media_type
 
 
 def apply_sim_http(box: SimBox, method: str, path: str) -> int:
@@ -67,33 +90,18 @@ def start_sim_http(box: SimBox, *, host: str, port: int) -> SimHttpListener:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             path = self.path.split("?", 1)[0]
-            if path != "/":
-                self.send_response(404)
-                self.end_headers()
-                return
-            body = (
-                b"<!DOCTYPE html><title>RoMini sim</title>"
-                b"<style>body{font:16px system-ui,sans-serif;color:#111;background:#fff;margin:1rem}"
-                b"label{margin-right:.5rem}</style>"
-                b'<label for="nfc-uid">NFC tag</label>'
-                b'<input id="nfc-uid" name="uid" type="text" autocomplete="off" spellcheck="false">'
-                b'<label for="nfc-present">On plate</label>'
-                b'<input id="nfc-present" type="checkbox">'
-                b"<script>"
-                b"document.getElementById('nfc-present').addEventListener('change',function(){"
-                b"var uid=document.getElementById('nfc-uid').value.trim();"
-                b"fetch(this.checked?'/place/'+encodeURIComponent(uid):'/remove',{method:'POST'});"
-                b"});"
-                b"</script>"
-                b"<p>POST /place/&lt;uid&gt; /remove /vol/up /vol/down /play /halt</p>"
-                b'<form method="post" action="/remove"><button>remove</button></form>'
-                b'<form method="post" action="/vol/up"><button>vol up</button></form>'
-                b'<form method="post" action="/vol/down"><button>vol down</button></form>'
-                b'<form method="post" action="/play"><button>play</button></form>'
-                b'<form method="post" action="/halt"><button>halt</button></form>'
-            )
+            if path == "/":
+                body = sim_home_page()
+                media_type = "text/html; charset=utf-8"
+            else:
+                asset = sim_asset(path)
+                if asset is None:
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                body, media_type = asset
             self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Type", media_type)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
