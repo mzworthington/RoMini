@@ -36,7 +36,14 @@
 <thead><tr><th>UID</th><th>Title</th><th>Path</th>{% if pad %}<th>Place</th>{% endif %}</tr></thead>
 <tbody>
 {% for track in tracks %}
-<tr><td>{{ track.uid }}</td><td>{{ track.title }}</td><td>{{ track.path }}</td>{% if pad %}<td><form action="/place/{{ track.uid }}" method="post"><button>Place</button></form></td>{% endif %}</tr>
+<tr>
+    <td>{{ track.uid }}</td>
+    <td>{{ track.title }}</td>
+    <td>{{ track.path }}</td>
+    {% if pad %}
+    <td><form action="/place/{{ track.uid }}" method="post"><button>Place</button></form></td>
+    {% endif %}
+</tr>
 {% endfor %}
 </tbody>
 </table>
@@ -44,6 +51,29 @@
 <p class="empty">No stories yet. Upload a track, then assign a figure.</p>
 {% endif %}
 </section>
+{% if tags %}
+<section>
+<h2>Figures</h2>
+<table>
+<caption>Figures</caption>
+<thead><tr><th>UID</th><th>Name</th><th>Action</th></tr></thead>
+<tbody>
+{% for tag in tags %}
+<form action="/tags/{{ tag.uid }}/name" method="post">
+<tr>
+    <td>{{ tag.uid }}</td>
+    <td>
+        <label for="tag-name-{{ tag.uid }}">Name</label>
+        <input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
+    </td>
+    <td><button>Save Name</button></td>
+</tr>
+</form>
+{% endfor %}
+</tbody>
+</table>
+</section>
+{% endif %}
 <div class="board">
 {% if mixer %}
 <section>
@@ -65,29 +95,6 @@
 <input id="volume-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}">
 <button>Set volume</button>
 </form>
-</section>
-{% endif %}
-{% if tags %}
-<section>
-<h2>Figures</h2>
-<table>
-<caption>Figures</caption>
-<thead><tr><th>UID</th><th>Name</th></tr></thead>
-<tbody>
-{% for tag in tags %}
-<tr>
-<td>{{ tag.uid }}</td>
-<td>
-<form action="/tags/{{ tag.uid }}/name" method="post">
-<label for="tag-name-{{ tag.uid }}">Name</label>
-<input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
-<button>Save name</button>
-</form>
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
 </section>
 {% endif %}
 {% if register %}
@@ -118,6 +125,8 @@
 <form action="/tracks" method="post" enctype="multipart/form-data">
 <label for="file">Audio file</label>
 <input id="file" type="file" name="file" accept="audio/*" required>
+<label for="folder">Folder of tracks</label>
+<input id="folder" type="file" name="file" accept="audio/*" webkitdirectory multiple>
 <button>Upload</button>
 </form>
 </section>

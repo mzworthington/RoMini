@@ -73,6 +73,18 @@ def start_sim_http(box: SimBox, *, host: str, port: int) -> SimHttpListener:
                 return
             body = (
                 b"<!DOCTYPE html><title>RoMini sim</title>"
+                b"<style>body{font:16px system-ui,sans-serif;color:#111;background:#fff;margin:1rem}"
+                b"label{margin-right:.5rem}</style>"
+                b'<label for="nfc-uid">NFC tag</label>'
+                b'<input id="nfc-uid" name="uid" type="text" autocomplete="off" spellcheck="false">'
+                b'<label for="nfc-present">On plate</label>'
+                b'<input id="nfc-present" type="checkbox">'
+                b"<script>"
+                b"document.getElementById('nfc-present').addEventListener('change',function(){"
+                b"var uid=document.getElementById('nfc-uid').value.trim();"
+                b"fetch(this.checked?'/place/'+encodeURIComponent(uid):'/remove',{method:'POST'});"
+                b"});"
+                b"</script>"
                 b"<p>POST /place/&lt;uid&gt; /remove /vol/up /vol/down /play /halt</p>"
                 b'<form method="post" action="/remove"><button>remove</button></form>'
                 b'<form method="post" action="/vol/up"><button>vol up</button></form>'
