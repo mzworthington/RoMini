@@ -633,6 +633,142 @@ def test_sim_http_page_has_nfc_tag_input_and_on_plate_toggle(tmp_path: Path) -> 
     assert '<input id="nfc-present" type="checkbox"' in html
 
 
+def test_sim_http_page_uses_romini_brand(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    assert 'lang="en"' in html
+    assert "<main" in html
+    assert "<h1" in html
+    assert "--story-coral: #FF6B6B" in html
+    assert "Nunito" in html
+    assert "Quicksand" in html
+
+
+def test_sim_http_page_groups_figure_and_box_buttons(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    figure = html.index("<h2>Figure on the plate</h2>")
+    buttons = html.index("<h2>Box buttons</h2>")
+    assert figure < buttons
+    assert 'id="nfc-uid"' in html[figure:buttons]
+    assert 'id="nfc-present"' in html[figure:buttons]
+    assert ">Lift<" in html[buttons:]
+    assert ">Quieter<" in html[buttons:]
+    assert ">Louder<" in html[buttons:]
+    assert ">Play<" in html[buttons:]
+    assert ">Halt<" in html[buttons:]
+    assert 'action="/remove"' in html[buttons:]
+    assert 'action="/vol/down"' in html[buttons:]
+    assert 'action="/vol/up"' in html[buttons:]
+    assert 'action="/play"' in html[buttons:]
+    assert 'action="/halt"' in html[buttons:]
+
+
+def test_sim_http_page_requires_a_uid_before_placing(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    script = html[html.index("<script>") : html.index("</script>")]
+    assert "value.trim()" in script
+    assert "if(this.checked&&!uid)" in script
+    assert "this.checked=false" in script
+
+
+def test_sim_http_page_tucks_http_injectors_into_details(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    assert "<details" in html
+    assert "<summary>HTTP injectors</summary>" in html
+    assert "POST /place/" in html
+    assert html.index("<h2>Box buttons</h2>") < html.index("<details")
+
+
+def test_sim_http_page_shows_the_storybox_mark(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    assert 'src="/mark.svg"' in html
+    assert 'alt=""' in html
+    assert 'href="/favicon.svg"' in html
+
+
+def test_sim_http_serves_mark_and_favicon(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/mark.svg") as mark:
+            mark_body = mark.read()
+            mark_type = mark.headers.get_content_type()
+        with urlopen(f"http://127.0.0.1:{listener.port}/favicon.svg") as icon:
+            icon_body = icon.read()
+            icon_type = icon.headers.get_content_type()
+    finally:
+        listener.close()
+
+    assert mark_type == "image/svg+xml"
+    assert icon_type == "image/svg+xml"
+    assert mark_body.startswith(b"<svg")
+    assert icon_body.startswith(b"<svg")
+
+
 def test_sim_http_refuses_non_localhost(tmp_path: Path) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"
