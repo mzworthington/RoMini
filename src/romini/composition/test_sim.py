@@ -769,6 +769,25 @@ def test_sim_http_serves_mark_and_favicon(tmp_path: Path) -> None:
     assert icon_body.startswith(b"<svg")
 
 
+def test_sim_http_page_box_buttons_stay_on_the_page(tmp_path: Path) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    listener = start_sim_http(box, host="127.0.0.1", port=0)
+    try:
+        with urlopen(f"http://127.0.0.1:{listener.port}/") as resp:
+            html = resp.read().decode()
+    finally:
+        listener.close()
+
+    assert "data-inject" in html
+    assert "preventDefault" in html
+    assert "fetch(form.action" in html
+
+
 def test_sim_http_refuses_non_localhost(tmp_path: Path) -> None:
     data = tmp_path / "romini"
     stories = data / "library" / "stories"
