@@ -457,25 +457,6 @@ def test_romini_core_dashboard_has_register_form(tmp_path: Path, monkeypatch) ->
         box.dashboard.close()
 
     assert 'action="/register-mode"' in body
-
-
-def test_romini_core_dashboard_has_volume_form(tmp_path: Path, monkeypatch) -> None:
-    from urllib.request import urlopen
-
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
-    monkeypatch.setenv("ROMINI_DATA", str(data))
-    monkeypatch.setenv("ROMINI_PROFILE", "sim")
-    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
-
-    box = main(player=FakePlayer(), led=FakeLed())
-    try:
-        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/") as resp:
-            body = resp.read().decode()
-    finally:
-        box.dashboard.close()
-
     assert "<h2>Volume</h2>" in body
     assert 'action="/volume"' in body
     assert "of 100" in body

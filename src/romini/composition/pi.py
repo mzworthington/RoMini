@@ -58,16 +58,9 @@ class MpvPlayer:
         return self._path
 
     def set_volume(self, level: int) -> None:
-        payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))
-        if self._ipc is not None:
-            self._ipc(payload)
+        if self._ipc is None:
             return
-        try:
-            sock = _unix_connect("/tmp/romini-mpv.sock")
-            sock.sendall(payload.encode() + b"\n")
-            sock.close()
-        except OSError:
-            return
+        self._ipc(json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":")))
 
     def play_earcon(self, path: str) -> None:
         from importlib.resources import files

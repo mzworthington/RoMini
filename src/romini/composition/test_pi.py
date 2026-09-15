@@ -56,6 +56,10 @@ def test_mpv_player_set_volume_sends_ipc() -> None:
     assert sent == ['{"command":["set_property","volume",42]}']
 
 
+def test_mpv_player_set_volume_without_ipc_is_a_noop() -> None:
+    MpvPlayer().set_volume(42)
+
+
 def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
     calls: list[list[str]] = []
 
