@@ -18,6 +18,8 @@ Environment=ROMINI_DASHBOARD_PORT=80
 EnvironmentFile=-/etc/romini/env
 RuntimeDirectory=romini
 RuntimeDirectoryMode=0700
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ExecStart=/var/lib/romini/install/venv/bin/romini-core
 Restart=always
 RestartSec=10

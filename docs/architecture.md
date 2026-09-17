@@ -148,7 +148,7 @@ gpio-style `bin/update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota
 
 ## 6. Parent dashboard
 
-`http://romini.local` on house WPA when Avahi + port 80 are on. Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
+`http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
 
 ## 7. Runtime
 

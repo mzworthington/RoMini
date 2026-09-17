@@ -19,7 +19,7 @@ make test
 
 ## Parent dashboard
 
-`./bin/sim` serves the catalog at `http://127.0.0.1:8080`. On the box, Avahi is `http://romini.local`.
+`./bin/sim` serves the catalog at `http://127.0.0.1:8080`. On the box, Avahi is `http://<hostname>.local` (usually `http://romini.local`).
 
 <p align="center">
   <img src="docs/brand/dashboard.png" alt="RoMini parent dashboard" width="720">

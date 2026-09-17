@@ -172,7 +172,7 @@ Pi 4B 4GB, PN532 HAT, NTAG203, **four** 16mm buttons (one with LED), powered spe
 
 ### 3.2 Flash
 
-Raspberry Pi Imager → **Lite 64-bit**. SSH (key), Wi-Fi, hostname `romini`, user `pi`. Do not expand the whole card if you will add `romini-data` before yank-risk.
+Raspberry Pi Imager → **Lite 64-bit**. SSH (key), Wi-Fi. Prefer hostname `romini` and user `pi` so the checked-in units match; Imager will happily create another name (this box used `romini` / `RoMini`). Dashboard is `http://<hostname>.local` (Avahi `%h`), not a hardcoded `romini.local`. Do not expand the whole card if you will add `romini-data` before yank-risk.
 
 ### 3.3 PN532 SPI
 
@@ -230,22 +230,26 @@ sudo apt-get update
 sudo apt-get install -y avahi-daemon mpv
 sudo mkdir -p /etc/romini /var/log/romini
 sudo chmod 700 /etc/romini
-sudo cp deploy/avahi/services/romini.service /etc/avahi/services/
 # PAT for Releases API (rate limits). chmod 600. Never commit.
 # /etc/romini/env:
 #   GITHUB_TOKEN=ghp_...
 #   GITHUB_REPO=mzworthington/RoMini
 ```
 
-Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit file uses **80**). Avahi advertises `_http._tcp` port 80 → `http://romini.local`.
+Copy `deploy/avahi/services/romini.service` after the clone in §3.7.
+
+Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses **80**). Port 80 needs `AmbientCapabilities=CAP_NET_BIND_SERVICE` on `romini-core.service`; a normal login cannot bind it. Avahi `_http._tcp` port 80 → `http://<hostname>.local`.
 
 ### 3.7 Install the app
 
 Pi packages not in the wheel: `mpv`, `RPi.GPIO`, and the Waveshare/Adafruit `nfc` module that exposes `PN532_SPI`. If `import nfc` fails, `default_nfc()` falls back to `FakeNfc`.
 
 ```bash
-sudo mkdir -p /var/lib/romini/{library,install,repo}
-sudo chown -R pi:pi /var/lib/romini
+BOX_USER="$(id -un)"
+sudo mkdir -p /var/lib/romini/{library,install,repo} /etc/romini /var/log/romini
+sudo chmod 700 /etc/romini
+sudo chown -R "$BOX_USER:$BOX_USER" /var/lib/romini
+# clone will fail with Permission denied on .git if this tree is still root-owned
 cd /var/lib/romini/repo
 git clone https://github.com/mzworthington/RoMini.git .
 python3 -m venv /var/lib/romini/install/venv
@@ -256,12 +260,21 @@ python3 -m venv /var/lib/romini/install/venv
 sudo cp deploy/systemd/system/romini-core.service /etc/systemd/system/
 sudo cp deploy/systemd/system/romini-update.service /etc/systemd/system/
 sudo cp deploy/systemd/system/romini-update.timer /etc/systemd/system/
+sudo cp deploy/avahi/services/romini.service /etc/avahi/services/
+# units ship User=pi Group=pi
+if [ "$BOX_USER" != pi ]; then
+  sudo sed -i "s/^User=pi$/User=$BOX_USER/; s/^Group=pi$/Group=$BOX_USER/" \
+    /etc/systemd/system/romini-core.service \
+    /etc/systemd/system/romini-update.service
+fi
 sudo systemctl daemon-reload
 sudo systemctl enable --now romini-core.service
 sudo systemctl enable --now romini-update.timer
 ```
 
-Unit env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`, `EnvironmentFile=-/etc/romini/env`.
+Stop if `git clone` or `venv` errors. The later `cp` / `systemctl` lines are noise on an empty `repo/`.
+
+Unit env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`, `EnvironmentFile=-/etc/romini/env`. The core unit also sets `AmbientCapabilities=CAP_NET_BIND_SERVICE` so the dashboard can bind 80 without running as root.
 
 `bin/update` execs `python -m romini.composition.update`. OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`, `pause == false`).
 
@@ -273,7 +286,9 @@ Unit env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_
 | I2C wedged | HAT not in I2C mode |
 | Brown-out | PSU ≥3A |
 | No sound | Aux cable, ALSA not HDMI-only, speaker powered, `mpv` on PATH |
-| Dashboard missing | `ROMINI_DASHBOARD_PORT`, port 80, Avahi |
+| Dashboard missing | `ROMINI_DASHBOARD_PORT`, port 80, Avahi, `http://$(hostname).local` |
+| `Permission denied` on `.git` or venv | `chown` `/var/lib/romini` to the SSH user before clone |
+| bind `0.0.0.0:80` errno 13 | Recopy `romini-core.service` (needs `AmbientCapabilities`) and `daemon-reload` |
 | Uploads vanish | Overlay on without `romini-data` |
 | Halt / no wake | BCM 17, gpio-shutdown, NO vs NC |
 | Catalog ignored | `catalog.yaml` on the data volume, UID hex, file under `library/` |
