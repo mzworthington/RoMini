@@ -20,3 +20,9 @@ def test_install_pi_script_installs_pn532_hat_packages() -> None:
     assert "adafruit-blinka" in script
     assert "RPi.GPIO" in script
     assert "spidev" in script
+
+
+def test_install_pi_script_installs_lgpio_build_deps() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "swig" in script
+    assert "python3-dev" in script
