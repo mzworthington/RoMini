@@ -11,3 +11,4 @@ def test_install_pi_script_installs_github_wheel_without_git_clone() -> None:
     assert "python -m romini.composition.update" not in script or "install/venv" in script
     assert "BOX_USER" in script
     assert "romini-core.service" in script
+    assert 'cd "${HOME:-/}"' in script

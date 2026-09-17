@@ -261,6 +261,7 @@ OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.ro
 If this box still has `/var/lib/romini/repo` from the old walkthrough, keep `library/` and `catalog.yaml`. Then:
 
 ```bash
+cd
 curl -fsSL https://raw.githubusercontent.com/mzworthington/RoMini/main/bin/install-pi | bash
 sudo rm -rf /var/lib/romini/repo
 sudo systemctl restart romini-core.service
