@@ -26,3 +26,4 @@ def test_install_pi_script_installs_lgpio_build_deps() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "swig" in script
     assert "python3-dev" in script
+    assert "liblgpio-dev" in script
