@@ -71,9 +71,14 @@ def default_nfc() -> Nfc:
         return FakeNfc()
     try:
         from nfc import PN532_SPI
-
-        return Pn532Nfc(PN532_SPI(reset=20, cs=4))
     except ImportError:
+        try:
+            from romini.composition.pn532_hat import PN532_SPI
+        except ImportError:
+            return FakeNfc()
+    try:
+        return Pn532Nfc(PN532_SPI(reset=20, cs=4))
+    except Exception:
         return FakeNfc()
 
 

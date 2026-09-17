@@ -21,7 +21,7 @@ sudo raspi-config nonint do_spi 0
 sudo reboot
 ```
 
-Vendor UID demo with `PN532_SPI(reset=20, cs=4)` and an NTAG203 over the coil. If no UID, fix jumpers before software.
+After `bin/install-pi`, confirm a UID with the venv (`romini.composition.pn532_hat.PN532_SPI(reset=20, cs=4)`) and a Type A tag over the coil. If no UID, fix jumpers before trusting software.
 
 ## 3. Buttons
 

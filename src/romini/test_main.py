@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
@@ -479,3 +480,36 @@ def test_romini_core_dashboard_has_volume_form(tmp_path: Path, monkeypatch) -> N
     assert "<h2>Volume</h2>" in body
     assert 'action="/volume"' in body
     assert "of 100" in body
+
+
+def test_default_nfc_on_pi_uses_pn532_hat_when_waveshare_nfc_is_missing(
+    monkeypatch,
+) -> None:
+    from types import ModuleType
+
+    from romini.__main__ import default_nfc
+    from romini.composition.pi import Pn532Nfc
+
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setitem(sys.modules, "nfc", ModuleType("nfc"))
+    hat = ModuleType("romini.composition.pn532_hat")
+
+    class PN532_SPI:
+        def __init__(self, *, reset: int = 20, cs: int = 4, debug: bool = False) -> None:
+            self.reset = reset
+            self.cs = cs
+            self.debug = debug
+
+        def SAM_configuration(self) -> None:
+            return None
+
+        def read_passive_target(self, timeout: float | None = None) -> bytes | None:
+            return None
+
+    hat.PN532_SPI = PN532_SPI
+    monkeypatch.setitem(sys.modules, "romini.composition.pn532_hat", hat)
+
+    nfc = default_nfc()
+
+    assert isinstance(nfc, Pn532Nfc)
+    assert nfc.read_uid() is None

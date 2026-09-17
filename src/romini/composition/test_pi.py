@@ -170,3 +170,9 @@ def test_mpv_ipc_status_not_playing_when_socket_missing() -> None:
         raise FileNotFoundError(path)
 
     assert MpvIpcStatus(connect=connect).is_playing() is False
+
+
+def test_pn532_hat_exposes_pn532_spi() -> None:
+    from romini.composition.pn532_hat import PN532_SPI
+
+    assert callable(PN532_SPI)

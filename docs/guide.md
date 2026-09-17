@@ -182,7 +182,7 @@ sudo raspi-config nonint do_spi 0
 sudo reboot
 ```
 
-Confirm a UID with vendor `PN532_SPI(reset=20, cs=4)` and a Type A tag **before** trusting software.
+Confirm a UID with the venv `PN532_SPI(reset=20, cs=4)` (Adafruit HAT adapter after install, or Waveshare `nfc` if present) and a Type A tag **before** trusting software.
 
 ### 3.4 Buttons and speaker
 
@@ -242,7 +242,7 @@ Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses *
 
 ### 3.7 Install the app
 
-Pi packages not in the wheel: `mpv`, `RPi.GPIO`, and the Waveshare/Adafruit `nfc` module that exposes `PN532_SPI`. If `import nfc` fails, `default_nfc()` falls back to `FakeNfc`.
+Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `spidev`, `adafruit-blinka`, and `adafruit-circuitpython-pn532` (installed by `bin/install-pi` into the venv). `default_nfc()` tries Waveshare `nfc.PN532_SPI`, then `romini.composition.pn532_hat.PN532_SPI` (`reset=20`, `cs=4`). If that import or init fails, it uses `FakeNfc`.
 
 MP3s never come from git. The Release wheel is the player, dashboard, updater, and systemd snippets. Stories live in `/var/lib/romini/library`.
 
