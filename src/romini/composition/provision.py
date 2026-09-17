@@ -37,7 +37,7 @@ Type=oneshot
 User=pi
 Group=pi
 EnvironmentFile=-/etc/romini/env
-ExecStart=/var/lib/romini/repo/bin/update
+ExecStart=/var/lib/romini/install/venv/bin/python -m romini.composition.update
 """
 ROMINI_UPDATE_TIMER = """[Unit]
 Description=RoMini update timer
@@ -83,3 +83,14 @@ def write_provision_files(dest: Path) -> None:
     (avahi / "romini.service").write_text(AVAHI_HTTP_SERVICE)
     (dest / "fstab.romini-data").write_text(ROMINI_DATA_FSTAB + "\n")
     (dest / "config.txt.romini").write_text(GPIO_SHUTDOWN_OVERLAY + "\n")
+
+
+def main() -> None:
+    import sys
+
+    dest = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("provision")
+    write_provision_files(dest)
+
+
+if __name__ == "__main__":
+    main()

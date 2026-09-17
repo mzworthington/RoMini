@@ -136,15 +136,14 @@ flowchart TB
   sd --> data["LABEL=romini-data RW"]
   data --> tree["/var/lib/romini"]
   tree --> catalog["catalog.yaml"]
-  tree --> install["install/: venv"]
-  tree --> repo["repo/: updater scripts"]
+  tree --> install["install/: venv + wheel"]
   tree --> library["library/"]
   tree --> db["state.sqlite"]
 ```
 
 ## 5. Over-the-wire updates
 
-gpio-style `bin/update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota.md)). Public repo; **PAT** in `/etc/romini/env`. `apply_update` skips while mpv IPC says a Track is playing. Do not `git pull` the daemon.
+gpio-style venv `python -m romini.composition.update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota.md)). Public repo; optional **PAT** in `/etc/romini/env`. `apply_update` skips while mpv IPC says a Track is playing. First install: `bin/install-pi`. Do not `git pull` the daemon.
 
 ## 6. Parent dashboard
 
@@ -155,7 +154,7 @@ gpio-style `bin/update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota
 | Unit | Role |
 |------|------|
 | `romini-core.service` | NFC, mpv, GPIO, FastAPI; `enable`d so 5V always starts the player |
-| `romini-update.timer` | oneshot `bin/update` |
+| `romini-update.timer` | oneshot `python -m romini.composition.update` |
 | dtoverlay gpio-shutdown | Halt BCM 17 can wake without yanking |
 
 Profiles `sim` / `pi`: [ADR-0004](./ADRs/0004-composition-root-profiles.md), [development.md](./development.md).

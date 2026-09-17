@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# First-time Pi install from a GitHub Release wheel. No repo checkout.
+# Audio and catalog stay on $ROMINI_DATA (never in the wheel).
+#
+#   curl -fsSL https://raw.githubusercontent.com/mzworthington/RoMini/main/bin/install-pi | bash
+
+BOX_USER="$(id -un)"
+DATA="${ROMINI_DATA:-/var/lib/romini}"
+REPO="${GITHUB_REPO:-mzworthington/RoMini}"
+VENV="${DATA}/install/venv"
+API="https://api.github.com/repos/${REPO}/releases/latest"
+
+sudo apt-get update
+sudo apt-get install -y python3-venv python3-pip avahi-daemon mpv curl
+
+sudo mkdir -p "${DATA}/library" "${DATA}/install" /etc/romini /var/log/romini
+sudo chmod 700 /etc/romini
+sudo chown -R "${BOX_USER}:${BOX_USER}" "${DATA}"
+
+AUTH=()
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  AUTH=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+fi
+
+WHEEL_URL="$(
+  curl -fsSL "${AUTH[@]}" -H "Accept: application/vnd.github+json" -H "User-Agent: romini-install" "${API}" |
+    python3 -c '
+import json, sys
+payload = json.load(sys.stdin)
+for asset in payload.get("assets") or []:
+    name = asset.get("name") or ""
+    if name.startswith("romini-") and name.endswith(".whl"):
+        print(asset["browser_download_url"])
+        raise SystemExit(0)
+raise SystemExit("no romini wheel in latest GitHub Release")
+'
+)"
+
+python3 -m venv "${VENV}"
+"${VENV}/bin/pip" install --upgrade pip
+"${VENV}/bin/pip" install "${WHEEL_URL}"
+
+PROV="$(mktemp -d)"
+"${VENV}/bin/python" -m romini.composition.provision "${PROV}"
+sudo cp "${PROV}/systemd/system/"* /etc/systemd/system/
+sudo mkdir -p /etc/avahi/services
+sudo cp "${PROV}/avahi/services/romini.service" /etc/avahi/services/
+rm -rf "${PROV}"
+
+if [ "${BOX_USER}" != pi ]; then
+  sudo sed -i "s/^User=pi$/User=${BOX_USER}/; s/^Group=pi$/Group=${BOX_USER}/" \
+    /etc/systemd/system/romini-core.service \
+    /etc/systemd/system/romini-update.service
+fi
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now romini-core.service
+sudo systemctl enable --now romini-update.timer
+
+if [ -e "${DATA}/repo/.git" ]; then
+  echo "Leftover checkout at ${DATA}/repo. The player uses ${VENV}, not that tree."
+  echo "Keep ${DATA}/library. Then: sudo rm -rf ${DATA}/repo"
+fi

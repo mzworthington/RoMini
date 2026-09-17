@@ -41,12 +41,13 @@ def test_romini_core_service_starts_on_boot() -> None:
     assert "AmbientCapabilities=CAP_NET_BIND_SERVICE" in ROMINI_CORE_SERVICE
 
 
-def test_romini_update_timer_runs_bin_update() -> None:
+def test_romini_update_timer_runs_installed_module() -> None:
     from romini.composition.provision import ROMINI_UPDATE_SERVICE, ROMINI_UPDATE_TIMER
 
     assert "OnBootSec=" in ROMINI_UPDATE_TIMER
     assert "romini-update.service" in ROMINI_UPDATE_TIMER
-    assert "bin/update" in ROMINI_UPDATE_SERVICE
+    assert "python -m romini.composition.update" in ROMINI_UPDATE_SERVICE
+    assert "/var/lib/romini/repo" not in ROMINI_UPDATE_SERVICE
     assert "Type=oneshot" in ROMINI_UPDATE_SERVICE
 
 
@@ -69,6 +70,17 @@ def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:
     assert (dest / "avahi/services/romini.service").is_file()
     assert "LABEL=romini-data" in (dest / "fstab.romini-data").read_text()
     assert "gpio-shutdown" in (dest / "config.txt.romini").read_text()
+
+
+def test_provision_module_writes_units_from_argv(tmp_path: Path, monkeypatch) -> None:
+    dest = tmp_path / "provision"
+    monkeypatch.setattr("sys.argv", ["provision", str(dest)])
+    from romini.composition.provision import main
+
+    main()
+
+    assert (dest / "systemd/system/romini-update.service").is_file()
+    assert "python -m romini.composition.update" in (dest / "systemd/system/romini-update.service").read_text()
 
 
 def test_load_sim_box_creates_data_tree_when_empty(tmp_path: Path) -> None:

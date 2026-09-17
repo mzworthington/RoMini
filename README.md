@@ -15,7 +15,7 @@ make test
 ./bin/sim
 ```
 
-**Run it:** [docs/guide.md](docs/guide.md) — laptop `sim` (`./bin/sim`), emulation limits and Pi bring-up.
+**Run it:** [docs/guide.md](docs/guide.md) — laptop `sim` (`./bin/sim`), Pi from a Release wheel (`bin/install-pi`).
 
 ## Parent dashboard
 

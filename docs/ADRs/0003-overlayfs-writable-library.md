@@ -19,7 +19,7 @@ The PRD wants OverlayFS so yanking power is less likely to corrupt the OS, and a
 
 ## Considered Options
 
-* Option A: Raspberry Pi overlay on root; extra partition `LABEL=romini-data` mounted at `/var/lib/romini` holding `library/`, `catalog.yaml`, SQLite, venv, and the git clone used by the updater.
+* Option A: Raspberry Pi overlay on root; extra partition `LABEL=romini-data` mounted at `/var/lib/romini` holding `library/`, `catalog.yaml`, SQLite, and the venv.
 * Option B: No overlay; entire root RW (gpio-like). Simpler OTA, weaker SD protection.
 * Option C: Overlay everything; remount RW for every upload and update. Easy to get wrong; uploads still race shutdown.
 
@@ -48,14 +48,12 @@ flowchart LR
     catalog["catalog.yaml"]
     db["state.sqlite"]
     venv["venv + wheel"]
-    clone["git clone for bin/update"]
   end
   core["romini-core"] --> db
   core --> catalog
   core --> lib
   core --> venv
-  upd["bin/update"] --> venv
-  upd --> clone
+  upd["python -m romini.composition.update"] --> venv
 ```
 
 ## Links

@@ -25,15 +25,16 @@ The device must receive new software without SSH or a screen. A git checkout on 
 
 ## Decision Outcome
 
-Chosen option: "**Option A**", because it is proven on gpio, keeps the updater out of the wheel, and separates code (release asset) from the library volume. Option B couples deploys to git dirt and overlay. Option C is the right later path for OS/kernel, not for weekly player fixes.
+Chosen option: "**Option A**", because it is proven on gpio, ships the updater **in** the wheel (`python -m romini.composition.update`), and keeps household audio on the data volume. Option B couples deploys to git dirt and overlay. Option C is the right later path for OS/kernel, not for weekly player fixes.
 
 ### Consequences
 
 * Good, because CI on `main` can semantic-release like gpio (`fix`/`feat` → wheel on the Release).
 * Good, because rollback is `pip install` a previous wheel.
-* Bad, because the Pi still needs a persistent clone for `bin/update` and unit files (not in the wheel).
-* The repo is **public** from day one; the device still uses a **PAT** in `/etc/romini/env` (chmod 600) for Releases API auth and rate limits. Never commit the token.
-* Follow-up: skip install while playing is implemented (`apply_update` + `MpvIpcStatus`). Copy updated unit files from the clone after `git fetch` of tags only if we later put units in the repo without overlaying `/etc`.
+* Units and updater ship **in the wheel** (`python -m romini.composition.provision` / `.update`). First install is `bin/install-pi`. No git working tree on the box.
+* The repo is **public** from day one; the device still uses a **PAT** in `/etc/romini/env` (`chmod 600`) for Releases API rate limits. Never commit the token.
+* A broken wheel can break the next OTA until you `pip install` a previous Release asset by hand.
+* Follow-up: skip install while playing is implemented (`apply_update` + `MpvIpcStatus`). Re-run provision and recopy `/etc` when unit files change.
 
 ## Architecture sketch
 
@@ -41,7 +42,7 @@ Chosen option: "**Option A**", because it is proven on gpio, keeps the updater o
 sequenceDiagram
   participant Main as main branch
   participant Rel as GitHub Release
-  participant Pi as bin/update
+  participant Pi as venv update
   participant Venv as persistent venv
   Main->>Rel: attach romini-x.y.z.whl
   Pi->>Rel: latest tag vs pip show

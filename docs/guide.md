@@ -64,8 +64,7 @@ CI (`.github/workflows/ci.yml`) runs the same `make test`. Merge to `main` with 
 $ROMINI_DATA/
   catalog.yaml    # tracks: []
   library/        # MP3s; YAML `path` is relative to here
-  install/        # venv on the Pi
-  repo/           # git clone + `bin/update` on the Pi
+  install/        # venv on the Pi (Release wheel)
   state.sqlite    # WAL: position, volume, play_mode
 ```
 
@@ -190,8 +189,9 @@ Confirm a UID with vendor `PN532_SPI(reset=20, cs=4)` and a Type A tag **before*
 Power off. Halt: COM GND, NO **BCM 17**, LED − GND, LED + **BCM 27**. Vol− **22**, vol+ **23**, play **24** (NO to pin, COM GND).
 
 ```bash
-sudo tee -a /boot/firmware/config.txt < deploy/config.txt.romini
+sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # older images: /boot/config.txt
+# generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
 That is `dtoverlay=gpio-shutdown,gpio_pin=17` so halt can wake.
@@ -236,7 +236,7 @@ sudo chmod 700 /etc/romini
 #   GITHUB_REPO=mzworthington/RoMini
 ```
 
-Copy `deploy/avahi/services/romini.service` after the clone in §3.7.
+`bin/install-pi` copies Avahi. Optional PAT in `/etc/romini/env` (`GITHUB_TOKEN`, `GITHUB_REPO`).
 
 Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses **80**). Port 80 needs `AmbientCapabilities=CAP_NET_BIND_SERVICE` on `romini-core.service`; a normal login cannot bind it. Avahi `_http._tcp` port 80 → `http://<hostname>.local`.
 
@@ -244,39 +244,29 @@ Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses *
 
 Pi packages not in the wheel: `mpv`, `RPi.GPIO`, and the Waveshare/Adafruit `nfc` module that exposes `PN532_SPI`. If `import nfc` fails, `default_nfc()` falls back to `FakeNfc`.
 
+MP3s never come from git. The Release wheel is the player, dashboard, updater, and systemd snippets. Stories live in `/var/lib/romini/library`.
+
 ```bash
-BOX_USER="$(id -un)"
-sudo mkdir -p /var/lib/romini/{library,install,repo} /etc/romini /var/log/romini
-sudo chmod 700 /etc/romini
-sudo chown -R "$BOX_USER:$BOX_USER" /var/lib/romini
-# clone will fail with Permission denied on .git if this tree is still root-owned
-cd /var/lib/romini/repo
-git clone https://github.com/mzworthington/RoMini.git .
-python3 -m venv /var/lib/romini/install/venv
-/var/lib/romini/install/venv/bin/pip install --upgrade pip
-# prefer a Release wheel when one exists:
-# /var/lib/romini/install/venv/bin/pip install /path/to/romini-*.whl
-/var/lib/romini/install/venv/bin/pip install -e .
-sudo cp deploy/systemd/system/romini-core.service /etc/systemd/system/
-sudo cp deploy/systemd/system/romini-update.service /etc/systemd/system/
-sudo cp deploy/systemd/system/romini-update.timer /etc/systemd/system/
-sudo cp deploy/avahi/services/romini.service /etc/avahi/services/
-# units ship User=pi Group=pi
-if [ "$BOX_USER" != pi ]; then
-  sudo sed -i "s/^User=pi$/User=$BOX_USER/; s/^Group=pi$/Group=$BOX_USER/" \
-    /etc/systemd/system/romini-core.service \
-    /etc/systemd/system/romini-update.service
-fi
-sudo systemctl daemon-reload
-sudo systemctl enable --now romini-core.service
-sudo systemctl enable --now romini-update.timer
+curl -fsSL https://raw.githubusercontent.com/mzworthington/RoMini/main/bin/install-pi | bash
 ```
 
-Stop if `git clone` or `venv` errors. The later `cp` / `systemctl` lines are noise on an empty `repo/`.
+That `chown`s `/var/lib/romini` to the SSH user, `pip install`s the latest `romini-*.whl`, writes units with `python -m romini.composition.provision`, rewrites `User=` / `Group=` when the login is not `pi`, and enables `romini-core` plus `romini-update.timer`. OTA is `python -m romini.composition.update` in the venv (no `repo/` tree).
 
-Unit env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`, `EnvironmentFile=-/etc/romini/env`. The core unit also sets `AmbientCapabilities=CAP_NET_BIND_SERVICE` so the dashboard can bind 80 without running as root.
+Optional PAT in `/etc/romini/env` (`GITHUB_TOKEN`, `GITHUB_REPO`) for Releases API rate limits. `chmod 600`.
 
-`bin/update` execs `python -m romini.composition.update`. OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`, `pause == false`).
+OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`, `pause == false`).
+
+#### Leave a previous clone behind
+
+If this box still has `/var/lib/romini/repo` from the old walkthrough, keep `library/` and `catalog.yaml`. Then:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mzworthington/RoMini/main/bin/install-pi | bash
+sudo rm -rf /var/lib/romini/repo
+sudo systemctl restart romini-core.service
+```
+
+`pip install -e .` in that clone is not the install path. Do not `git pull` to update the player.
 
 ### 3.8 Checks
 
@@ -287,7 +277,7 @@ Unit env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_
 | Brown-out | PSU ≥3A |
 | No sound | Aux cable, ALSA not HDMI-only, speaker powered, `mpv` on PATH |
 | Dashboard missing | `ROMINI_DASHBOARD_PORT`, port 80, Avahi, `http://$(hostname).local` |
-| `Permission denied` on `.git` or venv | `chown` `/var/lib/romini` to the SSH user before clone |
+| `Permission denied` on venv | `chown` `/var/lib/romini` to the SSH user before `install-pi` |
 | bind `0.0.0.0:80` errno 13 | Recopy `romini-core.service` (needs `AmbientCapabilities`) and `daemon-reload` |
 | Uploads vanish | Overlay on without `romini-data` |
 | Halt / no wake | BCM 17, gpio-shutdown, NO vs NC |
