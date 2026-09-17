@@ -4,6 +4,9 @@
 
 # RoMini
 
+[![CI](https://img.shields.io/github/actions/workflow/status/mzworthington/RoMini/ci.yml?branch=main&style=for-the-badge&logo=github-actions&label=CI)](https://github.com/mzworthington/RoMini/actions/workflows/ci.yml)
+[![Quality gate](https://img.shields.io/sonar/alert_status/mzworthington_RoMini?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarqube)](https://sonarcloud.io/summary/new_code?id=mzworthington_RoMini)
+
 Screen-free NFC audio player for a Raspberry Pi. Figures start Tracks; the parent maps Tags on the house LAN.
 
 ```bash
