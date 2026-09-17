@@ -28,7 +28,7 @@ Vendor UID demo with `PN532_SPI(reset=20, cs=4)` and an NTAG203 over the coil. I
 Power off. Halt: COM GND, NO BCM 17, LED − GND, LED + BCM 27. Vol− BCM 22, vol+ BCM 23, play BCM 24 (NO to pin, COM GND).
 
 ```bash
-sudo tee -a /boot/firmware/config.txt < deploy/config.txt.romini
+sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 ```
 
 `gpio-shutdown` on BCM 17 so the halt button can wake.
@@ -47,7 +47,7 @@ Before the box leaves the bench:
 
 1. ~6GB `rootfs`, partition 3 `mkfs.ext4 -L romini-data`.
 2. Append `deploy/fstab.romini-data` (`LABEL=romini-data /var/lib/romini ext4 defaults 0 2`). No `nofail` once overlay is on.
-3. `install/`, `repo/`, `library/`, empty `catalog.yaml` (`tracks: []`).
+3. `install/`, `library/`, empty `catalog.yaml` (`tracks: []`).
 4. Overlay filesystem in `raspi-config` **after** that mount works.
 5. `systemctl enable romini-core` so 5V always starts the player.
 
@@ -63,9 +63,9 @@ sudo chmod 700 /etc/romini
 
 ## 7. Application
 
-`chown` the data tree to the SSH user **before** `git clone`. Then clone into `/var/lib/romini/repo`, venv `/var/lib/romini/install/venv`, install a Release wheel or `pip install -e .`. Copy `deploy/systemd/system/*.service` and `romini-update.timer`. If the login is not `pi`, rewrite `User=` / `Group=` on the copied units. Enable `romini-core` and `romini-update.timer`. Full commands: [guide.md](./guide.md) §3.7.
+`chown` the data tree to the SSH user. Install the latest Release wheel with [guide.md](./guide.md) §3.7 (`bin/install-pi`). No git working tree. If login is not `pi`, the script rewrites `User=` / `Group=`. Enable `romini-core` and `romini-update.timer`.
 
-Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`. Core unit: `AmbientCapabilities=CAP_NET_BIND_SERVICE` (port 80).
+Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`. Core unit: `AmbientCapabilities=CAP_NET_BIND_SERVICE` (port 80). OTA: `python -m romini.composition.update` in the venv.
 
 ## 8. Checks
 
@@ -79,7 +79,7 @@ Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=
 | Halt / no wake | BCM 17, gpio-shutdown, NO vs NC |
 | Catalog ignored | `catalog.yaml` on `romini-data`, UID hex, MP3 under `library/` |
 | OTA skipped | Track is playing (mpv IPC) |
-| `Permission denied` on clone | Tree still root-owned |
+| `Permission denied` on venv | Tree still root-owned |
 | bind port 80 errno 13 | Missing `AmbientCapabilities` on `romini-core` |
 
 ## Files

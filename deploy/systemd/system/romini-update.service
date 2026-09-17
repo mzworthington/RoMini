@@ -8,4 +8,4 @@ Type=oneshot
 User=pi
 Group=pi
 EnvironmentFile=-/etc/romini/env
-ExecStart=/var/lib/romini/repo/bin/update
+ExecStart=/var/lib/romini/install/venv/bin/python -m romini.composition.update
