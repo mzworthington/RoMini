@@ -176,3 +176,12 @@ def test_pn532_hat_exposes_pn532_spi() -> None:
     from romini.composition.pn532_hat import PN532_SPI
 
     assert callable(PN532_SPI)
+
+
+def test_pn532_hat_spi_matches_waveshare_mode() -> None:
+    from pathlib import Path
+
+    text = Path(__file__).with_name("pn532_hat.py").read_text()
+    assert "spidev" in text
+    assert "0b10" in text
+    assert "no_cs" in text
