@@ -2,7 +2,7 @@
 
 Copy-paste walkthrough: **[guide.md](./guide.md) §3**. Hardware why: [hardware.md](./hardware.md). Spec: [spec.md](./spec.md). Laptop: [development.md](./development.md).
 
-Raspberry Pi OS **Lite 64-bit**. Hostname `romini`. User `pi` (or edit systemd `User=`). Checked-in units: `deploy/`.
+Raspberry Pi OS **Lite 64-bit**. Hostname `romini` and user `pi` match `deploy/` units as shipped. Any Imager user works if you `chown` `/var/lib/romini` and rewrite `User=` / `Group=` after copying units. Dashboard: `http://<hostname>.local`.
 
 ## 0. On the bench
 
@@ -10,7 +10,7 @@ Pi 4B 4GB, PN532 HAT, NTAG203, **four** 16mm buttons (one with LED), powered spe
 
 ## 1. Flash
 
-Imager → Lite 64-bit. Enable SSH (key), Wi-Fi, hostname `romini`. Do not expand to fill if you will add `romini-data` before the box can be yanked.
+Imager → Lite 64-bit. Enable SSH (key), Wi-Fi, hostname `romini` (or live with `http://<hostname>.local`). User `pi` avoids editing systemd. Do not expand to fill if you will add `romini-data` before the box can be yanked.
 
 ## 2. PN532 SPI
 
@@ -53,7 +53,7 @@ Before the box leaves the bench:
 
 ## 6. Network
 
-House WPA from Imager. `avahi-daemon` + `deploy/avahi/services/romini.service` for `http://romini.local`. Playback does not need the internet.
+House WPA from Imager. `avahi-daemon` + `deploy/avahi/services/romini.service` for `http://<hostname>.local`. Playback does not need the internet.
 
 ```bash
 sudo mkdir -p /etc/romini /var/log/romini
@@ -63,9 +63,9 @@ sudo chmod 700 /etc/romini
 
 ## 7. Application
 
-Clone into `/var/lib/romini/repo`, venv `/var/lib/romini/install/venv`, install a Release wheel or `pip install -e .`. Copy `deploy/systemd/system/*.service` and `romini-update.timer`. Enable `romini-core` and `romini-update.timer`. Full commands: [guide.md](./guide.md) §3.7.
+`chown` the data tree to the SSH user **before** `git clone`. Then clone into `/var/lib/romini/repo`, venv `/var/lib/romini/install/venv`, install a Release wheel or `pip install -e .`. Copy `deploy/systemd/system/*.service` and `romini-update.timer`. If the login is not `pi`, rewrite `User=` / `Group=` on the copied units. Enable `romini-core` and `romini-update.timer`. Full commands: [guide.md](./guide.md) §3.7.
 
-Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`.
+Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=80`. Core unit: `AmbientCapabilities=CAP_NET_BIND_SERVICE` (port 80).
 
 ## 8. Checks
 
@@ -79,6 +79,8 @@ Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=
 | Halt / no wake | BCM 17, gpio-shutdown, NO vs NC |
 | Catalog ignored | `catalog.yaml` on `romini-data`, UID hex, MP3 under `library/` |
 | OTA skipped | Track is playing (mpv IPC) |
+| `Permission denied` on clone | Tree still root-owned |
+| bind port 80 errno 13 | Missing `AmbientCapabilities` on `romini-core` |
 
 ## Files
 

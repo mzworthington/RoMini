@@ -38,6 +38,7 @@ def test_romini_core_service_starts_on_boot() -> None:
     assert "ROMINI_DASHBOARD_PORT=80" in ROMINI_CORE_SERVICE
     assert "WantedBy=multi-user.target" in ROMINI_CORE_SERVICE
     assert "RuntimeDirectory=romini" in ROMINI_CORE_SERVICE
+    assert "AmbientCapabilities=CAP_NET_BIND_SERVICE" in ROMINI_CORE_SERVICE
 
 
 def test_romini_update_timer_runs_bin_update() -> None:
