@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROMINI_DATA_FSTAB = "LABEL=romini-data /var/lib/romini ext4 defaults 0 2"
 GPIO_SHUTDOWN_OVERLAY = "dtoverlay=gpio-shutdown,gpio_pin=17"
+I2C_ARM = "dtparam=i2c_arm=on"
 ROMINI_CORE_SERVICE = """[Unit]
 Description=RoMini player
 After=network-online.target
@@ -82,7 +83,7 @@ def write_provision_files(dest: Path) -> None:
     avahi.mkdir(parents=True, exist_ok=True)
     (avahi / "romini.service").write_text(AVAHI_HTTP_SERVICE)
     (dest / "fstab.romini-data").write_text(ROMINI_DATA_FSTAB + "\n")
-    (dest / "config.txt.romini").write_text(GPIO_SHUTDOWN_OVERLAY + "\n")
+    (dest / "config.txt.romini").write_text(GPIO_SHUTDOWN_OVERLAY + "\n" + I2C_ARM + "\n")
 
 
 def main() -> None:

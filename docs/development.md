@@ -9,7 +9,7 @@ gpio-build-monitor swaps `RPi.GPIO` for `Mock.GPIO` when `__debug__` is set (`py
 | Profile | Where | Adapters |
 |---------|--------|----------|
 | `sim` | Laptop, CI | `FakeNfc`, silent player, `LoggingHalt`, SQLite + YAML under `$ROMINI_DATA` |
-| `pi` | Box / breadboard | PN532 SPI (or FakeNfc if the HAT driver is missing), `MpvPlayer`, `SystemdHalt`, GPIO LED, dashboard `0.0.0.0` |
+| `pi` | Box / breadboard | PN532 I2C (or FakeNfc if the HAT driver is missing), `MpvPlayer`, `SystemdHalt`, GPIO LED, dashboard `0.0.0.0` |
 
 Default on a checkout: `sim`. systemd on the device: `pi`. Never detect “am I a Pi?” inside domain code.
 

@@ -12,16 +12,16 @@ Pi 4B 4GB, PN532 HAT, NTAG203, **four** 16mm buttons (one with LED), powered spe
 
 Imager → Lite 64-bit. Enable SSH (key), Wi-Fi, hostname `romini` (or live with `http://<hostname>.local`). User `pi` avoids editing systemd. Do not expand to fill if you will add `romini-data` before the box can be yanked.
 
-## 2. PN532 SPI
+## 2. PN532 I2C
 
-Jumpers: I0 L, I1 H, RSTPDN D20, DIP SPI lines ON, I2C/UART OFF. Seat HAT, coil toward lid.
+Jumpers: I0 **H**, I1 **L**, RSTPDN D20. DIP **SCL SDA ON**; SCK/MISO/MOSI/NSS and RX/TX **OFF**. Unplug 5V after changing I0/I1. Seat HAT, coil toward lid.
 
 ```bash
-sudo raspi-config nonint do_spi 0
+sudo raspi-config nonint do_i2c 0
 sudo reboot
 ```
 
-After `bin/install-pi`, confirm a UID with the venv (`romini.composition.pn532_hat.PN532_SPI(reset=20, cs=4)`) and a Type A tag over the coil. If no UID, fix jumpers before trusting software.
+`i2cdetect -y 1` should show **24**. After `bin/install-pi`, confirm a UID with the venv (`romini.composition.pn532_hat.PN532_I2C(reset=20)`) and a Type A tag over the coil. If the scan is empty, the DIP still has SCL/SDA off (that is SPI routing, not I2C).
 
 ## 3. Buttons
 

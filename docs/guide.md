@@ -13,7 +13,7 @@ flowchart LR
     dash["dashboard 127.0.0.1"]
   end
   subgraph box ["Pi"]
-    nfc["PN532 SPI"]
+    nfc["PN532 I2C"]
     mpv["mpv ALSA"]
     lan["dashboard 0.0.0.0:80"]
   end
@@ -173,16 +173,16 @@ Pi 4B 4GB, PN532 HAT, NTAG203, **four** 16mm buttons (one with LED), powered spe
 
 Raspberry Pi Imager → **Lite 64-bit**. SSH (key), Wi-Fi. Prefer hostname `romini` and user `pi` so the checked-in units match; Imager will happily create another name (this box used `romini` / `RoMini`). Dashboard is `http://<hostname>.local` (Avahi `%h`), not a hardcoded `romini.local`. Do not expand the whole card if you will add `romini-data` before yank-risk.
 
-### 3.3 PN532 SPI
+### 3.3 PN532 I2C
 
-Jumpers: I0 **L**, I1 **H**, RSTPDN **BCM 20**, DIP SPI ON, I2C/UART OFF. Coil toward the lid.
+Jumpers: I0 **H**, I1 **L**, RSTPDN **BCM 20**. DIP **SCL SDA ON**; SCK/MISO/MOSI/NSS and RX/TX **OFF**. Unplug 5V after changing I0/I1. Coil toward the lid.
 
 ```bash
-sudo raspi-config nonint do_spi 0
+sudo raspi-config nonint do_i2c 0
 sudo reboot
 ```
 
-Confirm a UID with the venv `PN532_SPI(reset=20, cs=4)` (Adafruit HAT adapter after install, or Waveshare `nfc` if present) and a Type A tag **before** trusting software.
+`i2cdetect -y 1` should show **24**. Confirm a UID with the venv `PN532_I2C(reset=20)` **before** trusting software.
 
 ### 3.4 Buttons and speaker
 
@@ -242,7 +242,7 @@ Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses *
 
 ### 3.7 Install the app
 
-Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `spidev`, `adafruit-blinka`, and `adafruit-circuitpython-pn532` (installed by `bin/install-pi` into the venv). `default_nfc()` tries Waveshare `nfc.PN532_SPI`, then `romini.composition.pn532_hat.PN532_SPI` (`reset=20`, `cs=4`). If that import or init fails, it uses `FakeNfc`.
+Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `adafruit-blinka`, and `adafruit-circuitpython-pn532` (installed by `bin/install-pi` into the venv). `default_nfc()` uses `romini.composition.pn532_hat.PN532_I2C` (`reset=20`). If that import or init fails, it uses `FakeNfc`.
 
 MP3s never come from git. The Release wheel is the player, dashboard, updater, and systemd snippets. Stories live in `/var/lib/romini/library`.
 

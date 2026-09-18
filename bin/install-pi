@@ -42,7 +42,8 @@ raise SystemExit("no romini wheel in latest GitHub Release")
 python3 -m venv "${VENV}"
 "${VENV}/bin/pip" install --upgrade pip
 "${VENV}/bin/pip" install "${WHEEL_URL}"
-"${VENV}/bin/pip" install RPi.GPIO spidev adafruit-blinka adafruit-circuitpython-pn532
+"${VENV}/bin/pip" install RPi.GPIO adafruit-blinka adafruit-circuitpython-pn532
+sudo raspi-config nonint do_i2c 0
 
 PROV="$(mktemp -d)"
 "${VENV}/bin/python" -m romini.composition.provision "${PROV}"
