@@ -69,7 +69,9 @@ def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:
     assert (dest / "systemd/system/romini-update.timer").is_file()
     assert (dest / "avahi/services/romini.service").is_file()
     assert "LABEL=romini-data" in (dest / "fstab.romini-data").read_text()
-    assert "gpio-shutdown" in (dest / "config.txt.romini").read_text()
+    cfg = (dest / "config.txt.romini").read_text()
+    assert "gpio-shutdown" in cfg
+    assert "dtparam=i2c_arm=on" in cfg
 
 
 def test_provision_module_writes_units_from_argv(tmp_path: Path, monkeypatch) -> None:

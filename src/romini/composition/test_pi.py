@@ -172,16 +172,16 @@ def test_mpv_ipc_status_not_playing_when_socket_missing() -> None:
     assert MpvIpcStatus(connect=connect).is_playing() is False
 
 
-def test_pn532_hat_exposes_pn532_spi() -> None:
-    from romini.composition.pn532_hat import PN532_SPI
+def test_pn532_hat_exposes_pn532_i2c() -> None:
+    from romini.composition.pn532_hat import PN532_I2C
 
-    assert callable(PN532_SPI)
+    assert callable(PN532_I2C)
 
 
-def test_pn532_hat_spi_matches_waveshare_mode() -> None:
+def test_pn532_hat_uses_adafruit_i2c() -> None:
     from pathlib import Path
 
     text = Path(__file__).with_name("pn532_hat.py").read_text()
-    assert "spidev" in text
-    assert "0b10" in text
-    assert "no_cs" in text
+    assert "adafruit_pn532.i2c" in text
+    assert "spidev" not in text
+    assert "PN532_SPI" not in text

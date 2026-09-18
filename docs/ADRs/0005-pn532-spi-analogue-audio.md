@@ -1,8 +1,10 @@
 ---
-status: Accepted
+status: Superseded
 date: 2026-09-13
 deciders: [Matthew Worthington]
 ---
+
+NFC host bus: superseded by [0008](./0008-pn532-i2c.md). Analogue PWM audio to a powered speaker still stands.
 
 # 0005. PN532 SPI and analogue audio on Pi 4
 

@@ -19,7 +19,8 @@ def test_install_pi_script_installs_pn532_hat_packages() -> None:
     assert "adafruit-circuitpython-pn532" in script
     assert "adafruit-blinka" in script
     assert "RPi.GPIO" in script
-    assert "spidev" in script
+    assert "spidev" not in script
+    assert "do_i2c 0" in script
 
 
 def test_install_pi_script_installs_lgpio_build_deps() -> None:

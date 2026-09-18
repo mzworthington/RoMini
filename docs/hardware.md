@@ -27,7 +27,7 @@ The [passive 3W 4Ω pair](https://thepihut.com/products/stereo-enclosed-speaker-
 
 ```mermaid
 flowchart TB
-  ntag["NTAG203"] --> hat["PN532 SPI"]
+  ntag["NTAG203"] --> hat["PN532 I2C"]
   hat --> pi["Pi 4B 4GB"]
   halt["Halt NO + LED"] --> pi
   vol["Vol+ Vol- (later)"] --> pi
@@ -35,10 +35,10 @@ flowchart TB
   pi -->|"PWM AV jack"| spk["Powered speaker aux"]
 ```
 
-### PN532: SPI, not I2C
+### PN532: I2C
 
-- I0 = **L**, I1 = **H**; RSTPDN → **BCM 20**; DIP SCK/MISO/MOSI/NSS ON; SCL/SDA/RX/TX OFF.
-- `PN532_SPI(reset=20, cs=4)`. Enable SPI. Never I2C (Pi clock-stretching).
+- I0 = **H**, I1 = **L**; RSTPDN → **BCM 20**; DIP SCL/SDA ON; SCK/MISO/MOSI/NSS and RX/TX OFF. Mode latches on 5V.
+- `PN532_I2C(reset=20)` on i2c-1 address `0x24`. Enable `dtparam=i2c_arm=on`. Clock-stretching can stall the Pi bus ([ADR-0008](./ADRs/0008-pn532-i2c.md)).
 
 ### Audio
 
@@ -72,7 +72,7 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 
 | Port | `pi` adapter |
 |------|----------------|
-| NFC | PN532 SPI, 250ms, UID hex |
+| NFC | PN532 I2C, 250ms, UID hex |
 | LED | GPIO 27 PWM |
 | Vol ± | GPIO 22 / 23 (`apply_gpio_press`; not yet in `run_core_ticks`). First box: parent sets volume on the dashboard |
 | Play/pause | GPIO 24 (same). First box: unused |
