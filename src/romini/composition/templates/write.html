@@ -31,6 +31,12 @@
 <button>Draft script</button>
 </form>
 <form action="/stories/speak" method="post">
+<label for="voice">Voice</label>
+<select id="voice" name="voice_id">
+{% for voice in voices %}
+<option value="{{ voice.id }}">{{ voice.name }}</option>
+{% endfor %}
+</select>
 <button>Speak script</button>
 </form>
 </section>

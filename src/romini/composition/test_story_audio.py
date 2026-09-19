@@ -225,3 +225,30 @@ def test_story_audio_reads_only_the_script_body() -> None:
     markdown = "# Romy and the Banana\n\n- Cast: Romy\n- Say: Romy is Rowmy.\n\n## Script\n\nRowmy found a banana.\n"
 
     assert script_body(markdown) == "Rowmy found a banana."
+
+
+def test_story_audio_loads_named_voices_from_yaml(tmp_path: Path) -> None:
+    from romini.composition.story_audio import load_voices
+
+    path = tmp_path / "voices.yaml"
+    path.write_text("voices:\n  - name: Rowmy\n    id: voice-rowmy\n  - name: Maama\n    id: voice-maama\n")
+
+    assert load_voices(path) == [
+        {"name": "Rowmy", "id": "voice-rowmy"},
+        {"name": "Maama", "id": "voice-maama"},
+    ]
+
+
+def test_story_audio_ships_named_household_voices() -> None:
+    from romini.composition.story_audio import load_voices
+
+    voices = load_voices()
+    names = [voice["name"] for voice in voices]
+    ids = [voice["id"] for voice in voices]
+
+    assert names == ["Rowmy", "Maama", "Baaba"]
+    assert ids == [
+        "qXdtsJJ9LgnQ8Z2TYfav",
+        "ZF6FPAbjXT4488VcRRnw",
+        "AXdMgz6evoL7OPd7eU12",
+    ]

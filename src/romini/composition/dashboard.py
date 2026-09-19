@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from romini.adapters.sqlite.settings import SqliteSettings
-from romini.composition.story_audio import ElevenLabsSpeech, Speech, http_post
+from romini.composition.story_audio import ElevenLabsSpeech, Speech, http_post, load_voices
 from romini.composition.story_draft import GeminiScriptDraft, gemini_http_post
 from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage, add_track
@@ -355,6 +355,7 @@ def create_dashboard(
                 "spoken_file": _spoken_file_name(stories),
                 "saved_stories": _list_saved_stories(stories),
                 "elevenlabs_voices": keys["ELEVENLABS_VOICE_IDS"],
+                "voices": load_voices(),
                 "gemini_key_set": bool(keys["GEMINI_API_KEY"]),
                 "elevenlabs_key_set": bool(keys["ELEVENLABS_API_KEY"]),
                 "tracks": tracks,
@@ -602,12 +603,16 @@ def create_dashboard(
         return _notice("/write", "drafted")
 
     @app.post("/stories/speak", response_model=None)
-    def speak_story() -> RedirectResponse:
+    async def speak_story(request: Request) -> RedirectResponse:
         if stories is None:
             raise HTTPException(status_code=404)
         keys = _studio_keys(secrets, box_secrets)
-        voices = [part.strip() for part in keys["ELEVENLABS_VOICE_IDS"].split(",") if part.strip()]
-        if not keys["ELEVENLABS_API_KEY"] or not voices:
+        named_voices = load_voices()
+        allowed = {voice["id"] for voice in named_voices}
+        form = await request.form()
+        chosen = str(form.get("voice_id") or "").strip()
+        voice_id = chosen if chosen in allowed else (named_voices[0]["id"] if named_voices else "")
+        if not keys["ELEVENLABS_API_KEY"] or not voice_id:
             return _notice("/write", "speak-needed")
         notes = _load_story_notes(stories)
         script = notes["script"].strip()
@@ -615,7 +620,7 @@ def create_dashboard(
             return _notice("/write", "speak-needed")
         speaker = speech or ElevenLabsSpeech(api_key=keys["ELEVENLABS_API_KEY"], post=speak_post or http_post)
         try:
-            audio = speaker.speak(text=script, voice_id=voices[0])
+            audio = speaker.speak(text=script, voice_id=voice_id)
         except Exception:
             return _notice("/write", "speak-needed")
         pack = _current_pack(stories)

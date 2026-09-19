@@ -23,6 +23,7 @@ main { margin: 0; padding: 0; }
   flex-wrap: wrap;
   gap: 1.25rem;
   align-items: stretch;
+  margin: 0 0 1.25rem;
 }
 .board > section {
   flex: 1 1 20rem;
@@ -64,6 +65,16 @@ h1 span { color: #FF5252; }
   color: #94A3B8;
 }
 .lede { color: #64748B; margin: 0.45rem 0 0; font-weight: 600; }
+.welcome .lede { margin: 0 0 0.85rem; }
+.welcome-art {
+  display: block;
+  width: min(100%, 18rem);
+  height: auto;
+  margin: 0 auto 1rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
 header { margin: 0 0 1rem; }
 .jumps {
   list-style: none;
@@ -72,14 +83,20 @@ header { margin: 0 0 1rem; }
   display: grid;
   gap: 0.65rem;
 }
-.jumps a {
+.jumps form { margin: 0; }
+.jumps a,
+.jumps button.jump {
   display: block;
+  width: 100%;
   padding: 0.75rem 0.9rem;
   border-radius: 0.75rem;
   text-decoration: none;
+  text-align: left;
   color: inherit;
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
+  margin-top: 0;
+  min-height: 2.75rem;
 }
 .jumps strong { display: block; font-family: Nunito, system-ui, sans-serif; }
 nav[aria-label="Dashboard"] ul {
@@ -109,17 +126,16 @@ nav[aria-label="Dashboard"] a[aria-current="page"] {
 }
 section {
   margin: 0 0 1.5rem;
-  padding: 1.1rem 1.15rem;
+  padding: 1.45rem 1.4rem 1.6rem;
   background: #FFFFFF;
   border: 1px solid #F1F5F9;
   border-radius: 1rem;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
-  overflow-x: auto;
 }
 @media (max-width: 40rem) {
   .masthead { align-items: flex-start; }
   .mark { width: 3.75rem; height: 3.75rem; }
-  th, td { padding: 0.4rem 0.3rem; }
+  th, td { padding: 0.55rem 0.4rem; }
 }
 h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.75rem; }
 label { display: block; font-weight: 700; margin: 0.7rem 0 0.3rem; }
@@ -173,8 +189,9 @@ button:hover { filter: brightness(0.96); }
   outline: 3px solid var(--magic-ochre);
   outline-offset: 2px;
 }
+.table-wrap { overflow-x: auto; margin: 0.25rem -0.15rem 0; }
 table { width: 100%; border-collapse: collapse; font-size: 1rem; position: relative; }
-th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+th, td { text-align: left; padding: 0.7rem 0.55rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
 th:last-child, td:last-child { text-align: right; width: 1%; white-space: nowrap; }
 td:has(input) { width: 100%; }
 th { color: #64748B; font-weight: 700; }

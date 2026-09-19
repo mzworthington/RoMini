@@ -12,4 +12,4 @@ export ELEVENLABS_VOICE_IDS='voice-id-one,voice-id-two'
 ./bin/story-audio
 ```
 
-Each story picks one of those voice IDs at random. You can also fill `VOICE_IDS` in `src/romini/composition/story_audio.py`. The key stays in the environment; do not commit it.
+Each story picks one of those voice IDs at random. Named household voices also live in `src/romini/composition/voices.yaml`. The key stays in the environment; do not commit it.
