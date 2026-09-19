@@ -454,7 +454,7 @@ def test_romini_core_dashboard_reads_box_env_for_studio_keys(tmp_path: Path, mon
     assert seen["stories"] == data / "stories"
 
 
-def test_default_nfc_on_pi_uses_pn532_hat_i2c(monkeypatch) -> None:
+def test_default_nfc_on_pi_uses_pn532_hat_spi(monkeypatch) -> None:
     from types import ModuleType
 
     from romini.__main__ import default_nfc
@@ -465,9 +465,9 @@ def test_default_nfc_on_pi_uses_pn532_hat_i2c(monkeypatch) -> None:
     hat = ModuleType("romini.composition.pn532_hat")
     built: list[object] = []
 
-    class PN532_I2C:
-        def __init__(self, *, reset: int = 20, debug: bool = False) -> None:
-            built.append({"reset": reset, "debug": debug})
+    class PN532_SPI:
+        def __init__(self, *, reset: int = 20, cs: int = 4, debug: bool = False) -> None:
+            built.append({"reset": reset, "cs": cs, "debug": debug})
 
         def SAM_configuration(self) -> None:
             return None
@@ -475,11 +475,11 @@ def test_default_nfc_on_pi_uses_pn532_hat_i2c(monkeypatch) -> None:
         def read_passive_target(self, timeout: float | None = None) -> bytes | None:
             return None
 
-    hat.PN532_I2C = PN532_I2C
+    hat.PN532_SPI = PN532_SPI
     monkeypatch.setitem(sys.modules, "romini.composition.pn532_hat", hat)
 
     nfc = default_nfc()
 
     assert isinstance(nfc, Pn532Nfc)
-    assert built == [{"reset": 20, "debug": False}]
+    assert built == [{"reset": 20, "cs": 4, "debug": False}]
     assert nfc.read_uid() is None

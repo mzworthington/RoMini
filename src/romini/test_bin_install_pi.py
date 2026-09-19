@@ -21,6 +21,7 @@ def test_install_pi_script_installs_pn532_hat_packages() -> None:
     assert "RPi.GPIO" in script
     assert "spidev" not in script
     assert "do_i2c 0" in script
+    assert "do_spi 0" in script
 
 
 def test_install_pi_script_installs_ups_hat_smbus() -> None:
