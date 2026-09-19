@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from romini.fakes import FakeHalt, FakeLed, FakeMixer, FakePlayer, FakeSessions
 from romini.features.play_by_tag.place_figure import (
     PlayMode,
     next_assign_mode,
@@ -24,92 +25,11 @@ class FakeLibrary:
 
 
 @dataclass
-class FakePlayer:
-    plays: list[tuple[str, float]] = field(default_factory=list)
-    pauses: int = 0
-    stops: int = 0
-    selected: tuple[str, str] | None = None
-    _playing: bool = False
-    _uid: str | None = None
-    _path: str | None = None
-
-    def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        self.plays.append((path, position_sec))
-        self._playing = True
-        self._uid = uid
-        self._path = path
-
-    def select(self, uid: str, path: str) -> None:
-        self.selected = (uid, path)
-
-    def selected_track(self) -> tuple[str, str] | None:
-        return self.selected
-
-    def pause(self) -> None:
-        self.pauses += 1
-        self._playing = False
-
-    def stop(self) -> None:
-        self.stops += 1
-        self._playing = False
-        self._uid = None
-
-    def is_playing(self) -> bool:
-        return self._playing
-
-    def playing_uid(self) -> str | None:
-        return self._uid
-
-    def playing_path(self) -> str | None:
-        return self._path
-
-
-@dataclass
-class FakeLed:
-    pulses: int = 0
-    flashes: int = 0
-
-    def pulse(self) -> None:
-        self.pulses += 1
-
-    def flash(self) -> None:
-        self.flashes += 1
-
-
-@dataclass
 class FakeEarcon:
     plays: list[str] = field(default_factory=list)
 
     def play_earcon(self, path: str) -> None:
         self.plays.append(path)
-
-
-@dataclass
-class FakeSessions:
-    positions: dict[str, float] = field(default_factory=dict)
-
-    def remember(self, uid: str, position_sec: float) -> None:
-        self.positions[uid] = position_sec
-
-    def position_for(self, uid: str) -> float | None:
-        return self.positions.get(uid)
-
-
-@dataclass
-class FakeMixer:
-    level: int
-    ceiling: int
-
-    def set_level(self, level: int) -> None:
-        self.level = level
-
-
-@dataclass
-class FakeHalt:
-    poweroffs: int = 0
-
-    def poweroff(self) -> None:
-        self.poweroffs += 1
 
 
 def test_mapped_figure_starts_the_story_in_presence_mode() -> None:
