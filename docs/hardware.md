@@ -28,7 +28,7 @@ The [passive 3W 4Ω pair](https://thepihut.com/products/stereo-enclosed-speaker-
 
 ```mermaid
 flowchart TB
-  ntag["NTAG203"] --> hat["PN532 I2C"]
+  ntag["NTAG203"] --> hat["PN532 SPI"]
   hat --> pi["Pi 4B 4GB"]
   ups["UPS HAT D INA219"] --> pi
   halt["Halt NO + LED"] --> pi
@@ -37,14 +37,14 @@ flowchart TB
   pi -->|"PWM AV jack"| spk["Powered speaker aux"]
 ```
 
-### PN532: I2C
+### PN532: SPI
 
-- I0 = **H**, I1 = **L**; RSTPDN → **BCM 20**; DIP SCL/SDA ON; SCK/MISO/MOSI/NSS and RX/TX OFF. Mode latches on 5V.
-- `PN532_I2C(reset=20)` on i2c-1 address `0x24`. Enable `dtparam=i2c_arm=on`. Clock-stretching can stall the Pi bus ([ADR-0008](./ADRs/0008-pn532-i2c.md)).
+- I0 = **L**, I1 = **H**; RSTPDN → **BCM 20**; DIP SCK/MISO/MOSI/NSS ON; SCL/SDA and RX/TX OFF. Mode latches on 5V.
+- `PN532_SPI(reset=20, cs=4)` on SPI0. Enable `dtparam=spi=on`. UPS stays on I2C (`0x43`). The PN532 will **not** appear at `0x24` ([ADR-0009](./ADRs/0009-pn532-spi.md)).
 
 ### UPS HAT (D)
 
-Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU also appears at `0x2D`). Charge on the dashboard is estimated from pack voltage: 3.0 V empty, 4.2 V full, clamped. Charge the pack through the HAT USB-C, not the Pi USB-C. `i2cdetect -y 1` should show **24** and **43**.
+Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU also appears at `0x2D`). Charge on the dashboard is estimated from pack voltage: 3.0 V empty, 4.2 V full, clamped. Charge the pack through the HAT USB-C, not the Pi USB-C. `i2cdetect -y 1` should show **43** (and **2d**), not the PN532.
 
 ### Audio
 
@@ -78,7 +78,7 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 
 | Port | `pi` adapter |
 |------|----------------|
-| NFC | PN532 I2C, 250ms, UID hex |
+| NFC | PN532 SPI cs=4 rst=20, 250ms, UID hex |
 | LED | GPIO 27 PWM |
 | Vol ± | GPIO 22 / 23 (`apply_gpio_press`; not yet in `run_core_ticks`). First box: parent sets volume on the dashboard |
 | Play/pause | GPIO 24 (same). First box: unused |

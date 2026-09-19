@@ -44,6 +44,7 @@ python3 -m venv "${VENV}"
 "${VENV}/bin/pip" install "${WHEEL_URL}"
 "${VENV}/bin/pip" install RPi.GPIO adafruit-blinka adafruit-circuitpython-pn532 smbus2
 sudo raspi-config nonint do_i2c 0
+sudo raspi-config nonint do_spi 0
 
 PROV="$(mktemp -d)"
 "${VENV}/bin/python" -m romini.composition.provision "${PROV}"

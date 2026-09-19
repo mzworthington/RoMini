@@ -71,11 +71,11 @@ def default_nfc() -> Nfc:
     if os.environ.get("ROMINI_PROFILE", "sim") != "pi":
         return FakeNfc()
     try:
-        from romini.composition.pn532_hat import PN532_I2C
+        from romini.composition.pn532_hat import PN532_SPI
     except ImportError:
         return FakeNfc()
     try:
-        return Pn532Nfc(PN532_I2C(reset=20))
+        return Pn532Nfc(PN532_SPI(reset=20, cs=4))
     except Exception:
         return FakeNfc()
 

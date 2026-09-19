@@ -22,11 +22,11 @@ Listening never depends on GitHub.
 
 ## 2. Hardware
 
-BOM and pins: [hardware.md](./hardware.md). Bring-up: [pi-setup.md](./pi-setup.md). NFC bus: [ADR-0008](./ADRs/0008-pn532-i2c.md). Audio: [ADR-0005](./ADRs/0005-pn532-spi-analogue-audio.md). Play modes: [ADR-0006](./ADRs/0006-presence-and-tap-play-modes.md).
+BOM and pins: [hardware.md](./hardware.md). Bring-up: [pi-setup.md](./pi-setup.md). NFC bus: [ADR-0009](./ADRs/0009-pn532-spi.md). Audio: [ADR-0005](./ADRs/0005-pn532-spi-analogue-audio.md). Play modes: [ADR-0006](./ADRs/0006-presence-and-tap-play-modes.md).
 
 ```mermaid
 flowchart LR
-  figure["NTAG203 on figure"] --> nfc["PN532 HAT I2C"]
+  figure["NTAG203 on figure"] --> nfc["PN532 HAT SPI"]
   btns["Halt vol play 16mm"] --> pi["Pi 4B 4GB Lite 64-bit"]
   nfc --> pi
   pi --> jack["AV jack PWM"]
@@ -185,7 +185,7 @@ PR: `pre-commit --all-files` + `make test` (ruff, pytest). `main`: semantic-rele
 ## 9. Implementation order
 
 1. Domain + presence/tap slices on `sim` — done ([spec.md](./spec.md)).
-2. Breadboard: PN532 I2C + mpv into powered speaker — soak.
+2. Breadboard: PN532 SPI + mpv into powered speaker — soak.
 3. Halt + LED in `run_core_ticks`, halt wake, boot earcon on device — soak / remaining GPIO poll. Volume on the dashboard for the first box; physical vol± later.
 4. Dashboard + provision files + updater skip-while-playing — laptop complete; overlay on device.
 5. Birthday: `library/` + `catalog.yaml` + affixed Tags.
