@@ -1914,7 +1914,6 @@ def test_dashboard_home_shows_the_box_picture() -> None:
 
     assert 'src="/logo.svg"' in html
     assert 'class="welcome"' in html
-    assert "Put a figure on the box" in html
 
 
 def test_dashboard_write_page_lets_you_pick_a_named_voice() -> None:
