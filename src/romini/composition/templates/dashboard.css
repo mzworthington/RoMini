@@ -71,9 +71,7 @@ h1 span { color: #FF5252; }
   width: min(100%, 18rem);
   height: auto;
   margin: 0 auto 1rem;
-  border-radius: 1.1rem;
   background: #fff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 header { margin: 0 0 1rem; }
 .jumps {

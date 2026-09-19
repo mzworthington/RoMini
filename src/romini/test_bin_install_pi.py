@@ -41,3 +41,15 @@ def test_install_pi_script_prints_bold_colour_success_when_finished() -> None:
     assert r"\033[1;32m" in script
     assert "install complete" in script.lower()
     assert "nothing left" in script.lower()
+
+
+def test_readme_walks_pi_setup_to_release_wheel_curl() -> None:
+    readme = (ROOT / "README.md").read_text()
+    assert "## Set up the Pi" in readme
+    assert "Raspberry Pi Imager" in readme
+    assert "Lite 64-bit" in readme
+    assert "curl -fsSL https://raw.githubusercontent.com/mzworthington/RoMini/main/bin/install-pi | bash" in readme
+    assert "ssh pi@romini.local" in readme
+    assert "http://romini.local" in readme
+    assert "git clone" not in readme
+    assert "pip install -e" not in readme

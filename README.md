@@ -9,17 +9,42 @@
 
 Screen-free NFC audio player for a Raspberry Pi. Figures start Tracks; the parent maps Tags on the house LAN.
 
+## Set up the Pi
+
+Use a **Raspberry Pi 4** with Lite OS, house Wi-Fi and SSH. The player is a GitHub Release **wheel** (`bin/install-pi`). There is no repo on the box. HAT jumpers, buttons, overlay and library disk: [docs/hardware.md](docs/hardware.md) and [docs/guide.md](docs/guide.md) §3.
+
+1. **Flash.** Raspberry Pi Imager → **Lite 64-bit**. Enable SSH (key), house Wi-Fi (country GB), hostname `romini` and user `pi`. Do not expand the card to fill the disk if you will add a `romini-data` partition later. Use a **≥3A** USB-C PSU (or the UPS HAT USB-C on battery).
+2. **Boot and SSH.** Wait until the ACT LED settles. From a laptop on the same Wi-Fi:
+
+   ```bash
+   ssh pi@romini.local
+   ```
+
+   If `.local` fails, find the lease in the Google Wifi / router client list and SSH to that IPv4.
+3. **Install the player** (one command, on the Pi):
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/mzworthington/RoMini/main/bin/install-pi | bash
+   ```
+
+   That `apt`s Python/mpv/Avahi, installs the latest `romini-*.whl` into `/var/lib/romini/install/venv`, turns on SPI and I2C, writes systemd + Avahi, and enables `romini-core` plus `romini-update.timer`.
+4. **Open the dashboard.** On the house LAN: [http://romini.local](http://romini.local). Upload MP3s and map Tags there. Tracks live in `/var/lib/romini/library`, not in the wheel.
+
+OTA later is the same venv (`python -m romini.composition.update`). Optional GitHub PAT: `GITHUB_TOKEN` and `GITHUB_REPO` in `/etc/romini/env` (`chmod 600`).
+
+## Laptop (`sim`)
+
 ```bash
 ./bin/bootstrap
 make test
 ./bin/sim
 ```
 
-**Run it:** [docs/guide.md](docs/guide.md) — laptop `sim` (`./bin/sim`), Pi from a Release wheel (`bin/install-pi`).
+Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/GPIO/player are fakes.
 
 ## Parent dashboard
 
-`./bin/sim` serves the catalog at `http://127.0.0.1:8080`. On the box, Avahi is `http://<hostname>.local` (usually `http://romini.local`).
+On the box, Avahi is `http://<hostname>.local` (usually [http://romini.local](http://romini.local)).
 
 <p align="center">
   <img src="docs/brand/dashboard.png" alt="RoMini parent dashboard" width="720">
@@ -27,9 +52,10 @@ make test
 
 | Doc | Role |
 |-----|------|
-| [docs/guide.md](docs/guide.md) | Step-by-step laptop + Pi |
+| [docs/guide.md](docs/guide.md) | Full laptop + Pi walkthrough |
+| [docs/hardware.md](docs/hardware.md) | BOM, PN532 SPI, UPS, GPIO |
+| [docs/pi-setup.md](docs/pi-setup.md) | Headless flash checklist |
 | [docs/PRD_001.md](docs/PRD_001.md) | Product requirements |
 | [docs/spec.md](docs/spec.md) | Gherkin, glossary |
 | [docs/architecture.md](docs/architecture.md) | Hexagon, OTA, overlay |
-| [docs/hardware.md](docs/hardware.md) | BOM and GPIO |
 | [docs/ADRs/README.md](docs/ADRs/README.md) | Hard-to-reverse choices |
