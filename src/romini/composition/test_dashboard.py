@@ -231,12 +231,13 @@ def test_dashboard_home_has_upload_form() -> None:
     assert 'type="file"' in response.text
 
 
-def test_dashboard_upload_file_is_required() -> None:
+def test_dashboard_upload_file_is_not_required_so_a_folder_can_submit() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
-    assert 'id="file" type="file" name="file" accept="audio/*" required>' in html
+    assert 'id="file" type="file" name="file" accept="audio/*">' in html
+    assert 'id="file" type="file" name="file" accept="audio/*" required>' not in html
 
 
 def test_dashboard_upload_form_has_a_folder_picker() -> None:

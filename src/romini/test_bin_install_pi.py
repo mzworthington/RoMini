@@ -28,3 +28,10 @@ def test_install_pi_script_installs_lgpio_build_deps() -> None:
     assert "swig" in script
     assert "python3-dev" in script
     assert "liblgpio-dev" in script
+
+
+def test_install_pi_script_prints_bold_colour_success_when_finished() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert r"\033[1;32m" in script
+    assert "install complete" in script.lower()
+    assert "nothing left" in script.lower()
