@@ -1,5 +1,7 @@
 import json
 import subprocess
+from collections.abc import Callable
+from datetime import datetime
 from os import environ
 from pathlib import Path
 
@@ -19,13 +21,16 @@ class SystemdHalt:
 
 
 class MpvPlayer:
-    def __init__(self, ipc=None, mixer=None) -> None:
+    def __init__(self, ipc=None, mixer=None, connect=None, clock: Callable[[], datetime] = datetime.now) -> None:
         self._ipc = ipc
         self.mixer = mixer
+        self._connect = connect
+        self._clock = clock
         self._playing = False
         self._uid: str | None = None
         self._path: str | None = None
         self._selected: tuple[str, str] | None = None
+        self._started_at: datetime | None = None
 
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
         cmd = [
@@ -41,6 +46,7 @@ class MpvPlayer:
         self._playing = True
         self._uid = uid
         self._path = path
+        self._started_at = self._clock()
 
     def select(self, uid: str, path: str) -> None:
         self._selected = (uid, path)
@@ -67,6 +73,23 @@ class MpvPlayer:
 
     def playing_path(self) -> str | None:
         return self._path
+
+    def started_at(self) -> datetime | None:
+        return self._started_at
+
+    def position_sec(self) -> float:
+        connect = self._connect if self._connect is not None else _unix_connect
+        try:
+            sock = connect(mpv_ipc_socket())
+            sock.sendall(b'{"command":["get_property","time-pos"]}\n')
+            payload = json.loads(sock.recv(4096).decode())
+            sock.close()
+        except OSError:
+            return 0.0
+        data = payload.get("data")
+        if isinstance(data, int | float):
+            return float(data)
+        return 0.0
 
     def set_volume(self, level: int) -> None:
         payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))

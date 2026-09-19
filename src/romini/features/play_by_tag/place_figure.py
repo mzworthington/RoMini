@@ -28,6 +28,8 @@ class Player(Protocol):
 
     def playing_path(self) -> str | None: ...
 
+    def position_sec(self) -> float: ...
+
 
 class StatusLed(Protocol):
     def pulse(self) -> None: ...
@@ -78,7 +80,13 @@ def on_figure_placed(
     if path is None:
         return
     if play_mode is PlayMode.TAP:
-        player.select(uid, path)
+        if player.is_playing() and player.playing_uid() == uid:
+            player.pause()
+            return
+        if player.is_playing():
+            player.stop()
+        player.play(path, position_sec=0.0, uid=uid)
+        led.pulse()
         return
     if play_mode is not PlayMode.PRESENCE:
         return

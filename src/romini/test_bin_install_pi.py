@@ -53,3 +53,12 @@ def test_readme_walks_pi_setup_to_release_wheel_curl() -> None:
     assert "http://romini.local" in readme
     assert "git clone" not in readme
     assert "pip install -e" not in readme
+
+
+def test_readme_documents_forcing_pi_ota() -> None:
+    readme = (ROOT / "README.md").read_text()
+    assert "sudo systemctl start romini-update.service" in readme
+    assert "python -m romini.composition.update" in readme
+    assert "skips while" in readme.lower() or "skip while" in readme.lower()
+    assert "git pull" not in readme or "Do not `git pull`" in readme
+    assert "releases/latest" in readme.lower() or "GitHub Release" in readme

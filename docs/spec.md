@@ -27,7 +27,9 @@ flowchart LR
 | Assign mode | Parent is linking a Tag to a Track. Child play does not start. | — |
 | Register mode | Parent is collecting Tag UIDs into the catalog. Same mute as Assign mode. | — |
 | Catalog | YAML file of Tracks, registered Tags, and Tag UIDs on the data volume. Source of truth for mappings. | Library / TagMapping |
-| Story pack | Parent-authored bedtime story: title, characters, points to cover, outline, extra files, current script, spoken Track. Lives with the Library on the data volume. Not a Player aggregate. | Story pack |
+| Story pack | Parent-authored bedtime story: title, selected character slugs, points to cover, outline, extra files, current script, spoken Track. Lives with the Library on the data volume. Not a Player aggregate. | Story pack |
+| Character | Reusable person with a name and background/history. Lives on the data volume. Stories pick characters with checkboxes. | Character |
+| Audit log | Newest-first list of box changes. Keys never appear. Last 1000 events stay on the data volume. | — |
 
 ## Defaults
 
@@ -106,16 +108,21 @@ Feature: Presence play
 
 ```gherkin
 Feature: Tap play
-  The listener taps a Figure then uses buttons.
+  The listener taps a Figure to start a story. The story plays to the end unless they tap the same Figure again.
 
-  Scenario: Tap selects the Track but does not require the Figure to stay
+  Scenario: Tap starts the Track and does not require the Figure to stay
     Given Play mode is tap
     And Assign mode is off
     And a Figure is mapped to a Track
     When the listener taps that Figure
-    Then the box selects that Track
-    And the listener can start and pause with the play button
+    Then the box starts that Track
     And lifting the Figure does not pause the Track
+
+  Scenario: Same Figure tap pauses playback
+    Given Play mode is tap
+    And a Track is playing for Figure A
+    When the listener taps Figure A again
+    Then the box pauses that Track
 
   Scenario: Long-press play restarts the Track
     Given a Track is playing
@@ -265,18 +272,41 @@ Feature: Library
 ```
 
 ```gherkin
+Feature: Characters on the parent dashboard
+  A parent keeps reusable people with background and history.
+  Stories pick who is in the tale. Player does not learn characters.
+
+  Scenario: Character fields are on their own page
+    Given the parent opens the dashboard
+    When they open Characters
+    Then they see labelled fields for Name and Background and history
+
+  Scenario: A character stays on the box
+    Given the parent is on Characters
+    When they save a name and background
+    Then that character is still listed when they open Characters again
+
+  Scenario: Stories pick characters
+    Given the parent has saved a character
+    When they write a story
+    Then they see a checkbox for that character
+    And they do not type characters as free text on the story
+```
+
+```gherkin
 Feature: Story notes on the parent dashboard
-  A parent keeps characters, points to cover, and an outline on a bedtime story.
-  Gemini and narration are other stories. Player does not learn notes.
+  A parent keeps points to cover and an outline on a bedtime story.
+  Characters live on the Characters page. Gemini and narration are other stories. Player does not learn notes.
 
   Scenario: Note fields are on the dashboard
     Given the parent opens the dashboard
     When they start a story
-    Then they see labelled fields for Characters, Points to cover / interests, and Story outline
+    Then they see labelled fields for Points to cover / interests and Story outline
+    And they pick characters with checkboxes
 
   Scenario: Notes stay on the story
     Given the parent has started a story
-    When they save Characters, Points to cover / interests, and Story outline
+    When they save selected characters, Points to cover / interests, and Story outline
     Then those documents are still on that story when they open it again
 
   Scenario: Blank notes still save
@@ -343,6 +373,27 @@ Feature: Story studio keys, draft, and speak
     And not the first story's
 ```
 
+```gherkin
+Feature: Audit log
+  The parent can see what the box has done.
+
+  Scenario: Settings lists what happened
+    Given the box stored a Track
+    And a Figure started that Track
+    When the parent opens Settings
+    Then the Audit log lists those events newest first
+
+  Scenario: Quiet box
+    Given nothing has happened since the box was set up
+    When the parent opens Settings
+    Then the Audit log says nothing has happened yet
+
+  Scenario: Keys stay private
+    Given the parent saved studio keys
+    When the parent opens Settings
+    Then the Audit log does not show the key values
+```
+
 ## Cross-functional
 
 | Quality | Criterion |
@@ -350,7 +401,7 @@ Feature: Story studio keys, draft, and speak
 | Accessibility | Parent dashboard on a laptop/phone browser; no child screen. Unknown WCAG target — treat as simple large controls. |
 | Security / privacy | House WPA Wi-Fi. No HTTP PIN. Playback needs no internet. PAT stays on the box, never in git. Sim-only injectors off on the box. |
 | Performance | Play start 500 ms; boot 20 s; NFC poll 250 ms. Device measurements, not CI load tests. |
-| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, set volume, see free space and charge, write story notes, save studio keys, draft a script, speak a script, reopen a saved story. |
+| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, set volume, see free space and charge, write story notes, save studio keys, draft a script, speak a script, reopen a saved story, read the Audit log on Settings. |
 
 ## Behaviour catalog notes
 

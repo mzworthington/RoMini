@@ -115,6 +115,16 @@ def test_mpv_player_play_does_not_wait_for_the_track_to_end(monkeypatch) -> None
     assert player.is_playing() is True
 
 
+def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
+    from datetime import datetime
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
+    player = MpvPlayer(clock=lambda: datetime(2026, 9, 19, 22, 33))
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+
+    assert player.started_at() == datetime(2026, 9, 19, 22, 33)
+
+
 def test_rpi_gpio_led_driver_pulses_pin_high_then_low() -> None:
     from romini.composition.gpio import GPIO_LED, GpioLed, RpiGpioLedDriver
 
@@ -170,6 +180,29 @@ def test_mpv_ipc_status_not_playing_when_socket_missing() -> None:
         raise FileNotFoundError(path)
 
     assert MpvIpcStatus(connect=connect).is_playing() is False
+
+
+def test_mpv_player_position_sec_reads_time_pos(monkeypatch) -> None:
+    from romini.composition.pi import MpvPlayer
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
+    sent: list[bytes] = []
+
+    class Sock:
+        def sendall(self, data: bytes) -> None:
+            sent.append(data)
+
+        def recv(self, n: int) -> bytes:
+            return b'{"data":74.2,"error":"success"}\n'
+
+        def close(self) -> None:
+            return
+
+    player = MpvPlayer(connect=lambda path: Sock())
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+
+    assert player.position_sec() == 74.2
+    assert b"time-pos" in sent[0]
 
 
 def test_pn532_hat_exposes_pn532_spi() -> None:

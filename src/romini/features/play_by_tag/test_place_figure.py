@@ -240,7 +240,7 @@ def test_figure_returns_after_grace_resumes_remembered_position() -> None:
     ]
 
 
-def test_tap_selects_the_track_without_starting_playback() -> None:
+def test_tap_starts_the_story() -> None:
     library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
     player = FakePlayer()
     led = FakeLed()
@@ -254,11 +254,74 @@ def test_tap_selects_the_track_without_starting_playback() -> None:
         led=led,
     )
 
-    assert player.plays == []
-    assert player.selected == ("04AABBCC", "/var/lib/romini/tracks/bear.mp3")
+    assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
+    assert player.is_playing() is True
+    assert led.pulses == 1
 
 
-def test_play_button_starts_the_selected_tap_track() -> None:
+def test_same_figure_tap_pauses_playback() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    led = FakeLed()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+
+    assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
+    assert player.pauses == 1
+    assert player.is_playing() is False
+
+
+def test_different_figure_tap_starts_that_story() -> None:
+    library = FakeLibrary(
+        tracks={
+            "A": "/var/lib/romini/tracks/a.mp3",
+            "B": "/var/lib/romini/tracks/b.mp3",
+        }
+    )
+    player = FakePlayer()
+    led = FakeLed()
+
+    on_figure_placed(
+        "A",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+    on_figure_placed(
+        "B",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=led,
+    )
+
+    assert player.stops == 1
+    assert player.plays == [
+        ("/var/lib/romini/tracks/a.mp3", 0.0),
+        ("/var/lib/romini/tracks/b.mp3", 0.0),
+    ]
+    assert player.is_playing() is True
+
+
+def test_play_button_pauses_after_tap_started_the_story() -> None:
     library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
     player = FakePlayer()
     led = FakeLed()
@@ -274,6 +337,8 @@ def test_play_button_starts_the_selected_tap_track() -> None:
     on_play_pressed(player=player)
 
     assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
+    assert player.pauses == 1
+    assert player.is_playing() is False
 
 
 def test_lift_in_tap_does_not_pause_the_track() -> None:
@@ -290,7 +355,6 @@ def test_lift_in_tap_does_not_pause_the_track() -> None:
         player=player,
         led=led,
     )
-    on_play_pressed(player=player)
     on_figure_lifted(
         "04AABBCC",
         play_mode=PlayMode.TAP,

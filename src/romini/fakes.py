@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from urllib.request import urlopen
 
@@ -25,12 +26,14 @@ class FakePlayer:
     _playing: bool = False
     _uid: str | None = None
     _path: str | None = None
+    _started_at: datetime | None = None
 
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
         self.plays.append((path, position_sec))
         self._playing = True
         self._uid = uid
         self._path = path
+        self._started_at = datetime.now()
 
     def select(self, uid: str, path: str) -> None:
         self.selected = (uid, path)
@@ -55,6 +58,12 @@ class FakePlayer:
 
     def playing_path(self) -> str | None:
         return self._path
+
+    def started_at(self) -> datetime | None:
+        return self._started_at
+
+    def position_sec(self) -> float:
+        return self.plays[-1][1] if self.plays else 0.0
 
 
 @dataclass

@@ -35,6 +35,9 @@ def apply_sim_http(box: SimBox, method: str, path: str) -> int:
     if method == "POST" and path.startswith("/place/"):
         box.place(path.removeprefix("/place/"))
         return 204
+    if method == "POST" and path.startswith("/tap/"):
+        box.place(path.removeprefix("/tap/"))
+        return 204
     if method == "POST" and path == "/remove":
         apply_sim_line(box, "remove")
         return 204

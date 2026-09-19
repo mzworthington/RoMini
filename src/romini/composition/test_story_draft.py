@@ -31,7 +31,7 @@ def test_gemini_script_draft_posts_notes_and_returns_text() -> None:
     url, headers, body = calls[0]
     payload = json.loads(body)
     prompt = payload["contents"][0]["parts"][0]["text"]
-    assert "generativelanguage.googleapis.com" in url
+    assert "generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent" in url
     assert headers["x-goog-api-key"] == "gem-secret"
     assert "The little station" in prompt
     assert "Romy" in prompt

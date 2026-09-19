@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from romini.adapters.sqlite.catalog import SqliteCatalog
+from romini.adapters.sqlite.schema import SCHEMA_VERSION
 from romini.adapters.sqlite.sessions import SqliteSessions
 from romini.composition.catalog import poll_catalog, run_catalog_ticks
 from romini.composition.gpio import (
@@ -49,6 +50,34 @@ def test_sim_place_plays_mapped_catalog_track() -> None:
 
     assert player.plays == [(f"{SIM_LIBRARY_ROOT}/{FROG_REL_PATH}", 0.0)]
     assert led.pulses == 1
+
+
+def test_sim_place_records_the_audit_log() -> None:
+    from romini.features.audit.memory import MemoryAuditLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led)
+    box.audit = MemoryAuditLog()
+
+    box.place(FROG_UID)
+
+    summaries = [entry.summary for entry in box.audit.recent()]
+    assert summaries == [f"Played {SIM_LIBRARY_ROOT}/{FROG_REL_PATH}"]
+
+
+def test_sim_volume_and_halt_record_the_audit_log() -> None:
+    from romini.features.audit.memory import MemoryAuditLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led, mixer=FakeMixer(level=4, ceiling=100), halt=FakeHalt())
+    box.audit = MemoryAuditLog()
+
+    apply_sim_line(box, "vol up")
+    apply_sim_line(box, "halt")
+
+    assert [entry.summary for entry in box.audit.recent()] == ["Halt", "Volume set to 5"]
 
 
 def test_sim_lift_pauses_after_grace() -> None:
@@ -209,6 +238,30 @@ def test_sim_http_place_starts_the_track() -> None:
     assert player.plays == [(f"{SIM_LIBRARY_ROOT}/{FROG_REL_PATH}", 0.0)]
 
 
+def test_sim_http_tap_starts_the_track() -> None:
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led, play_mode=PlayMode.TAP)
+
+    status = apply_sim_http(box, "POST", "/tap/04aabbccddeeff")
+
+    assert status == 204
+    assert player.plays == [(f"{SIM_LIBRARY_ROOT}/{FROG_REL_PATH}", 0.0)]
+    assert player.is_playing() is True
+
+
+def test_sim_http_same_figure_tap_pauses_playback() -> None:
+    player = FakePlayer()
+    box = frog_sim_box(player, FakeLed(), play_mode=PlayMode.TAP)
+
+    apply_sim_http(box, "POST", "/tap/04aabbccddeeff")
+    status = apply_sim_http(box, "POST", "/tap/04aabbccddeeff")
+
+    assert status == 204
+    assert player.is_playing() is False
+    assert player.pauses == 1
+
+
 def test_sim_http_remove_pauses_after_grace() -> None:
     player = FakePlayer()
     led = FakeLed()
@@ -324,6 +377,28 @@ def test_sim_http_page_has_nfc_tag_input_and_on_plate_toggle(tmp_path: Path) -> 
     assert '<input id="nfc-present" type="checkbox"' in html
 
 
+def test_sim_http_page_has_a_tap_button(tmp_path: Path) -> None:
+
+    html = fetch_sim_root_html(tmp_path)
+
+    assert 'id="nfc-tap"' in html
+    assert ">Tap<" in html
+    script = html[html.index("<script>") : html.index("</script>")]
+    assert "/tap/" in script
+
+
+def test_sim_http_page_tap_skips_when_the_figure_is_already_on_the_plate(tmp_path: Path) -> None:
+
+    html = fetch_sim_root_html(tmp_path)
+
+    script = html[html.index("<script>") : html.index("</script>")]
+    tap = script[script.index("nfc-tap") :]
+    checked_at = tap.index("checked")
+    tap_post_at = tap.index("/tap/")
+    assert checked_at < tap_post_at
+    assert "return" in tap[checked_at:tap_post_at]
+
+
 def test_sim_http_page_uses_romini_brand(tmp_path: Path) -> None:
 
     html = fetch_sim_root_html(tmp_path)
@@ -374,6 +449,7 @@ def test_sim_http_page_tucks_http_injectors_into_details(tmp_path: Path) -> None
     assert "<details" in html
     assert "<summary>HTTP injectors</summary>" in html
     assert "POST /place/" in html
+    assert "/tap/" in html
     assert html.index("<h2>Box buttons</h2>") < html.index("<details")
 
 
@@ -535,7 +611,7 @@ def test_load_sim_box_applies_schema_version(tmp_path: Path) -> None:
     load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
 
     conn = sqlite3.connect(data / "state.sqlite")
-    assert conn.execute("SELECT version FROM schema_version WHERE id = 1").fetchone() == (1,)
+    assert conn.execute("SELECT version FROM schema_version WHERE id = 1").fetchone() == (SCHEMA_VERSION,)
 
 
 def test_load_sim_box_unmaps_removed_yaml_uid_and_keeps_position(tmp_path: Path) -> None:
@@ -562,6 +638,17 @@ def test_catalog_mtime_tick_unmaps_uid_without_restart(tmp_path: Path) -> None:
     apply_sim_line(box, "place 04aabbccddeeff")
 
     assert player.plays == []
+
+
+def test_catalog_reload_records_the_audit_log(tmp_path: Path) -> None:
+    data = write_frog_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    previous_mtime = (data / "catalog.yaml").stat().st_mtime
+    (data / "catalog.yaml").write_text("tracks: []\n")
+
+    poll_catalog(box, data_dir=data, previous_mtime=previous_mtime)
+
+    assert "Updated catalog" in [entry.summary for entry in box.audit.recent()]
 
 
 def test_catalog_ticks_unmaps_after_yaml_change(tmp_path: Path) -> None:
@@ -617,6 +704,19 @@ def test_gpio_halt_flashes_and_powers_off() -> None:
 
     assert led.flashes == 1
     assert halt.poweroffs == 1
+
+
+def test_gpio_presses_record_the_audit_log() -> None:
+    from romini.features.audit.memory import MemoryAuditLog
+
+    mixer = FakeMixer(level=10, ceiling=100)
+    box = frog_sim_box(FakePlayer(), FakeLed(), empty=True, mixer=mixer, halt=FakeHalt())
+    box.audit = MemoryAuditLog()
+
+    apply_gpio_press(box, GPIO_VOL_UP)
+    apply_gpio_press(box, GPIO_HALT)
+
+    assert [entry.summary for entry in box.audit.recent()] == ["Halt", "Volume set to 11"]
 
 
 def test_gpio_led_pulses_on_pin_27() -> None:

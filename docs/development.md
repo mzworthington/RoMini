@@ -32,14 +32,14 @@ Python is formatted with **ruff format**. GitHub YAML/JSON use Prettier via pre-
 `sim` only (`start_sim_http` refuses `pi` and non-localhost):
 
 - TTY: `place`, `lift`/`remove`, `vol up`/`down`, `play`, `play long`, `halt`, `quit`
-- HTTP: `POST /place/<uid>`, `/remove`, `/vol/up`, `/vol/down`, `/play`, `/halt`
+- HTTP: `POST /place/<uid>`, `/tap/<uid>`, `/remove`, `/vol/up`, `/vol/down`, `/play`, `/halt`
 
 Halt logs instead of `systemctl poweroff`.
 
 ## Audio on a laptop
 
 - **Tests:** `FakePlayer` records play/pause/seek; no mpv.
-- **Console `sim`:** `SilentPlayer` (no speakers). Missing mpv is not a test failure.
+- **Console `sim`:** `SilentPlayer` (no speakers; still reports now playing). Missing mpv is not a test failure.
 - **Pi / breadboard:** `MpvPlayer` via `Popen` (`--ao=alsa`, `--volume=` from the Mixer, IPC `$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`).
 
 ## CI

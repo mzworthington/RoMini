@@ -1,7 +1,9 @@
 import os
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
+from romini.adapters.sqlite.audit import SqliteAudit
 from romini.adapters.sqlite.catalog import SqliteCatalog
 from romini.adapters.sqlite.mixer import SqliteMixer
 from romini.adapters.sqlite.schema import ensure_schema, open_state
@@ -12,6 +14,7 @@ from romini.composition.mixer import LiveMixer, MemoryMixer
 from romini.composition.pi import SystemdHalt
 from romini.composition.provision import ensure_data_tree
 from romini.composition.sessions import MemorySessions
+from romini.features.audit.record import record_event
 from romini.features.library.import_catalog import import_catalog
 from romini.features.library.register_tag import register_tag
 from romini.features.play_by_tag.place_figure import (
@@ -60,6 +63,12 @@ class SimBox:
             player.mixer = mixer
         self.halt = halt if halt is not None else LoggingHalt()
 
+    def note(self, action: str, summary: str) -> None:
+        log = getattr(self, "audit", None)
+        if log is None:
+            return
+        record_event(log, action=action, summary=summary, clock=lambda: datetime.now(UTC))
+
     def place(self, uid: str) -> None:
         if self.assign_mode:
             catalog = getattr(self, "catalog_file", None)
@@ -70,6 +79,7 @@ class SimBox:
                     led=self.led,
                     earcon=getattr(self, "earcon", None),
                 )
+                self.note("register", f"Registered {uid}")
             return
         on_figure_placed(
             uid,
@@ -80,6 +90,14 @@ class SimBox:
             led=self.led,
             sessions=self.sessions,
         )
+        if self.player.is_playing() and self.player.playing_uid() == uid:
+            self.note("play", f"Played {self.player.playing_path()}")
+            return
+        selected = self.player.selected_track()
+        if selected is not None and selected[0] == uid:
+            self.note("select", f"Selected {uid}")
+            return
+        self.note("place", f"Placed {uid}")
 
     def lift(self, uid: str, *, elapsed_sec: float, position_sec: float) -> None:
         if self.sessions is None:
@@ -92,6 +110,7 @@ class SimBox:
             player=self.player,
             sessions=self.sessions,
         )
+        self.note("lift", f"Lifted {uid}")
 
 
 def load_sim_box(
@@ -134,6 +153,7 @@ def load_sim_box(
     box.state = conn
     box.catalog_file = data_dir / "catalog.yaml"
     box.earcon = player if hasattr(player, "play_earcon") else None
+    box.audit = SqliteAudit(conn)
     return box
 
 

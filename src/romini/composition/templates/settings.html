@@ -5,10 +5,10 @@
 <form action="/keys" method="post">
 <label for="gemini-key">Gemini key</label>
 <input id="gemini-key" name="gemini_key" type="password" autocomplete="off">
-{% if gemini_key_set %}<p class="hint">Gemini key is set</p>{% endif %}
+{% if gemini_key_set %}<p class="hint">Gemini key is set{% if gemini_key_mask %} · {{ gemini_key_mask }}{% endif %}</p>{% endif %}
 <label for="elevenlabs-key">ElevenLabs key</label>
 <input id="elevenlabs-key" name="elevenlabs_key" type="password" autocomplete="off">
-{% if elevenlabs_key_set %}<p class="hint">ElevenLabs key is set</p>{% endif %}
+{% if elevenlabs_key_set %}<p class="hint">ElevenLabs key is set{% if elevenlabs_key_mask %} · {{ elevenlabs_key_mask }}{% endif %}</p>{% endif %}
 <button>Save keys</button>
 </form>
 </section>
@@ -18,9 +18,9 @@
 <label for="play_mode">How figures start a story</label>
 <select id="play_mode" name="play_mode">
 <option value="presence"{% if play_mode == presence %} selected{% endif %}>Presence — plays while the figure sits on the box</option>
-<option value="tap"{% if play_mode == tap %} selected{% endif %}>Tap — tap the figure, then use the buttons</option>
+<option value="tap"{% if play_mode == tap %} selected{% endif %}>Tap — tap the figure to start; same figure again to pause</option>
 </select>
-<p class="hint">Presence is the default. Tap is for buttons after a tap.</p>
+<p class="hint">Presence is the default. Tap plays the story to the end unless you tap that figure again.</p>
 <button>Save play mode</button>
 </form>
 </section>
@@ -46,4 +46,17 @@
 </form>
 </section>
 {% endif %}
+<section>
+<h2>Audit log</h2>
+<p class="hint">Newest first. The box keeps the last 1000 events.</p>
+{% if audit_entries %}
+<ol class="audit-log">
+{% for entry in audit_entries %}
+<li><time datetime="{{ entry.when_iso }}">{{ entry.when }}</time> {{ entry.summary }}</li>
+{% endfor %}
+</ol>
+{% else %}
+<p class="empty">Nothing has happened yet</p>
+{% endif %}
+</section>
 {% endblock %}

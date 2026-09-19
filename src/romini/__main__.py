@@ -1,6 +1,7 @@
 import os
 import sys
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from datetime import datetime
 from pathlib import Path
 
 from romini.adapters.sqlite.settings import SqliteSettings
@@ -18,29 +19,49 @@ from romini.features.play_by_tag.place_figure import Player, StatusLed
 
 
 class SilentPlayer:
+    def __init__(self, clock: Callable[[], datetime] = datetime.now) -> None:
+        self._playing = False
+        self._uid: str | None = None
+        self._path: str | None = None
+        self._position_sec = 0.0
+        self._selected: tuple[str, str] | None = None
+        self._clock = clock
+        self._started_at: datetime | None = None
+
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        return
+        self._playing = True
+        self._uid = uid
+        self._path = path
+        self._position_sec = position_sec
+        self._started_at = self._clock()
 
     def select(self, uid: str, path: str) -> None:
-        return
+        self._selected = (uid, path)
 
     def selected_track(self) -> tuple[str, str] | None:
-        return None
+        return self._selected
 
     def pause(self) -> None:
-        return
+        self._playing = False
 
     def stop(self) -> None:
-        return
+        self._playing = False
+        self._uid = None
 
     def is_playing(self) -> bool:
-        return False
+        return self._playing
 
     def playing_uid(self) -> str | None:
-        return None
+        return self._uid
 
     def playing_path(self) -> str | None:
-        return None
+        return self._path
+
+    def started_at(self) -> datetime | None:
+        return self._started_at
+
+    def position_sec(self) -> float:
+        return self._position_sec
 
 
 class SilentLed:
@@ -133,8 +154,11 @@ def main(
             mixer=box.mixer,
             battery=open_ups_hat(),
             stories=data / "stories",
+            characters=data / "characters",
             secrets=data / "studio.env",
             box_secrets=Path("/etc/romini/env"),
+            player=box.player,
+            audit=getattr(box, "audit", None),
         )
         box.dashboard = start_dashboard(
             app,

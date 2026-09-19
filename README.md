@@ -28,9 +28,23 @@ Use a **Raspberry Pi 4** with Lite OS, house Wi-Fi and SSH. The player is a GitH
    ```
 
    That `apt`s Python/mpv/Avahi, installs the latest `romini-*.whl` into `/var/lib/romini/install/venv`, turns on SPI and I2C, writes systemd + Avahi, and enables `romini-core` plus `romini-update.timer`.
-4. **Open the dashboard.** On the house LAN: [http://romini.local](http://romini.local). Upload MP3s and map Tags there. Tracks live in `/var/lib/romini/library`, not in the wheel.
+4. **Open the dashboard.** On the house LAN: [http://romini.local](http://romini.local). Upload MP3s and map Tags there. Settings shows what the box has done. Tracks live in `/var/lib/romini/library`, not in the wheel.
 
-OTA later is the same venv (`python -m romini.composition.update`). Optional GitHub PAT: `GITHUB_TOKEN` and `GITHUB_REPO` in `/etc/romini/env` (`chmod 600`).
+## Update the player
+
+The box installs the latest **GitHub Release** wheel into `/var/lib/romini/install/venv`. The timer runs 5 minutes after boot and at **03:15**. Laptop commits are not on the box until that Release exists. Do not `git pull` — there is no repo on the Pi.
+
+Force it now (SSH, nothing playing):
+
+```bash
+sudo systemctl start romini-update.service
+sudo journalctl -u romini-update.service -n 50 --no-pager
+/var/lib/romini/install/venv/bin/pip show romini
+```
+
+Same updater: `sudo /var/lib/romini/install/venv/bin/python -m romini.composition.update`. It **skips while** a Track is playing (mpv `pause == false`). Lift the figure first.
+
+Optional PAT if GitHub rate-limits you: `GITHUB_TOKEN` and `GITHUB_REPO` in `/etc/romini/env` (`chmod 600`).
 
 ## Laptop (`sim`)
 

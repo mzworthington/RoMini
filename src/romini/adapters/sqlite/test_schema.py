@@ -16,7 +16,7 @@ def test_ensure_schema_sets_version_and_creates_tables(tmp_path: Path) -> None:
     tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 
     assert version == (SCHEMA_VERSION,)
-    assert {"sessions", "mixer", "settings", "catalog"}.issubset(tables)
+    assert {"sessions", "mixer", "settings", "catalog", "audit_log"}.issubset(tables)
 
 
 def test_sqlite_sessions_accept_a_shared_connection(tmp_path: Path) -> None:

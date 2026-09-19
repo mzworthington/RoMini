@@ -91,6 +91,40 @@ h1 span { color: var(--story-coral); }
 }
 .welcome { text-align: center; }
 .welcome .lede { margin: 0 0 1rem; text-align: left; }
+.now-playing {
+  text-align: left;
+  margin: 0 0 1.15rem;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--story-coral);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 rgba(30, 41, 59, 0.03);
+}
+.now-playing h2 { margin: 0 0 0.65rem; }
+.now-playing dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+.now-playing dt {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.now-playing dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.now-playing-transport {
+  margin: 0.85rem 0 0;
+}
+.now-playing-transport button {
+  width: auto;
+  margin: 0;
+}
 .welcome-art {
   display: block;
   width: min(100%, 16.5rem);
@@ -200,6 +234,27 @@ h2 {
   letter-spacing: 0.01em;
 }
 label { display: block; font-weight: 700; margin: 0.7rem 0 0.3rem; }
+fieldset {
+  margin: 0.7rem 0 0;
+  padding: 0.65rem 0.85rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+legend { font-weight: 700; padding: 0 0.25rem; }
+fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  margin: 0.45rem 0 0;
+}
+fieldset input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  min-height: 0;
+  accent-color: var(--story-coral);
+  flex-shrink: 0;
+}
 input, select, button, textarea { font: inherit; }
 input[type="text"], input[type="password"], input[type="file"], select, textarea {
   width: 100%;
@@ -258,7 +313,10 @@ button {
   touch-action: manipulation;
   transition: background 0.15s ease, transform 0.15s ease;
 }
-button:hover { background: var(--coral-press); }
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
 button:active { transform: translateY(1px); }
 :focus-visible {
   outline: 3px solid var(--magic-ochre);
@@ -290,6 +348,26 @@ caption, td label {
 td form { margin: 0; }
 td button { margin: 0; min-height: 2.25rem; }
 .empty, .hint { color: var(--muted); margin: 0.4rem 0 0; font-weight: 500; }
+.audit-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 22rem;
+  overflow: auto;
+}
+.audit-log li {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 0.35rem 0.85rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #F1F5F9;
+  font-weight: 600;
+}
+.audit-log time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
 .hint a, .lede a {
   color: var(--midnight-navy);
   font-weight: 700;

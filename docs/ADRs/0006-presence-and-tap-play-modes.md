@@ -38,7 +38,7 @@ Chosen option: "**Option A**", because Wi-Fi and the SD card are always availabl
 flowchart TD
   settings["play_mode setting"]
   settings --> presence["presence: lift pauses"]
-  settings --> tap["tap: buttons transport"]
+  settings --> tap["tap: tap starts, same figure pauses"]
   nfc["Tag UID"] --> presence
   nfc --> tap
   buttons["play/pause volume halt"] --> tap

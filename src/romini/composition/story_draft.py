@@ -24,7 +24,7 @@ class GeminiScriptDraft:
             "Return only the script body."
         )
         raw = self._post(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
             headers={
                 "x-goog-api-key": self._api_key,
                 "Content-Type": "application/json",

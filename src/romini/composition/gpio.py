@@ -38,10 +38,16 @@ class RpiGpioLedDriver:
 def apply_gpio_press(box: SimBox, pin: int) -> None:
     if pin == GPIO_VOL_UP:
         on_volume_up(mixer=box.mixer)
+        box.note("volume", f"Volume set to {box.mixer.level}")
     if pin == GPIO_VOL_DOWN:
         on_volume_down(mixer=box.mixer)
+        box.note("volume", f"Volume set to {box.mixer.level}")
     if pin == GPIO_PLAY:
         on_play_pressed(player=box.player)
+        if box.player.is_playing():
+            box.note("play", f"Played {box.player.playing_path()}")
+        else:
+            box.note("play", "Paused")
     if pin == GPIO_HALT:
         on_halt_pressed(
             player=box.player,
@@ -50,3 +56,4 @@ def apply_gpio_press(box: SimBox, pin: int) -> None:
             halt=box.halt,
             position_sec=0.0,
         )
+        box.note("halt", "Halt")

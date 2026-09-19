@@ -17,17 +17,18 @@
 <div>
 <h1>Ro<span>Mini</span></h1>
 <p class="tag">Sim</p>
-<p class="lede">Place a figure and press the box from this page</p>
+<p class="lede">Place or tap a figure and press the box from this page</p>
 </div>
 </header>
 <section>
 <h2>Figure on the plate</h2>
 <label for="nfc-uid">NFC tag</label>
 <input id="nfc-uid" name="uid" type="text" autocomplete="off" spellcheck="false">
-<p class="hint">Paste a UID, then put it on the plate.</p>
+<p class="hint">Paste a UID, then put it on the plate or tap it.</p>
 <div class="plate">
 <input id="nfc-present" type="checkbox">
 <label for="nfc-present">On plate</label>
+<button type="button" id="nfc-tap">Tap</button>
 </div>
 </section>
 <section>
@@ -42,7 +43,7 @@
 </section>
 <details class="injectors">
 <summary>HTTP injectors</summary>
-<p>POST /place/&lt;uid&gt; /remove /vol/up /vol/down /play /halt</p>
+<p>POST /place/&lt;uid&gt; /tap/&lt;uid&gt; /remove /vol/up /vol/down /play /halt</p>
 </details>
 </main>
 <script>
@@ -50,6 +51,13 @@ document.getElementById('nfc-present').addEventListener('change',function(){
 var uid=document.getElementById('nfc-uid').value.trim();
 if(this.checked&&!uid){this.checked=false;return;}
 fetch(this.checked?'/place/'+encodeURIComponent(uid):'/remove',{method:'POST'});
+});
+document.getElementById('nfc-tap').addEventListener('click',function(){
+var uid=document.getElementById('nfc-uid').value.trim();
+if(!uid){return;}
+var plate=document.getElementById('nfc-present');
+if(plate.checked){plate.checked=false;return;}
+fetch('/tap/'+encodeURIComponent(uid),{method:'POST'});
 });
 document.querySelectorAll('form[data-inject]').forEach(function(form){
 form.addEventListener('submit',function(e){

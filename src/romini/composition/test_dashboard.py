@@ -488,6 +488,15 @@ def test_dashboard_home_has_play_mode_form() -> None:
     assert 'name="play_mode"' in response.text
 
 
+def test_dashboard_tap_mode_copy_says_tap_starts_and_same_figure_pauses() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert "tap the figure to start" in html
+    assert "same figure again to pause" in html
+
+
 def test_dashboard_play_mode_form_persists(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -535,10 +544,43 @@ def test_dashboard_home_lists_catalog_table(tmp_path: Path) -> None:
     response = TestClient(app).get("/library")
 
     assert "<table>" in response.text
-    assert "<th>UID</th>" in response.text
+    assert "<th>Figure</th>" in response.text
     assert "<th>Title</th>" in response.text
     assert "<th>Path</th>" in response.text
     assert "stories/frog-prince.mp3" in response.text
+
+
+def test_dashboard_library_table_shows_figure_name_not_uid(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy-and-the-banana.mp3"\n'
+        '    title: "Romy and the banana"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    table = html[html.index("<caption>Library</caption>") : html.index("</table>")]
+
+    assert "<th>Figure</th>" in table
+    assert "<th>UID</th>" not in table
+    assert "Banana" in table
+    assert "04aabbccddeeff" not in table
 
 
 def test_dashboard_home_lays_out_actions_in_a_flex_board_below_library() -> None:
@@ -1230,9 +1272,9 @@ def test_dashboard_keeps_story_notes_after_save(tmp_path: Path) -> None:
     )
     html = client.get("/write").text
 
-    assert ">Romy</textarea>" in html
     assert ">trains</textarea>" in html
     assert ">a station</textarea>" in html
+    assert "<legend>Characters</legend>" in html
 
 
 def test_dashboard_lists_an_extra_file_on_the_story(tmp_path: Path) -> None:
@@ -1270,12 +1312,12 @@ def test_dashboard_home_has_labelled_story_note_fields() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
 
-    assert 'for="characters"' in html
-    assert ">Characters<" in html
     assert 'for="interests"' in html
     assert "Points to cover / interests" in html
     assert 'for="outline"' in html
     assert "Story outline" in html
+    assert "<legend>Characters</legend>" in html
+    assert 'for="characters"' not in html
 
 
 def test_dashboard_home_has_labelled_story_title() -> None:
@@ -1305,6 +1347,234 @@ def test_dashboard_saved_stories_empty_when_none_saved(tmp_path: Path) -> None:
 
     assert "<h2>Saved stories</h2>" in html
     assert "No saved stories yet" in html
+
+
+def test_dashboard_nav_has_stories_without_a_separate_write_page() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/stories").text
+
+    assert 'href="/stories"' in html
+    assert ">Stories<" in html
+    assert 'href="/write"' not in html
+    assert ">Write<" not in html
+
+
+def test_dashboard_characters_page_has_labelled_create_fields() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/characters").text
+
+    assert "<h2>Add a character</h2>" in html
+    assert 'for="character-name"' in html
+    assert ">Name<" in html
+    assert 'for="character-background"' in html
+    assert "Background and history" in html
+
+
+def test_dashboard_nav_has_characters_page() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/characters").text
+
+    assert 'href="/characters"' in html
+    assert ">Characters<" in html
+    assert 'aria-current="page"' in html
+
+
+def test_dashboard_lists_a_saved_character_after_save(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post(
+        "/characters",
+        data={"name": "Romy", "background": "Loves trains and bedtime."},
+    )
+    html = client.get("/characters").text
+
+    assert "No characters yet" not in html
+    assert "Romy" in html
+    assert "Loves trains and bedtime." in html
+
+
+def test_dashboard_opening_a_character_fills_the_form(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    client.post("/characters/open", data={"slug": "romy"})
+    html = client.get("/characters").text
+
+    assert 'value="Romy"' in html
+    assert ">Loves trains.</textarea>" in html
+    assert "Open Romy" in html
+
+
+def test_dashboard_rejects_a_second_character_with_the_same_name(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    html = client.post("/characters", data={"name": "Romy", "background": "A different Romy."}).text
+
+    assert "That name is already used" in html
+    assert ">Loves trains.</textarea>" in html
+    assert "A different Romy." not in html
+
+
+def test_dashboard_new_character_clears_the_form(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    html = client.post("/characters/new").text
+
+    assert 'value="Romy"' not in html
+    assert 'type="hidden" name="slug"' not in html
+    assert "Open Romy" in html
+
+
+def test_dashboard_saving_an_opened_character_updates_background(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    client.post(
+        "/characters",
+        data={"name": "Romy", "background": "Now loves boats.", "slug": "romy"},
+    )
+    html = client.get("/characters").text
+
+    assert ">Now loves boats.</textarea>" in html
+    assert "Loves trains." not in html
+
+
+def test_dashboard_character_save_needs_a_name(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    html = client.post("/characters", data={"name": "  ", "background": "Loves trains."}).text
+
+    assert "Fill in the required fields" in html
+    assert "No characters yet" in html
+
+
+def test_dashboard_stories_lists_characters_as_checkboxes(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    html = client.get("/stories").text
+
+    assert "<legend>Characters</legend>" in html
+    assert 'type="checkbox"' in html
+    assert 'name="character"' in html
+    assert 'value="romy"' in html
+    assert ">Romy<" in html
+
+
+def test_dashboard_keeps_selected_characters_on_the_story(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            characters=tmp_path / "characters",
+            stories=tmp_path / "stories",
+        )
+    )
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    client.post("/characters", data={"name": "Baaba", "background": "Wears a hat."})
+    client.post(
+        "/stories",
+        data={
+            "story_title": "The little station",
+            "character": ["romy"],
+            "interests": "trains",
+            "outline": "a ride",
+        },
+    )
+    html = client.get("/stories").text
+
+    assert 'value="romy" checked>' in html
+    assert 'value="baaba">' in html
+    assert 'value="baaba" checked>' not in html
+
+
+def test_dashboard_story_ignores_character_slug_outside_the_pack(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    stories = tmp_path / "stories"
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=stories,
+            characters=tmp_path / "characters",
+        )
+    )
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "character": ["../secret", "romy"]},
+    )
+    notes = (stories / "the-little-station" / "story.yaml").read_text()
+
+    assert "../secret" not in notes
+    assert "romy" in notes
+
+
+def test_dashboard_draft_uses_character_background(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("GEMINI_API_KEY=gem-secret\n")
+    drafter = FakeDrafter(script="Rowmy waited at the station.")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            characters=tmp_path / "characters",
+            stories=tmp_path / "stories",
+            secrets=secrets,
+            drafter=drafter,
+        )
+    )
+    client.post("/characters", data={"name": "Romy", "background": "A small train-loving girl."})
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "character": ["romy"], "outline": "a ride"},
+    )
+    client.post("/stories/draft")
+
+    assert drafter.calls == [
+        {
+            "title": "The little station",
+            "characters": "Romy: A small train-loving girl.",
+            "interests": "",
+            "outline": "a ride",
+        }
+    ]
+
+
+def test_dashboard_draft_shows_writing_in_progress() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/stories").text
+
+    assert 'action="/stories/draft"' in html
+    assert "Writing the script" in html
+    assert 'id="draft-status"' in html
+    assert 'aria-live="polite"' in html
+    assert "form-busy" in html
+
+
+def test_dashboard_stories_page_puts_write_form_above_saved_list() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/stories").text
+    write = html.index("<h2>Write a story</h2>")
+    saved = html.index("<h2>Saved stories</h2>")
+
+    assert write < saved
+    assert 'for="story-title"' in html
 
 
 def test_dashboard_lists_a_saved_story_after_save(tmp_path: Path) -> None:
@@ -1339,6 +1609,23 @@ def test_dashboard_saved_stories_use_the_home_jump_list(tmp_path: Path) -> None:
     assert "<strong>The little station</strong>" in html
 
 
+def test_dashboard_new_story_clears_the_form(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "outline": "a ride"},
+    )
+    saved = client.get("/stories").text
+    html = client.post("/stories/new").text
+
+    assert ">New story<" in saved
+    assert 'value="The little station"' not in html
+    assert ">a ride</textarea>" not in html
+    assert "Open The little station" in html
+
+
 def test_dashboard_opening_another_story_shows_that_story_notes(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1365,8 +1652,8 @@ def test_dashboard_opening_another_story_shows_that_story_notes(tmp_path: Path) 
     html = client.get("/write").text
     listed = client.get("/stories").text
 
-    assert ">Romy</textarea>" in html
-    assert ">Rowmy</textarea>" not in html
+    assert ">one</textarea>" in html
+    assert ">two</textarea>" not in html
     assert 'value="The little station"' in html
     assert "The red helmet" in listed
 
@@ -1443,6 +1730,19 @@ def test_dashboard_saved_keys_are_set_not_shown(tmp_path: Path) -> None:
     text = secrets.read_text()
     assert "GEMINI_API_KEY=gem-secret" in text
     assert "ELEVENLABS_API_KEY=el-secret" in text
+
+
+def test_dashboard_settings_shows_masked_key_tails(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("GEMINI_API_KEY=sk-gemini-test-1a2b\nELEVENLABS_API_KEY=sk-eleven-test-9z8y\n")
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), secrets=secrets)).get("/settings").text
+
+    assert "sk-gemini-test-1a2b" not in html
+    assert "sk-eleven-test-9z8y" not in html
+    assert "••••1a2b" in html
+    assert "••••9z8y" in html
 
 
 @dataclass
@@ -1664,11 +1964,39 @@ def test_dashboard_speak_stores_mp3_in_library_and_on_the_story(tmp_path: Path) 
 
     assert storage.files["the-little-station.mp3"] == b"ID3ok"
     assert catalog.paths == ["the-little-station.mp3"]
-    assert (tmp_path / "the-little-station" / "spoken.mp3").read_bytes() == b"ID3ok"
-    assert "spoken.mp3" in html
+    assert (tmp_path / "the-little-station" / "the-little-station.mp3").read_bytes() == b"ID3ok"
+    assert "Spoken file: the-little-station.mp3" in html
     assert "the-little-station.mp3" in library
     assert speech.calls == [{"text": "Rowmy waited at the station. [pause]", "voice_id": "qXdtsJJ9LgnQ8Z2TYfav"}]
     assert "sk-secret" not in html
+
+
+def test_dashboard_speak_saves_the_spoken_file_as_a_unique_title_slug(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    storage = FakeStorage(free_bytes=1024, files={"the-little-station.mp3": b"earlier"})
+    speech = FakeSpeech(audio=b"ID3ok")
+    client = TestClient(
+        create_dashboard(
+            storage=storage,
+            stories=tmp_path,
+            secrets=secrets,
+            speech=speech,
+        )
+    )
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "script": "Rowmy waited at the station."},
+    )
+    html = client.post("/stories/speak").text
+
+    assert storage.files["the-little-station.mp3"] == b"earlier"
+    assert storage.files["the-little-station-2.mp3"] == b"ID3ok"
+    assert (tmp_path / "the-little-station" / "the-little-station-2.mp3").read_bytes() == b"ID3ok"
+    assert "Spoken file: the-little-station-2.mp3" in html
+    assert "Spoken file: spoken.mp3" not in html
 
 
 def test_dashboard_speak_uses_the_voice_you_picked(tmp_path: Path) -> None:
@@ -1771,7 +2099,7 @@ def test_dashboard_speak_again_replaces_the_spoken_file(tmp_path: Path) -> None:
     client.post("/stories/speak")
 
     assert storage.files["the-little-station.mp3"] == b"second"
-    assert (tmp_path / "the-little-station" / "spoken.mp3").read_bytes() == b"second"
+    assert (tmp_path / "the-little-station" / "the-little-station.mp3").read_bytes() == b"second"
     assert speech.calls[-1] == {"text": "second script", "voice_id": "qXdtsJJ9LgnQ8Z2TYfav"}
 
 
@@ -1798,11 +2126,11 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     home = client.get("/").text
     figures = client.get("/figures").text
     library = client.get("/library").text
+    characters_page = client.get("/characters").text
     stories = client.get("/stories").text
-    write = client.get("/write").text
     settings = client.get("/settings").text
 
-    for page in (home, figures, library, stories, write, settings):
+    for page in (home, figures, library, characters_page, stories, settings):
         assert "<nav" in page
         assert 'href="/"' in page
         assert ">Home<" in page
@@ -1810,10 +2138,12 @@ def test_dashboard_pages_split_parent_jobs() -> None:
         assert ">Figures<" in page
         assert 'href="/library"' in page
         assert ">Library<" in page
+        assert 'href="/characters"' in page
+        assert ">Characters<" in page
         assert 'href="/stories"' in page
         assert ">Stories<" in page
-        assert 'href="/write"' in page
-        assert ">Write<" in page
+        assert 'href="/write"' not in page
+        assert ">Write<" not in page
         assert 'href="/settings"' in page
         assert ">Settings<" in page
 
@@ -1822,18 +2152,172 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     assert 'action="/assign"' not in home
     assert "<h2>Write a story</h2>" not in home
     assert "<h2>Saved stories</h2>" not in home
+    assert "<h2>Add a character</h2>" not in home
     assert 'action="/assign"' not in figures
     assert 'action="/tracks"' not in figures
     assert 'action="/register-mode"' in figures
     assert 'action="/assign"' in library
     assert 'action="/tracks"' in library
     assert "<h2>Volume</h2>" not in figures
+    assert "<h2>Add a character</h2>" in characters_page
+    assert 'action="/characters"' in characters_page
+    assert "<h2>Write a story</h2>" not in characters_page
+    assert "<h2>Write a story</h2>" in stories
     assert "<h2>Saved stories</h2>" in stories
-    assert 'for="characters"' in write
-    assert 'action="/stories/draft"' in write
+    assert "<legend>Characters</legend>" in stories
+    assert 'action="/stories/draft"' in stories
     assert "<h2>Keys</h2>" in settings
     assert 'for="play_mode"' in settings
     assert "<h2>Volume</h2>" in settings
+
+
+def test_dashboard_settings_shows_empty_audit_log() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert "<h2>Audit log</h2>" in html
+    assert "Nothing has happened yet" in html
+
+
+def test_dashboard_audit_log_copy_says_it_keeps_the_last_thousand_events() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert "last 1000 events" in html
+    assert "last 200 events" not in html
+
+
+def test_dashboard_audit_log_lists_every_kept_event() -> None:
+    from datetime import UTC, datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+    from romini.features.audit.record import record_event
+
+    log = MemoryAuditLog()
+    for index in range(150):
+        record_event(
+            log,
+            action="play",
+            summary=f"event-{index}",
+            clock=lambda: datetime(2026, 1, 1, tzinfo=UTC),
+        )
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), audit=log)).get("/settings").text
+
+    assert html.count('class="audit-log"') == 1
+    assert html.count("<time ") == 150
+    assert "event-0" in html
+    assert "event-149" in html
+
+
+def test_dashboard_settings_lists_audit_entries_newest_first() -> None:
+    from datetime import UTC, datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+    from romini.features.audit.record import record_event
+
+    log = MemoryAuditLog()
+    times = iter(
+        [
+            datetime(2026, 9, 19, 21, 0, tzinfo=UTC),
+            datetime(2026, 9, 19, 21, 1, tzinfo=UTC),
+        ]
+    )
+    record_event(log, action="upload", summary="Stored frog.mp3", clock=lambda: next(times))
+    record_event(log, action="play", summary="Played The Frog Prince", clock=lambda: next(times))
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), audit=log)).get("/settings").text
+
+    assert "Nothing has happened yet" not in html
+    play = html.index("Played The Frog Prince")
+    stored = html.index("Stored frog.mp3")
+    assert play < stored
+    assert "2026-09-19 21:01" in html
+    assert 'datetime="2026-09-19T21:01:00+00:00"' in html
+
+
+def test_dashboard_upload_records_the_audit_log() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    log = MemoryAuditLog()
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), catalog=FakeCatalog(), audit=log))
+    client.post("/tracks", files={"file": ("frog.mp3", b"id3", "audio/mpeg")})
+
+    html = client.get("/settings").text
+
+    assert "Stored frog.mp3" in html
+
+
+def test_dashboard_parent_changes_appear_in_the_audit_log(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.features.audit.memory import MemoryAuditLog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+    secrets = tmp_path / "studio.env"
+    stories = tmp_path / "stories"
+    stories.mkdir()
+    log = MemoryAuditLog()
+
+    class Pad:
+        def place(self, uid: str) -> None:
+            return
+
+    class Register:
+        assign_mode = False
+
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(catalog_path),
+            settings=SqliteSettings(tmp_path / "state.sqlite"),
+            pad=Pad(),
+            register=Register(),
+            mixer=FakeMixer(level=10),
+            stories=stories,
+            secrets=secrets,
+            audit=log,
+        )
+    )
+    client.post(
+        "/assign",
+        data={"uid": "04aabbccddeeff", "path": "stories/frog-prince.mp3", "title": "The Frog Prince"},
+    )
+    client.post("/play-mode", data={"play_mode": "tap"})
+    client.post("/volume", data={"step": "up"})
+    client.post("/place/04aabbccddeeff")
+    client.post("/present", data={"uid": "04aabbccddeeff"})
+    client.post("/register-mode", data={"register": "on"})
+    client.post("/tags/04aabbccddeeff/name", data={"name": "Frog"})
+    client.post(
+        "/stories",
+        data={"story_title": "The station", "characters": "Romy", "interests": "trains", "outline": "a visit"},
+    )
+    client.post("/keys", data={"gemini_key": "gem-secret", "elevenlabs_key": "el-secret"})
+
+    html = client.get("/settings").text
+
+    assert "Assigned The Frog Prince to 04aabbccddeeff" in html
+    assert "Play mode set to tap" in html
+    assert "Volume set to 11" in html
+    assert "Placed 04aabbccddeeff" in html
+    assert "Presented 04aabbccddeeff" in html
+    assert "Register on" in html
+    assert "Named 04aabbccddeeff Frog" in html
+    assert "Saved story The station" in html
+    assert "Saved studio keys" in html
+    assert "gem-secret" not in html
+    assert "el-secret" not in html
 
 
 def test_dashboard_library_page_puts_upload_and_assign_above_the_catalog() -> None:
@@ -1904,7 +2388,16 @@ def test_dashboard_chrome_sits_in_the_same_column_as_the_page() -> None:
     assert "Toys" in html
     assert 'href="/library"' in html
     assert 'href="/stories"' in html
-    assert 'href="/write"' in html
+    assert 'href="/characters"' in html
+    assert 'href="/write"' not in html
+
+
+def test_dashboard_home_jump_list_includes_characters() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert '<a href="/characters"><strong>Characters</strong>' in html
 
 
 def test_dashboard_home_shows_the_box_picture() -> None:
@@ -1914,6 +2407,181 @@ def test_dashboard_home_shows_the_box_picture() -> None:
 
     assert 'src="/logo.svg"' in html
     assert 'class="welcome"' in html
+
+
+def test_dashboard_home_shows_what_is_playing_now(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert 'aria-label="Now playing"' in html
+    assert 'aria-live="polite"' in html
+    assert "<dl>" in html
+    assert ">Story<" in html
+    assert "The Frog Prince" in html
+    assert ">Trigger<" in html
+    assert "Frog" in html
+    assert ">Time<" in html
+    assert "22:33" in html
+
+
+def test_dashboard_home_offers_pause_when_a_story_is_playing(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert 'action="/play"' in html
+    assert ">Pause<" in html
+
+
+def test_dashboard_play_pauses_when_a_story_is_playing() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    player = FakePlayer()
+    player.play("stories/frog-prince.mp3", position_sec=0.0, uid="04aabbccddeeff")
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=player)).post(
+        "/play",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=paused"
+    assert player.is_playing() is False
+    assert player.pauses == 1
+
+
+def test_dashboard_home_offers_play_when_the_story_is_paused(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Paused:
+        def is_playing(self) -> bool:
+            return False
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Paused(),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert 'aria-label="Now playing"' in html
+    assert 'action="/play"' in html
+    assert ">Play<" in html
+    assert ">Pause<" not in html
+
+
+def test_dashboard_home_hides_now_playing_when_the_box_is_quiet() -> None:
+    from fastapi.testclient import TestClient
+
+    class Quiet:
+        def is_playing(self) -> bool:
+            return False
+
+        def playing_uid(self) -> str | None:
+            return None
+
+        def playing_path(self) -> str | None:
+            return None
+
+        def position_sec(self) -> float:
+            return 0.0
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=Quiet())).get("/").text
+
+    assert 'aria-label="Now playing"' not in html
+    assert ">Story<" not in html
 
 
 def test_dashboard_write_page_lets_you_pick_a_named_voice() -> None:

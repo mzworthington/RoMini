@@ -50,7 +50,7 @@ flowchart TB
   subgraph app ["Application ports"]
     play["Play by tag"]
     pause["Pause on remove"]
-    tap["Tap select"]
+    tap["Tap play"]
     mapTag["Assign tag"]
     ingest["Ingest track"]
     volume["Set volume"]
@@ -62,6 +62,8 @@ flowchart TB
     mapping["TagMapping"]
     session["PlaybackSession"]
     settings["play_mode"]
+    audit["Audit log"]
+    character["Character"]
   end
   subgraph driven ["Driven adapters"]
     mpv["mpv JSON IPC"]
@@ -81,6 +83,7 @@ flowchart TB
   http --> ingest
   yamlWatch --> ingest
   http --> settings
+  http --> audit
   http --> volume
   play --> domain
   pause --> domain
@@ -115,7 +118,7 @@ flowchart TB
 |-------|--------|
 | Boot ready | LED + Ready earcon; resume only if `presence` and mapped Figure still on coil |
 | Presence play | Figure down → play; lift past grace → pause |
-| Tap play | Tap selects Track; lift does not pause; play button transports |
+| Tap play | Tap starts Track; same Figure tap pauses; lift does not pause |
 | Assign tag | Parent links Tag; blocks child play until done or 60s |
 | Register figures | Parent taps a Figure; catalog `tags` lists UID; name on dashboard; assign dropdown |
 | Catalog import | Drop or edit `catalog.yaml`; box maps Tags without dashboard |
@@ -143,11 +146,11 @@ flowchart TB
 
 ## 5. Over-the-wire updates
 
-gpio-style venv `python -m romini.composition.update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota.md)). Public repo; optional **PAT** in `/etc/romini/env`. `apply_update` skips while mpv IPC says a Track is playing. First install: `bin/install-pi`. Do not `git pull` the daemon.
+gpio-style venv `python -m romini.composition.update` + timer ([ADR-0002](./ADRs/0002-github-release-wheel-ota.md)). Public repo; optional **PAT** in `/etc/romini/env`. `apply_update` skips while mpv IPC says a Track is playing. Force a check from SSH: [README — Update the player](../README.md#update-the-player). First install: `bin/install-pi`. Do not `git pull` the daemon.
 
 ## 6. Parent dashboard
 
-`http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no Cloudflare. The masthead shows free space and remaining charge from the Waveshare UPS HAT (D) when INA219 `0x43` is on i2c-1; the laptop `sim` omits charge. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
+`http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no Cloudflare. The masthead shows free space and remaining charge from the Waveshare UPS HAT (D) when INA219 `0x43` is on i2c-1; the laptop `sim` omits charge. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The Audit log on Settings lists what the box has done (newest first, last 1000). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
 
 ## 7. Runtime
 
@@ -173,6 +176,7 @@ Domain talks these; adapters bind in `sim` / `pi` (`src/romini/`).
 | Player | out | Play path + position, pause; `sim` silent, `pi` mpv |
 | LibraryStore | out | SQLite cache after YAML import |
 | SessionStore | out | Position, volume, play_mode in `state.sqlite` |
+| AuditLog | out | Newest-first box events in `state.sqlite`; last 1000 rows |
 | Mixer | out | Volume with ceiling |
 | Battery | in | Remaining charge percent from UPS HAT (D) pack voltage; omitted when the HAT is missing |
 | StatusLed | out | Pulse / flash (GPIO 27 on `pi`) |

@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _MIGRATIONS = {
     1: """
@@ -26,7 +26,15 @@ _MIGRATIONS = {
             uid TEXT PRIMARY KEY,
             path TEXT NOT NULL
         );
-        """
+        """,
+    2: """
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            happened_at TEXT NOT NULL,
+            action TEXT NOT NULL,
+            summary TEXT NOT NULL
+        );
+        """,
 }
 
 

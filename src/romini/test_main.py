@@ -370,6 +370,26 @@ def test_romini_core_dashboard_has_volume_form(tmp_path: Path, monkeypatch) -> N
     assert "of 100" in body
 
 
+def test_romini_core_dashboard_shows_play_in_the_audit_log(tmp_path: Path, monkeypatch) -> None:
+    from urllib.request import urlopen
+
+    data = write_frog_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        box.place(FROG_UID)
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/settings") as resp:
+            body = resp.read().decode()
+    finally:
+        box.dashboard.close()
+
+    assert "<h2>Audit log</h2>" in body
+    assert f"Played {frog_story_path(data)}" in body
+
+
 def test_romini_core_dashboard_shows_ups_hat_charge(tmp_path: Path, monkeypatch) -> None:
     from urllib.request import urlopen
 
@@ -422,7 +442,9 @@ def test_romini_core_dashboard_keeps_story_notes(tmp_path: Path, monkeypatch) ->
     finally:
         box.dashboard.close()
 
-    assert ">Romy</textarea>" in body
+    assert ">trains</textarea>" in body
+    assert ">a station</textarea>" in body
+    assert "<legend>Characters</legend>" in body
 
 
 def test_romini_core_dashboard_reads_box_env_for_studio_keys(tmp_path: Path, monkeypatch) -> None:
@@ -452,6 +474,35 @@ def test_romini_core_dashboard_reads_box_env_for_studio_keys(tmp_path: Path, mon
     assert seen["secrets"] == data / "studio.env"
     assert seen["box_secrets"] == Path("/etc/romini/env")
     assert seen["stories"] == data / "stories"
+    assert seen["characters"] == data / "characters"
+
+
+def test_romini_core_dashboard_reads_the_live_player(tmp_path: Path, monkeypatch) -> None:
+    import romini.__main__ as core
+
+    seen: dict[str, object] = {}
+    real = core.create_dashboard
+
+    def wrap(**kwargs: object):
+        seen.update(kwargs)
+        return real(**kwargs)
+
+    monkeypatch.setattr(core, "create_dashboard", wrap)
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+    player = FakePlayer()
+
+    box = main(player=player, led=FakeLed())
+    try:
+        assert box.dashboard is not None
+    finally:
+        box.dashboard.close()
+
+    assert seen["player"] is player
 
 
 def test_default_nfc_on_pi_uses_pn532_hat_spi(monkeypatch) -> None:
@@ -483,3 +534,51 @@ def test_default_nfc_on_pi_uses_pn532_hat_spi(monkeypatch) -> None:
     assert isinstance(nfc, Pn532Nfc)
     assert built == [{"reset": 20, "cs": 4, "debug": False}]
     assert nfc.read_uid() is None
+
+
+def test_sim_silent_player_reports_playing_after_play() -> None:
+    from romini.__main__ import SilentPlayer
+
+    player = SilentPlayer()
+    player.play("/library/frog.mp3", position_sec=14.0, uid="04aabbccddeeff")
+
+    assert player.is_playing() is True
+    assert player.playing_uid() == "04aabbccddeeff"
+    assert player.playing_path() == "/library/frog.mp3"
+    assert player.position_sec() == 14.0
+
+
+def test_sim_silent_player_records_when_playback_started() -> None:
+    from datetime import datetime
+
+    from romini.__main__ import SilentPlayer
+
+    player = SilentPlayer(clock=lambda: datetime(2026, 9, 19, 22, 33))
+    player.play("/library/frog.mp3", position_sec=0.0, uid="04aabbccddeeff")
+
+    assert player.started_at() == datetime(2026, 9, 19, 22, 33)
+
+
+def test_sim_dashboard_home_shows_now_playing_after_place(tmp_path: Path, monkeypatch) -> None:
+    from urllib.request import urlopen
+
+    data = write_frog_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+    monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
+
+    box = main(led=FakeLed())
+    try:
+        status = box.http.post("/place/04aabbccddeeff")
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/") as resp:
+            body = resp.read().decode()
+    finally:
+        box.http.close()
+        box.dashboard.close()
+
+    assert status == 204
+    assert 'aria-label="Now playing"' in body
+    assert "The Frog Prince" in body
+    assert ">Pause<" in body
+    assert ">Play<" not in body.replace("start play", "")

@@ -44,6 +44,11 @@
   accent-color: var(--story-coral);
   flex-shrink: 0;
 }
+#nfc-tap {
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
+}
 .injectors {
   margin-top: 0.5rem;
 }

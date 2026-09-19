@@ -23,6 +23,8 @@ def poll_catalog(
         audio_exists=lambda rel: (library_root / rel).is_file(),
     )
     SqliteCatalog(data_dir / "state.sqlite").replace_tracks(box.library.tracks)
+    if previous_mtime is not None:
+        box.note("catalog", "Updated catalog")
     return mtime
 
 

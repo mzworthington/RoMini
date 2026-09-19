@@ -4,7 +4,7 @@
 
 **HAYWARDS HEATH, UK — 2026** — Today marks the unveiling of RoMini, an open, screen-free smart audio player engineered specifically to celebrate Romy’s 5th birthday. Designed as an independent, tactile alternative to proprietary commercial audio systems, RoMini lets children place physical figurines on top of a bespoke wooden box to instantly trigger custom audiobooks, bedtime stories, and favourite songs.
 
-In an age dominated by bright tablets and touchscreen interfaces, RoMini returns to tactile play. By embedding miniature NFC chips into existing toys, RoMini creates an intuitive link between physical objects and rich audio narratives. When a toy is placed on the reader, the story begins; when it is removed, playback can pause smoothly, waiting to resume exactly where the listener left off. A second play style — tap the figure, then use large buttons — can be chosen from the parent dashboard.
+In an age dominated by bright tablets and touchscreen interfaces, RoMini returns to tactile play. By embedding miniature NFC chips into existing toys, RoMini creates an intuitive link between physical objects and rich audio narratives. When a toy is placed on the reader, the story begins; when it is removed, playback can pause smoothly, waiting to resume exactly where the listener left off. A second play style — tap the figure to start the story, tap it again to pause — can be chosen from the parent dashboard.
 
 > "Five-year-olds shouldn't need a login, a screen, or adult supervision to explore stories," said the creator of RoMini. "RoMini gives Romy total agency over her audio world. Whether it's a favourite fairy tale, a personalised story read in a parent's voice, or upbeat songs to dance to, she just puts her toy on the box and the magic happens."
 

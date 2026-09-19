@@ -65,7 +65,7 @@ $ROMINI_DATA/
   catalog.yaml    # tracks: []
   library/        # MP3s; YAML `path` is relative to here
   install/        # venv on the Pi (Release wheel)
-  state.sqlite    # WAL: position, volume, play_mode
+  state.sqlite    # WAL: position, volume, play_mode, audit log
 ```
 
 Laptop example: `mkdir -p ./var/romini`.
@@ -85,12 +85,12 @@ Type one command per line. `quit` exits.
 | `place <uid>` | Figure down (UID lowercase hex) |
 | `lift` / `remove` `[position]` | Figure up after grace; optional position seconds |
 | `vol up` / `vol down` | Mixer step |
-| `play` | Play/pause (tap transport) |
+| `play` | Play/pause |
 | `play long` | Restart Track |
 | `halt` | Persist, flash LED, log halt (no `poweroff`) |
 | `quit` | Stop reading stdin |
 
-Player on `sim` is **silent** (`SilentPlayer`). Tests use `FakePlayer`. The laptop does not auto-bind mpv. Audio files still need to exist for catalog import.
+Player on `sim` is **silent** (`SilentPlayer`): no speakers, but it still remembers play/pause so the dashboard Now playing panel can update. Tests use `FakePlayer`. The laptop does not auto-bind mpv. Audio files still need to exist for catalog import.
 
 Add a mapped Track, then place its UID:
 
@@ -115,7 +115,7 @@ Then `place 04aabbccddeeff`. Domain starts the Track; you will not hear it on `s
 
 Creates `var/romini` if needed, sets `ROMINI_PROFILE=sim`, binds the parent dashboard on **8080** and sim injectors on **8081**, and closes stdin so HTTP starts immediately. Override with `ROMINI_DATA`, `ROMINI_DASHBOARD_PORT`, or `ROMINI_HTTP_PORT`.
 
-- Parent UI: `http://127.0.0.1:8080` — free space, **volume** (quieter / louder / level), library table (UID, title, path), registered figures (name a Tag), Register mode, upload, assign (figure dropdown + file picker from `$ROMINI_DATA/library`), play mode. On `sim`, each row has **Place**, plus **Present UID** for an unknown figure (same as `POST /present`).
+- Parent UI: `http://127.0.0.1:8080` — free space, **volume** (quieter / louder / level), library table (UID, title, path), registered figures (name a Tag), Register mode, upload, assign (figure dropdown + file picker from `$ROMINI_DATA/library`), play mode, **Audit log** on Settings. On `sim`, each row has **Place**, plus **Present UID** for an unknown figure (same as `POST /present`).
 - Sim injectors (localhost only; refused on `pi`):
 
 ```bash
@@ -127,7 +127,7 @@ curl -sS -X POST http://127.0.0.1:8081/play
 curl -sS -X POST http://127.0.0.1:8081/halt
 ```
 
-Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST /register-mode`, `POST /tags/<uid>/name`, `PUT`/`POST /play-mode`, `POST /volume`, on `sim` `POST /place/<uid>` and `POST /present`. Assign, register, and upload write `catalog.yaml`. Play mode and volume are SQLite, not YAML.
+Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST /register-mode`, `POST /tags/<uid>/name`, `PUT`/`POST /play-mode`, `POST /volume`, on `sim` `POST /place/<uid>` and `POST /present`. Assign, register, and upload write `catalog.yaml`. Play mode, volume, and the Audit log are SQLite, not YAML.
 
 ### 1.5 What `sim` covers
 
@@ -138,7 +138,7 @@ Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST
 | Halt | `LoggingHalt` (log, no poweroff) |
 | Catalog | Real YAML import + mtime watch when the core tick loop runs |
 | Library | Files under `$ROMINI_DATA/library` |
-| Session / volume / play mode | SQLite WAL `state.sqlite` |
+| Session / volume / play mode / Audit log | SQLite WAL `state.sqlite` |
 | Dashboard | Same FastAPI; bind `127.0.0.1` |
 | Audio | Silent. CI must not need speakers |
 | OverlayFS, Avahi, gpio-shutdown | Not emulated |
@@ -255,7 +255,7 @@ That `chown`s `/var/lib/romini` to the SSH user, `pip install`s the latest `romi
 
 Optional PAT in `/etc/romini/env` (`GITHUB_TOKEN`, `GITHUB_REPO`) for Releases API rate limits. `chmod 600`.
 
-OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`, `pause == false`).
+OTA **skips** while mpv reports playing (`$RUNTIME_DIRECTORY/mpv.sock` or `~/.romini/mpv.sock`, `pause == false`). Force a check: [README — Update the player](../README.md#update-the-player) (`sudo systemctl start romini-update.service`).
 
 #### Leave a previous clone behind
 
