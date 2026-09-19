@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from romini.composition.provision import ensure_data_tree
+from romini.fakes import FakeLed, FakePlayer
 
 
 def test_ensure_data_tree_creates_library_catalog_install_and_repo(tmp_path: Path) -> None:
@@ -88,40 +89,8 @@ def test_provision_module_writes_units_from_argv(tmp_path: Path, monkeypatch) ->
 def test_load_sim_box_creates_data_tree_when_empty(tmp_path: Path) -> None:
     from romini.composition.sim import load_sim_box
 
-    class SilentPlayer:
-        def play(self, path: str, *, position_sec: float, uid: str) -> None:
-            return
-
-        def select(self, uid: str, path: str) -> None:
-            return
-
-        def selected_track(self) -> tuple[str, str] | None:
-            return None
-
-        def pause(self) -> None:
-            return
-
-        def stop(self) -> None:
-            return
-
-        def is_playing(self) -> bool:
-            return False
-
-        def playing_uid(self) -> str | None:
-            return None
-
-        def playing_path(self) -> str | None:
-            return None
-
-    class SilentLed:
-        def pulse(self) -> None:
-            return
-
-        def flash(self) -> None:
-            return
-
     root = tmp_path / "romini"
-    load_sim_box(data_dir=root, player=SilentPlayer(), led=SilentLed())
+    load_sim_box(data_dir=root, player=FakePlayer(), led=FakeLed())
 
     assert (root / "catalog.yaml").read_text() == "tracks: []\n"
     assert (root / "library").is_dir()
