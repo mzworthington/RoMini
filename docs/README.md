@@ -5,7 +5,8 @@ Start here: **[guide.md](./guide.md)** (laptop `sim`, what we emulate, Pi bring-
 | Doc | Role |
 |-----|------|
 | [guide.md](./guide.md) | Step-by-step local + Pi |
-| [PRD_001.md](./PRD_001.md) | Product requirements |
+| [PRD_001.md](./PRD_001.md) | Product requirements (v1 box) |
+| [PRD_002.md](./PRD_002.md) | Bet: story studio on the parent dashboard |
 | [PRESS_RELEASE.md](./PRESS_RELEASE.md) | Launch narrative |
 | [spec.md](./spec.md) | Gherkin, glossary, XFN draft |
 | [architecture.md](./architecture.md) | Hexagon, OTA, overlay |

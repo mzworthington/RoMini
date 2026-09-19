@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% if poll %}
+<script>
+{% include "register_poll.js" %}
+</script>
+{% endif %}
+<title>{% if page_title %}{{ page_title }} · {% endif %}RoMini</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>{% include "dashboard.css" %}</style>
+</head>
+<body>
+<div class="shell">
+<header>
+<div class="masthead">
+<img class="mark" src="/mark.svg" width="72" height="72" alt="">
+<div>
+<h1>Ro<span>Mini</span></h1>
+<p class="tag">Storybox</p>
+<p class="lede">{{ free_space }} on the box{% if charge is not none %} · {{ charge }}% charged{% endif %}</p>
+</div>
+</div>
+<nav aria-label="Dashboard">
+<ul>
+<li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Home</a></li>
+<li><a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}>Figures</a></li>
+<li><a href="/library"{% if page == "library" %} aria-current="page"{% endif %}>Library</a></li>
+<li><a href="/stories"{% if page == "stories" %} aria-current="page"{% endif %}>Stories</a></li>
+<li><a href="/write"{% if page == "write" %} aria-current="page"{% endif %}>Write</a></li>
+<li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>Settings</a></li>
+</ul>
+</nav>
+</header>
+<main>
+{% if notice %}
+<p class="status" role="status">{{ notice }}</p>
+{% endif %}
+{% block content %}{% endblock %}
+</main>
+</div>
+</body>
+</html>

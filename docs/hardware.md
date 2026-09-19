@@ -10,6 +10,7 @@ Domain talks ports; this file is the `pi` profile. Software: [architecture.md](.
 | NFC reader | Waveshare **PN532 NFC HAT** | [Pi Hut](https://thepihut.com/products/nfc-hat-for-raspberry-pi-pn532) · [wiki](https://www.waveshare.com/wiki/PN532_NFC_HAT) |
 | Figures | **NTAG203** clear tags (UID only) | [Pi Hut](https://thepihut.com/products/13-56mhz-rfid-nfc-clear-tag-ntag203-chip) |
 | Halt + status | 16mm metal momentary, **blue LED ring** | [Pi Hut](https://thepihut.com/products/rugged-metal-pushbutton-with-blue-led-ring) |
+| UPS | Waveshare **21700 UPS HAT (D)** (two 21700 cells, not included) | [Pi Hut](https://thepihut.com/products/21700-ups-hat-d-for-raspberry-pi-4-3) · [wiki](https://www.waveshare.com/wiki/UPS_HAT_(D)) |
 | Volume + play | **Three more** 16mm momentaries (LED optional) — later; first box is halt only | same switch family |
 | Audio | **Powered speaker with aux/amp jack** (household choice) | not the passive 4Ω pair as the amp |
 | Storage | **16GB** microSD | user-supplied |
@@ -29,6 +30,7 @@ The [passive 3W 4Ω pair](https://thepihut.com/products/stereo-enclosed-speaker-
 flowchart TB
   ntag["NTAG203"] --> hat["PN532 I2C"]
   hat --> pi["Pi 4B 4GB"]
+  ups["UPS HAT D INA219"] --> pi
   halt["Halt NO + LED"] --> pi
   vol["Vol+ Vol- (later)"] --> pi
   play["Play/pause (later)"] --> pi
@@ -39,6 +41,10 @@ flowchart TB
 
 - I0 = **H**, I1 = **L**; RSTPDN → **BCM 20**; DIP SCL/SDA ON; SCK/MISO/MOSI/NSS and RX/TX OFF. Mode latches on 5V.
 - `PN532_I2C(reset=20)` on i2c-1 address `0x24`. Enable `dtparam=i2c_arm=on`. Clock-stretching can stall the Pi bus ([ADR-0008](./ADRs/0008-pn532-i2c.md)).
+
+### UPS HAT (D)
+
+Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU also appears at `0x2D`). Charge on the dashboard is estimated from pack voltage: 3.0 V empty, 4.2 V full, clamped. Charge the pack through the HAT USB-C, not the Pi USB-C. `i2cdetect -y 1` should show **24** and **43**.
 
 ### Audio
 
@@ -77,6 +83,7 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 | Vol ± | GPIO 22 / 23 (`apply_gpio_press`; not yet in `run_core_ticks`). First box: parent sets volume on the dashboard |
 | Play/pause | GPIO 24 (same). First box: unused |
 | Catalog import | Watch `catalog.yaml`, upsert mappings |
+| Battery | UPS HAT (D) INA219 `0x43`; `sim` omits the reading |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |
 | Halt | GPIO 17 + gpio-shutdown; `systemctl poweroff` |

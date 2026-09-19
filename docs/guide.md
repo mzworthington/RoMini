@@ -182,7 +182,7 @@ sudo raspi-config nonint do_i2c 0
 sudo reboot
 ```
 
-`i2cdetect -y 1` should show **24**. Confirm a UID with the venv `PN532_I2C(reset=20)` **before** trusting software.
+`i2cdetect -y 1` should show **24**. Confirm a UID with the venv `PN532_I2C(reset=20)` **before** trusting software. With the UPS HAT seated, the scan should also show **43**.
 
 ### 3.4 Buttons and speaker
 
@@ -242,7 +242,7 @@ Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses *
 
 ### 3.7 Install the app
 
-Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `adafruit-blinka`, and `adafruit-circuitpython-pn532` (installed by `bin/install-pi` into the venv). `default_nfc()` uses `romini.composition.pn532_hat.PN532_I2C` (`reset=20`). If that import or init fails, it uses `FakeNfc`.
+Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `adafruit-blinka`, `adafruit-circuitpython-pn532`, and `smbus2` (installed by `bin/install-pi` into the venv). `default_nfc()` uses `romini.composition.pn532_hat.PN532_I2C` (`reset=20`). If that import or init fails, it uses `FakeNfc`.
 
 MP3s never come from git. The Release wheel is the player, dashboard, updater, and systemd snippets. Stories live in `/var/lib/romini/library`.
 
