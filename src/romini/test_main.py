@@ -1,70 +1,22 @@
 import sys
-from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 
 from romini.__main__ import main, run
 from romini.composition.nfc import FakeNfc
 from romini.composition.pi import MpvPlayer
-
-
-@dataclass
-class FakePlayer:
-    plays: list[tuple[str, float]] = field(default_factory=list)
-    pauses: int = 0
-    stops: int = 0
-    selected: tuple[str, str] | None = None
-    _playing: bool = False
-    _uid: str | None = None
-    _path: str | None = None
-
-    def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        self.plays.append((path, position_sec))
-        self._playing = True
-        self._uid = uid
-        self._path = path
-
-    def select(self, uid: str, path: str) -> None:
-        self.selected = (uid, path)
-
-    def selected_track(self) -> tuple[str, str] | None:
-        return self.selected
-
-    def pause(self) -> None:
-        self.pauses += 1
-        self._playing = False
-
-    def stop(self) -> None:
-        self.stops += 1
-        self._playing = False
-        self._uid = None
-
-    def is_playing(self) -> bool:
-        return self._playing
-
-    def playing_uid(self) -> str | None:
-        return self._uid
-
-    def playing_path(self) -> str | None:
-        return self._path
-
-
-@dataclass
-class FakeLed:
-    pulses: int = 0
-    flashes: int = 0
-
-    def pulse(self) -> None:
-        self.pulses += 1
-
-    def flash(self) -> None:
-        self.flashes += 1
+from romini.fakes import (
+    FROG_UID,
+    FakeLed,
+    FakePlayer,
+    frog_story_path,
+    write_empty_data,
+    write_frog_data,
+)
 
 
 def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
 
@@ -82,32 +34,20 @@ def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, mo
 
 
 def test_romini_core_main_loads_sim_from_env(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     player = FakePlayer()
     led = FakeLed()
 
     box = main(player=player, led=led)
-    box.place("04aabbccddeeff")
+    box.place(FROG_UID)
 
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_main_runs_sim_lines(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     player = FakePlayer()
@@ -115,17 +55,11 @@ def test_romini_core_main_runs_sim_lines(tmp_path: Path, monkeypatch) -> None:
 
     main(player=player, led=led, lines=["place 04aabbccddeeff", "quit"])
 
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_run_reads_stdin(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setattr(
@@ -137,17 +71,11 @@ def test_romini_core_run_reads_stdin(tmp_path: Path, monkeypatch) -> None:
 
     run(player=player, led=led)
 
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_main_starts_sim_http(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
@@ -161,13 +89,11 @@ def test_romini_core_main_starts_sim_http(tmp_path: Path, monkeypatch) -> None:
         box.http.close()
 
     assert status == 204
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_starts_sim_http_before_stdin_lines(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
@@ -198,9 +124,7 @@ def test_romini_core_main_starts_dashboard(tmp_path: Path, monkeypatch) -> None:
     import json
     from urllib.request import urlopen
 
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
@@ -218,13 +142,7 @@ def test_romini_core_main_starts_dashboard(tmp_path: Path, monkeypatch) -> None:
 def test_romini_core_dashboard_place_starts_the_track(tmp_path: Path, monkeypatch) -> None:
     from urllib.request import Request, urlopen
 
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
@@ -241,17 +159,11 @@ def test_romini_core_dashboard_place_starts_the_track(tmp_path: Path, monkeypatc
 
     assert status == 200
     assert "Place" in body
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_main_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     player = FakePlayer()
@@ -260,21 +172,15 @@ def test_romini_core_main_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> None:
     main(
         player=player,
         led=led,
-        nfc=FakeNfc(uid="04aabbccddeeff"),
+        nfc=FakeNfc(uid=FROG_UID),
         ticks=[None],
     )
 
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_main_runs_catalog_ticks(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     player = FakePlayer()
@@ -286,19 +192,13 @@ def test_romini_core_main_runs_catalog_ticks(tmp_path: Path, monkeypatch) -> Non
         yield None
 
     box = main(player=player, led=led, catalog_ticks=ticks())
-    box.place("04aabbccddeeff")
+    box.place(FROG_UID)
 
     assert player.plays == []
 
 
 def test_romini_core_main_nfc_ticks_poll_catalog(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     player = FakePlayer()
@@ -310,15 +210,13 @@ def test_romini_core_main_nfc_ticks_poll_catalog(tmp_path: Path, monkeypatch) ->
         yield None
 
     box = main(player=player, led=led, nfc=FakeNfc(), ticks=ticks())
-    box.place("04aabbccddeeff")
+    box.place(FROG_UID)
 
     assert player.plays == []
 
 
 def test_romini_core_main_pi_profile_defaults_mpv_player(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "pi")
 
@@ -328,9 +226,7 @@ def test_romini_core_main_pi_profile_defaults_mpv_player(tmp_path: Path, monkeyp
 
 
 def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) -> None:
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "pi")
     monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
@@ -355,9 +251,7 @@ def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) ->
 def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> None:
     from romini.composition.gpio import GpioLed
 
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "pi")
 
@@ -386,22 +280,16 @@ def test_romini_core_entry_on_pi_runs_nfc_ticks(tmp_path: Path, monkeypatch) -> 
     from romini.__main__ import entry
     from romini.composition.nfc import FakeNfc
 
-    data = tmp_path / "romini"
-    stories = data / "library" / "stories"
-    stories.mkdir(parents=True)
-    (stories / "frog-prince.mp3").write_bytes(b"id3")
-    (data / "catalog.yaml").write_text(
-        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
-    )
+    data = write_frog_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "pi")
-    monkeypatch.setattr("romini.__main__.default_nfc", lambda: FakeNfc(uid="04aabbccddeeff"))
+    monkeypatch.setattr("romini.__main__.default_nfc", lambda: FakeNfc(uid=FROG_UID))
     monkeypatch.setattr("romini.__main__.default_ticks", lambda: [None])
     player = FakePlayer()
 
     entry(player=player, led=FakeLed())
 
-    assert player.plays == [(str(stories / "frog-prince.mp3"), 0.0)]
+    assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 
 def test_romini_core_entry_keeps_serving_after_stdin_eof(tmp_path: Path, monkeypatch) -> None:
@@ -411,9 +299,7 @@ def test_romini_core_entry_keeps_serving_after_stdin_eof(tmp_path: Path, monkeyp
     from romini.__main__ import entry
     from romini.composition.http import start_sim_http
 
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_HTTP_PORT", "0")
@@ -443,9 +329,7 @@ def test_romini_core_entry_keeps_serving_after_stdin_eof(tmp_path: Path, monkeyp
 def test_romini_core_dashboard_has_register_form(tmp_path: Path, monkeypatch) -> None:
     from urllib.request import urlopen
 
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
@@ -463,9 +347,7 @@ def test_romini_core_dashboard_has_register_form(tmp_path: Path, monkeypatch) ->
 def test_romini_core_dashboard_has_volume_form(tmp_path: Path, monkeypatch) -> None:
     from urllib.request import urlopen
 
-    data = tmp_path / "romini"
-    (data / "library").mkdir(parents=True)
-    (data / "catalog.yaml").write_text("tracks: []\n")
+    data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "sim")
     monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
