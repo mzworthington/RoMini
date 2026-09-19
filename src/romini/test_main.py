@@ -1,4 +1,5 @@
 import sys
+from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 
@@ -16,61 +17,8 @@ from romini.fakes import (
 
 
 @dataclass
-class FakePlayer:
-    plays: list[tuple[str, float]] = field(default_factory=list)
-    pauses: int = 0
-    stops: int = 0
-    selected: tuple[str, str] | None = None
-    _playing: bool = False
-    _uid: str | None = None
-    _path: str | None = None
-
-    def play(self, path: str, *, position_sec: float, uid: str) -> None:
-        self.plays.append((path, position_sec))
-        self._playing = True
-        self._uid = uid
-        self._path = path
-
-    def select(self, uid: str, path: str) -> None:
-        self.selected = (uid, path)
-
-    def selected_track(self) -> tuple[str, str] | None:
-        return self.selected
-
-    def pause(self) -> None:
-        self.pauses += 1
-        self._playing = False
-
-    def stop(self) -> None:
-        self.stops += 1
-        self._playing = False
-        self._uid = None
-
-    def is_playing(self) -> bool:
-        return self._playing
-
-    def playing_uid(self) -> str | None:
-        return self._uid
-
-    def playing_path(self) -> str | None:
-        return self._path
-
-
-@dataclass
 class FakeBattery:
     percent: int
-
-
-@dataclass
-class FakeLed:
-    pulses: int = 0
-    flashes: int = 0
-
-    def pulse(self) -> None:
-        self.pulses += 1
-
-    def flash(self) -> None:
-        self.flashes += 1
 
 
 def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, monkeypatch) -> None:
