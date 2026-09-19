@@ -237,9 +237,13 @@ STUDIO_KEY_NAMES = ("GEMINI_API_KEY", "ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID
 
 def _parse_env_file(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
-    if not path.is_file():
+    try:
+        if not path.is_file():
+            return values
+        lines = path.read_text().splitlines()
+    except OSError:
         return values
-    for line in path.read_text().splitlines():
+    for line in lines:
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue

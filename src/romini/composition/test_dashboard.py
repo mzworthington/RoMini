@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import pytest
+
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.dashboard import DiskStorage, create_dashboard
 from romini.features.library.import_catalog import import_catalog
@@ -1377,6 +1379,24 @@ def test_dashboard_keeps_the_script_after_save(tmp_path: Path) -> None:
     assert ">Once upon a time</textarea>" in html
 
 
+def test_dashboard_home_when_box_secrets_are_unreadable(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    locked = tmp_path / "etc-romini"
+    locked.mkdir()
+    env = locked / "env"
+    env.write_text("GITHUB_TOKEN=secret\nGEMINI_API_KEY=from-box\n")
+    locked.chmod(0o000)
+    try:
+        response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), box_secrets=env)).get("/")
+    finally:
+        locked.chmod(0o700)
+
+    assert response.status_code == 200
+    assert "from-box" not in response.text
+    assert "secret" not in response.text
+
+
 def test_dashboard_keys_form_is_labelled() -> None:
     from fastapi.testclient import TestClient
 
@@ -1491,9 +1511,12 @@ def test_dashboard_draft_fills_script_from_notes(tmp_path: Path) -> None:
     assert "gem-secret" not in html
 
 
-def test_dashboard_draft_without_gemini_key_explains_and_keeps_script(tmp_path: Path) -> None:
+def test_dashboard_draft_without_gemini_key_explains_and_keeps_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from fastapi.testclient import TestClient
 
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     drafter = FakeDrafter(script="should not appear")
     client = TestClient(
         create_dashboard(
@@ -1642,10 +1665,12 @@ def test_dashboard_speak_stores_mp3_in_library_and_on_the_story(tmp_path: Path) 
 
 
 def test_dashboard_speak_without_elevenlabs_key_explains_and_keeps_spoken_file(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from fastapi.testclient import TestClient
 
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    monkeypatch.delenv("ELEVENLABS_VOICE_IDS", raising=False)
     speech = FakeSpeech(audio=b"new")
     storage = FakeStorage(free_bytes=1024)
     client = TestClient(
