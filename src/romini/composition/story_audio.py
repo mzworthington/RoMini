@@ -5,16 +5,39 @@ import os
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from random import Random
-from typing import Protocol
+from typing import Protocol, TypedDict
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+
+import yaml
 
 VOICE_IDS: tuple[str, ...] = (
     # Fill with ElevenLabs Voice Lab IDs, or set ELEVENLABS_VOICE_IDS.
 )
 
+VOICES_PATH = Path(__file__).with_name("voices.yaml")
 REPO_STORIES = Path(__file__).resolve().parents[3] / "docs" / "stories"
 log = logging.getLogger(__name__)
+
+
+class Voice(TypedDict):
+    name: str
+    id: str
+
+
+def load_voices(path: Path | None = None) -> list[Voice]:
+    source = path or VOICES_PATH
+    try:
+        data = yaml.safe_load(source.read_text()) or {}
+    except OSError:
+        return []
+    voices: list[Voice] = []
+    for item in data.get("voices") or []:
+        name = str(item.get("name") or "").strip()
+        voice_id = str(item.get("id") or "").strip()
+        if name and voice_id:
+            voices.append({"name": name, "id": voice_id})
+    return voices
 
 
 class Speech(Protocol):
@@ -81,7 +104,8 @@ def render_stories(
 def configured_voices() -> tuple[str, ...]:
     raw = os.environ.get("ELEVENLABS_VOICE_IDS", "")
     from_env = tuple(part.strip() for part in raw.split(",") if part.strip())
-    return from_env or VOICE_IDS
+    from_yaml = tuple(voice["id"] for voice in load_voices())
+    return from_env or from_yaml or VOICE_IDS
 
 
 def http_post(url: str, *, headers: dict[str, str], body: bytes) -> bytes:
@@ -101,7 +125,7 @@ def main(argv: list[str] | None = None, *, post: Callable[..., bytes] | None = N
     args = parser.parse_args(argv)
     voices = configured_voices()
     if not voices:
-        raise SystemExit("set ELEVENLABS_VOICE_IDS or fill VOICE_IDS")
+        raise SystemExit("set ELEVENLABS_VOICE_IDS or add voices.yaml")
     api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
     if not api_key:
         raise SystemExit("set ELEVENLABS_API_KEY")

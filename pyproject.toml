@@ -36,7 +36,7 @@ where = ["src"]
 include = ["romini", "romini.*"]
 
 [tool.setuptools.package-data]
-romini = ["*.wav", "assets/*.svg", "composition/templates/*"]
+romini = ["*.wav", "assets/*.svg", "composition/templates/*", "composition/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["src/romini"]

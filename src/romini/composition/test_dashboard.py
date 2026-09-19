@@ -1327,6 +1327,18 @@ def test_dashboard_lists_a_saved_story_after_save(tmp_path: Path) -> None:
     assert "Open The little station" in html
 
 
+def test_dashboard_saved_stories_use_the_home_jump_list(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    html = client.get("/stories").text
+
+    assert 'class="jumps"' in html
+    assert 'class="jump"' in html
+    assert "<strong>The little station</strong>" in html
+
+
 def test_dashboard_opening_another_story_shows_that_story_notes(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1407,8 +1419,6 @@ def test_dashboard_keys_form_is_labelled() -> None:
     assert "Gemini key" in html
     assert 'for="elevenlabs-key"' in html
     assert "ElevenLabs key" in html
-    assert 'for="elevenlabs-voices"' in html
-    assert "ElevenLabs voice IDs" in html
     assert 'type="password"' in html
 
 
@@ -1422,7 +1432,6 @@ def test_dashboard_saved_keys_are_set_not_shown(tmp_path: Path) -> None:
         data={
             "gemini_key": "gem-secret",
             "elevenlabs_key": "el-secret",
-            "elevenlabs_voices": "voice-a,voice-b",
         },
     )
     html = client.get("/settings").text
@@ -1431,11 +1440,9 @@ def test_dashboard_saved_keys_are_set_not_shown(tmp_path: Path) -> None:
     assert "el-secret" not in html
     assert "Gemini key is set" in html
     assert "ElevenLabs key is set" in html
-    assert 'value="voice-a,voice-b"' in html
     text = secrets.read_text()
     assert "GEMINI_API_KEY=gem-secret" in text
     assert "ELEVENLABS_API_KEY=el-secret" in text
-    assert "ELEVENLABS_VOICE_IDS=voice-a,voice-b" in text
 
 
 @dataclass
@@ -1660,8 +1667,34 @@ def test_dashboard_speak_stores_mp3_in_library_and_on_the_story(tmp_path: Path) 
     assert (tmp_path / "the-little-station" / "spoken.mp3").read_bytes() == b"ID3ok"
     assert "spoken.mp3" in html
     assert "the-little-station.mp3" in library
-    assert speech.calls == [{"text": "Rowmy waited at the station. [pause]", "voice_id": "voice-a"}]
+    assert speech.calls == [{"text": "Rowmy waited at the station. [pause]", "voice_id": "qXdtsJJ9LgnQ8Z2TYfav"}]
     assert "sk-secret" not in html
+
+
+def test_dashboard_speak_uses_the_voice_you_picked(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.story_audio import load_voices
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    speech = FakeSpeech(audio=b"ID3ok")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            speech=speech,
+        )
+    )
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "script": "Rowmy waited at the station."},
+    )
+    chosen = load_voices()[1]
+    client.post("/stories/speak", data={"voice_id": chosen["id"]})
+
+    assert speech.calls == [{"text": "Rowmy waited at the station.", "voice_id": chosen["id"]}]
 
 
 def test_dashboard_speak_without_elevenlabs_key_explains_and_keeps_spoken_file(
@@ -1739,7 +1772,7 @@ def test_dashboard_speak_again_replaces_the_spoken_file(tmp_path: Path) -> None:
 
     assert storage.files["the-little-station.mp3"] == b"second"
     assert (tmp_path / "the-little-station" / "spoken.mp3").read_bytes() == b"second"
-    assert speech.calls[-1] == {"text": "second script", "voice_id": "voice-a"}
+    assert speech.calls[-1] == {"text": "second script", "voice_id": "qXdtsJJ9LgnQ8Z2TYfav"}
 
 
 def test_dashboard_pages_split_parent_jobs() -> None:
@@ -1872,3 +1905,24 @@ def test_dashboard_chrome_sits_in_the_same_column_as_the_page() -> None:
     assert 'href="/library"' in html
     assert 'href="/stories"' in html
     assert 'href="/write"' in html
+
+
+def test_dashboard_home_shows_the_box_picture() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'src="/logo.svg"' in html
+    assert 'class="welcome"' in html
+    assert "Put a figure on the box" in html
+
+
+def test_dashboard_write_page_lets_you_pick_a_named_voice() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
+
+    assert 'for="voice"' in html
+    assert ">Voice<" in html
+    assert 'name="voice_id"' in html
+    assert 'action="/stories/speak"' in html

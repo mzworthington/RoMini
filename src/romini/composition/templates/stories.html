@@ -3,11 +3,14 @@
 <section>
 <h2>Saved stories</h2>
 {% if saved_stories %}
-<ul>
+<ul class="jumps">
 {% for story in saved_stories %}
 <li>
 <form action="/stories/open" method="post">
-<button name="slug" value="{{ story.slug }}">Open {{ story.title }}</button>
+<button class="jump" name="slug" value="{{ story.slug }}">
+<strong>{{ story.title }}</strong>
+Open {{ story.title }}
+</button>
 </form>
 </li>
 {% endfor %}
@@ -15,6 +18,8 @@
 {% else %}
 <p class="empty">No saved stories yet</p>
 {% endif %}
-<p class="hint"><a href="/write">Write a new story</a></p>
+<ul class="jumps">
+<li><a href="/write"><strong>Write</strong> Start a new story pack.</a></li>
+</ul>
 </section>
 {% endblock %}

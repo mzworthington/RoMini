@@ -28,6 +28,7 @@
 <section>
 <h2>Figures</h2>
 {% if tags %}
+<div class="table-wrap">
 <table>
 <caption>Figures</caption>
 <thead><tr><th>UID</th><th>Name</th><th>Action</th></tr></thead>
@@ -46,6 +47,7 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 {% else %}
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
 {% endif %}
