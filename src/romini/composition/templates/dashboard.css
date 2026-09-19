@@ -16,7 +16,8 @@ body {
     radial-gradient(900px 420px at 50% -80px, #FFF7ED 0%, transparent 70%),
     var(--cloud-foam);
 }
-main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+.shell { max-width: 52rem; margin: 0 auto; padding: 1.25rem 1.25rem 3rem; }
+main { margin: 0; padding: 0; }
 .board {
   display: flex;
   flex-wrap: wrap;
@@ -35,8 +36,8 @@ main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
   margin: 0 0 1.25rem;
 }
 .mark {
-  width: 7rem;
-  height: 7rem;
+  width: 4.5rem;
+  height: 4.5rem;
   object-fit: cover;
   border-radius: 50%;
   background: #fff;
@@ -47,10 +48,11 @@ h1, h2, caption {
   font-family: Nunito, Comfortaa, system-ui, sans-serif;
 }
 h1 {
-  font-size: 2rem;
+  font-size: 1.85rem;
   font-weight: 900;
   letter-spacing: 0.02em;
   margin: 0;
+  white-space: nowrap;
 }
 h1 span { color: #FF5252; }
 .tag {
@@ -62,6 +64,49 @@ h1 span { color: #FF5252; }
   color: #94A3B8;
 }
 .lede { color: #64748B; margin: 0.45rem 0 0; font-weight: 600; }
+header { margin: 0 0 1rem; }
+.jumps {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+.jumps a {
+  display: block;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+.jumps strong { display: block; font-family: Nunito, system-ui, sans-serif; }
+nav[aria-label="Dashboard"] ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+nav[aria-label="Dashboard"] a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.65rem;
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--midnight-navy);
+  background: #fff;
+  border: 1px solid #E2E8F0;
+}
+nav[aria-label="Dashboard"] a[aria-current="page"] {
+  background: var(--midnight-navy);
+  color: #fff;
+  border-color: var(--midnight-navy);
+}
 section {
   margin: 0 0 1.5rem;
   padding: 1.1rem 1.15rem;
@@ -73,13 +118,13 @@ section {
 }
 @media (max-width: 40rem) {
   .masthead { align-items: flex-start; }
-  .mark { width: 5.5rem; height: 5.5rem; }
+  .mark { width: 3.75rem; height: 3.75rem; }
   th, td { padding: 0.4rem 0.3rem; }
 }
 h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.75rem; }
 label { display: block; font-weight: 700; margin: 0.7rem 0 0.3rem; }
 input, select, button { font: inherit; }
-input[type="text"], input[type="file"], select {
+input[type="text"], input[type="password"], input[type="file"], select, textarea {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.4rem 0.6rem;
@@ -88,6 +133,7 @@ input[type="text"], input[type="file"], select {
   background: #fff;
   color: var(--midnight-navy);
 }
+textarea { min-height: 6rem; resize: vertical; }
 input[type="range"] {
   width: 100%;
   min-height: 2.75rem;
@@ -95,7 +141,7 @@ input[type="range"] {
   accent-color: var(--story-coral);
 }
 .volume-now {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 800;
   margin: 0 0 0.5rem;
 }
@@ -105,7 +151,13 @@ input[type="range"] {
   margin: 0.85rem 0 0;
 }
 .volume-steps form { flex: 1; margin: 0; }
-.volume-steps button { width: 100%; margin-top: 0; }
+.volume-steps button {
+  width: 100%;
+  margin-top: 0;
+  background: #fff;
+  color: var(--midnight-navy);
+  border: 1px solid #E2E8F0;
+}
 button {
   min-height: 2.75rem;
   margin-top: 0.85rem;
@@ -140,7 +192,10 @@ caption, td label {
 td form { margin: 0; }
 td button { margin: 0; min-height: 2.25rem; }
 .empty, .hint { color: #64748B; margin: 0.4rem 0 0; font-weight: 500; }
-.hint { font-size: 0.95rem; }
+.hint a, .lede a {
+  color: var(--midnight-navy);
+  font-weight: 700;
+}
 .status {
   margin: 0 0 1.25rem;
   padding: 0.65rem 0.8rem;

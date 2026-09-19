@@ -13,6 +13,7 @@ from romini.composition.loop import run_core_ticks
 from romini.composition.nfc import FakeNfc, Nfc
 from romini.composition.pi import MpvPlayer, Pn532Nfc
 from romini.composition.sim import SimBox, load_sim_box_from_env
+from romini.composition.ups_hat import open_ups_hat
 from romini.features.play_by_tag.place_figure import Player, StatusLed
 
 
@@ -130,6 +131,10 @@ def main(
             pad=box if os.environ.get("ROMINI_PROFILE", "sim") == "sim" else None,
             register=box,
             mixer=box.mixer,
+            battery=open_ups_hat(),
+            stories=data / "stories",
+            secrets=data / "studio.env",
+            box_secrets=Path("/etc/romini/env"),
         )
         box.dashboard = start_dashboard(
             app,

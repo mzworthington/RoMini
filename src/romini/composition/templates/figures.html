@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="board">
+{% if register %}
+<section>
+<h2>Register figures</h2>
+<form action="/register-mode" method="post">
+<label for="register">NFC register</label>
+<select id="register" name="register">
+<option value="off"{% if not assign_mode %} selected{% endif %}>Off</option>
+<option value="on"{% if assign_mode %} selected{% endif %}>On — place a figure on the box</option>
+</select>
+<button>Save</button>
+</form>
+</section>
+{% endif %}
+{% if pad %}
+<section>
+<h2>Present a figure</h2>
+<form action="/present" method="post">
+<label for="present-uid">UID</label>
+<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>
+<button>Present</button>
+</form>
+</section>
+{% endif %}
+</div>
+<section>
+<h2>Figures</h2>
+{% if tags %}
+<table>
+<caption>Figures</caption>
+<thead><tr><th>UID</th><th>Name</th><th>Action</th></tr></thead>
+<tbody>
+{% for tag in tags %}
+<form action="/tags/{{ tag.uid }}/name" method="post">
+<tr>
+    <td>{{ tag.uid }}</td>
+    <td>
+        <label for="tag-name-{{ tag.uid }}">Name</label>
+        <input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
+    </td>
+    <td><button>Save Name</button></td>
+</tr>
+</form>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
+{% endif %}
+</section>
+{% endblock %}

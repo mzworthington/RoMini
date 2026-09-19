@@ -15,6 +15,64 @@ from romini.fakes import (
 )
 
 
+@dataclass
+class FakePlayer:
+    plays: list[tuple[str, float]] = field(default_factory=list)
+    pauses: int = 0
+    stops: int = 0
+    selected: tuple[str, str] | None = None
+    _playing: bool = False
+    _uid: str | None = None
+    _path: str | None = None
+
+    def play(self, path: str, *, position_sec: float, uid: str) -> None:
+        self.plays.append((path, position_sec))
+        self._playing = True
+        self._uid = uid
+        self._path = path
+
+    def select(self, uid: str, path: str) -> None:
+        self.selected = (uid, path)
+
+    def selected_track(self) -> tuple[str, str] | None:
+        return self.selected
+
+    def pause(self) -> None:
+        self.pauses += 1
+        self._playing = False
+
+    def stop(self) -> None:
+        self.stops += 1
+        self._playing = False
+        self._uid = None
+
+    def is_playing(self) -> bool:
+        return self._playing
+
+    def playing_uid(self) -> str | None:
+        return self._uid
+
+    def playing_path(self) -> str | None:
+        return self._path
+
+
+@dataclass
+class FakeBattery:
+    percent: int
+
+
+@dataclass
+class FakeLed:
+    pulses: int = 0
+    flashes: int = 0
+
+    def pulse(self) -> None:
+        self.pulses += 1
+
+    def flash(self) -> None:
+        self.flashes += 1
+
+
 def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, monkeypatch) -> None:
     data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
@@ -336,7 +394,7 @@ def test_romini_core_dashboard_has_register_form(tmp_path: Path, monkeypatch) ->
 
     box = main(player=FakePlayer(), led=FakeLed())
     try:
-        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/") as resp:
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/figures") as resp:
             body = resp.read().decode()
     finally:
         box.dashboard.close()
@@ -354,7 +412,7 @@ def test_romini_core_dashboard_has_volume_form(tmp_path: Path, monkeypatch) -> N
 
     box = main(player=FakePlayer(), led=FakeLed())
     try:
-        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/") as resp:
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/settings") as resp:
             body = resp.read().decode()
     finally:
         box.dashboard.close()
@@ -362,6 +420,90 @@ def test_romini_core_dashboard_has_volume_form(tmp_path: Path, monkeypatch) -> N
     assert "<h2>Volume</h2>" in body
     assert 'action="/volume"' in body
     assert "of 100" in body
+
+
+def test_romini_core_dashboard_shows_ups_hat_charge(tmp_path: Path, monkeypatch) -> None:
+    from urllib.request import urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+    monkeypatch.setattr("romini.__main__.open_ups_hat", lambda: FakeBattery(64))
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/") as resp:
+            body = resp.read().decode()
+    finally:
+        box.dashboard.close()
+
+    assert "64% charged" in body
+
+
+def test_romini_core_dashboard_keeps_story_notes(tmp_path: Path, monkeypatch) -> None:
+    from urllib.error import HTTPError
+    from urllib.parse import urlencode
+    from urllib.request import Request, urlopen
+
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        payload = urlencode({"characters": "Romy", "interests": "trains", "outline": "a station"}).encode()
+        req = Request(
+            f"http://127.0.0.1:{box.dashboard.port}/stories",
+            data=payload,
+            method="POST",
+        )
+        req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        try:
+            urlopen(req)
+        except HTTPError as error:
+            if error.code not in {302, 303}:
+                raise
+        with urlopen(f"http://127.0.0.1:{box.dashboard.port}/write") as resp:
+            body = resp.read().decode()
+    finally:
+        box.dashboard.close()
+
+    assert ">Romy</textarea>" in body
+
+
+def test_romini_core_dashboard_reads_box_env_for_studio_keys(tmp_path: Path, monkeypatch) -> None:
+    import romini.__main__ as core
+
+    seen: dict[str, object] = {}
+    real = core.create_dashboard
+
+    def wrap(**kwargs: object):
+        seen.update(kwargs)
+        return real(**kwargs)
+
+    monkeypatch.setattr(core, "create_dashboard", wrap)
+    data = tmp_path / "romini"
+    (data / "library").mkdir(parents=True)
+    (data / "catalog.yaml").write_text("tracks: []\n")
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        assert box.dashboard is not None
+    finally:
+        box.dashboard.close()
+
+    assert seen["secrets"] == data / "studio.env"
+    assert seen["box_secrets"] == Path("/etc/romini/env")
+    assert seen["stories"] == data / "stories"
 
 
 def test_default_nfc_on_pi_uses_pn532_hat_i2c(monkeypatch) -> None:

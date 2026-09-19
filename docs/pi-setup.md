@@ -6,7 +6,7 @@ Raspberry Pi OS **Lite 64-bit**. Hostname `romini` and user `pi` match `deploy/`
 
 ## 0. On the bench
 
-Pi 4B 4GB, PN532 HAT, NTAG203, **four** 16mm buttons (one with LED), powered speaker with **aux**, 16GB microSD, **≥3A USB-C PSU**, house WPA.
+Pi 4B 4GB, PN532 HAT, UPS HAT (D) under the Pi, NTAG203, **four** 16mm buttons (one with LED), powered speaker with **aux**, 16GB microSD, **≥3A USB-C PSU** (or the HAT USB-C while on battery), house WPA.
 
 ## 1. Flash
 
@@ -21,7 +21,7 @@ sudo raspi-config nonint do_i2c 0
 sudo reboot
 ```
 
-`i2cdetect -y 1` should show **24**. After `bin/install-pi`, confirm a UID with the venv (`romini.composition.pn532_hat.PN532_I2C(reset=20)`) and a Type A tag over the coil. If the scan is empty, the DIP still has SCL/SDA off (that is SPI routing, not I2C).
+`i2cdetect -y 1` should show **24** (PN532) and **43** (UPS INA219). After `bin/install-pi`, confirm a UID with the venv (`romini.composition.pn532_hat.PN532_I2C(reset=20)`) and a Type A tag over the coil. If the scan is empty, the DIP still has SCL/SDA off (that is SPI routing, not I2C).
 
 ## 3. Buttons
 

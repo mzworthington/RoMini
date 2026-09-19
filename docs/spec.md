@@ -27,6 +27,7 @@ flowchart LR
 | Assign mode | Parent is linking a Tag to a Track. Child play does not start. | — |
 | Register mode | Parent is collecting Tag UIDs into the catalog. Same mute as Assign mode. | — |
 | Catalog | YAML file of Tracks, registered Tags, and Tag UIDs on the data volume. Source of truth for mappings. | Library / TagMapping |
+| Story pack | Parent-authored bedtime story: title, characters, points to cover, outline, extra files, current script, spoken Track. Lives with the Library on the data volume. Not a Player aggregate. | Story pack |
 
 ## Defaults
 
@@ -208,6 +209,21 @@ Feature: Register figures
 ```
 
 ```gherkin
+Feature: Charge on the parent dashboard
+  The box is on a Waveshare 21700 UPS HAT (D). Remaining charge is estimated from pack voltage.
+
+  Scenario: Parent sees remaining charge
+    Given the UPS HAT is on the I2C bus
+    When the parent opens the dashboard
+    Then the masthead shows remaining charge as a percent
+
+  Scenario: Laptop sim has no HAT
+    Given the dashboard is running without the UPS HAT
+    When the parent opens the dashboard
+    Then remaining charge is omitted
+```
+
+```gherkin
 Feature: Halt
   The household can sleep the box without yanking power.
 
@@ -248,6 +264,85 @@ Feature: Library
     And the box says storage is full
 ```
 
+```gherkin
+Feature: Story notes on the parent dashboard
+  A parent keeps characters, points to cover, and an outline on a bedtime story.
+  Gemini and narration are other stories. Player does not learn notes.
+
+  Scenario: Note fields are on the dashboard
+    Given the parent opens the dashboard
+    When they start a story
+    Then they see labelled fields for Characters, Points to cover / interests, and Story outline
+
+  Scenario: Notes stay on the story
+    Given the parent has started a story
+    When they save Characters, Points to cover / interests, and Story outline
+    Then those documents are still on that story when they open it again
+
+  Scenario: Blank notes still save
+    Given the parent has started a story
+    When they leave a note empty and save
+    Then the story is still saved
+    And they can type a script later
+
+  Scenario: Extra files stay on the story
+    Given the parent has started a story
+    When they attach an extra file and save
+    Then the file is listed on that story
+    And they can remove it without deleting the spoken Track
+```
+
+```gherkin
+Feature: Story studio keys, draft, and speak
+  A parent drafts and speaks on the house LAN. Playback stays offline.
+  Player does not learn Gemini or ElevenLabs.
+
+  Scenario: Keys are set not shown
+    Given the parent types Gemini and ElevenLabs keys on the dashboard
+    When they save
+    Then the page says which keys are set
+    And it does not show the secret
+
+  Scenario: Draft fills an editable script
+    Given Gemini is configured
+    And the open story has notes
+    When the parent asks for a draft
+    Then they see a script in an editable box that used those notes
+    And narration has not started
+
+  Scenario: Draft cannot run
+    Given Gemini is missing or the house is offline
+    When the parent asks for a draft
+    Then they see that the script could not be written
+    And they can still type a script
+
+  Scenario: Speak stores a Track
+    Given ElevenLabs is configured
+    And the open story has a script the parent can see
+    When the parent asks the dashboard to speak it
+    Then an MP3 is stored on that story and in the library file list
+    And they can assign it with Assign a figure
+
+  Scenario: Speak again replaces the spoken file
+    Given a story already has a spoken Track
+    When the parent changes the script and speaks again
+    Then the story's spoken file is the new MP3
+    And a figure already assigned to that Track still plays it
+
+  Scenario: Speak cannot run
+    Given the key is missing or ElevenLabs is down
+    When the parent asks the dashboard to speak
+    Then they see that the story could not be spoken
+    And the previous spoken file stays
+    And upload still works
+
+  Scenario: Reopen a saved story
+    Given two stories are saved on the box
+    When the parent opens the second
+    Then they see that story's notes, script, extra files, and spoken file
+    And not the first story's
+```
+
 ## Cross-functional
 
 | Quality | Criterion |
@@ -255,7 +350,7 @@ Feature: Library
 | Accessibility | Parent dashboard on a laptop/phone browser; no child screen. Unknown WCAG target — treat as simple large controls. |
 | Security / privacy | House WPA Wi-Fi. No HTTP PIN. Playback needs no internet. PAT stays on the box, never in git. Sim-only injectors off on the box. |
 | Performance | Play start 500 ms; boot 20 s; NFC poll 250 ms. Device measurements, not CI load tests. |
-| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, set volume, see free space. |
+| Browser | Parent: add Track, register Tag, name Tag, assign Tag, switch Play mode, set volume, see free space and charge, write story notes, save studio keys, draft a script, speak a script, reopen a saved story. |
 
 ## Behaviour catalog notes
 

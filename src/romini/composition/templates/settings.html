@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block content %}
+<section>
+<h2>Keys</h2>
+<form action="/keys" method="post">
+<label for="gemini-key">Gemini key</label>
+<input id="gemini-key" name="gemini_key" type="password" autocomplete="off">
+{% if gemini_key_set %}<p class="hint">Gemini key is set</p>{% endif %}
+<label for="elevenlabs-key">ElevenLabs key</label>
+<input id="elevenlabs-key" name="elevenlabs_key" type="password" autocomplete="off">
+{% if elevenlabs_key_set %}<p class="hint">ElevenLabs key is set</p>{% endif %}
+<label for="elevenlabs-voices">ElevenLabs voice IDs</label>
+<input id="elevenlabs-voices" name="elevenlabs_voices" type="text" value="{{ elevenlabs_voices }}">
+<button>Save keys</button>
+</form>
+</section>
+<section>
+<h2>Play mode</h2>
+<form action="/play-mode" method="post">
+<label for="play_mode">How figures start a story</label>
+<select id="play_mode" name="play_mode">
+<option value="presence"{% if play_mode == presence %} selected{% endif %}>Presence — plays while the figure sits on the box</option>
+<option value="tap"{% if play_mode == tap %} selected{% endif %}>Tap — tap the figure, then use the buttons</option>
+</select>
+<p class="hint">Presence is the default. Tap is for buttons after a tap.</p>
+<button>Save play mode</button>
+</form>
+</section>
+{% if mixer %}
+<section>
+<h2>Volume</h2>
+<p class="volume-now" aria-live="polite">{{ volume_level }} of {{ volume_ceiling }}</p>
+<p class="hint">The first box has a power button only. Set how loud stories play. A software ceiling keeps it from going past {{ volume_ceiling }}.</p>
+<div class="volume-steps">
+<form action="/volume" method="post">
+<input type="hidden" name="step" value="down">
+<button>Quieter</button>
+</form>
+<form action="/volume" method="post">
+<input type="hidden" name="step" value="up">
+<button>Louder</button>
+</form>
+</div>
+<form action="/volume" method="post">
+<label for="volume-level">Level</label>
+<input id="volume-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}">
+<button>Set volume</button>
+</form>
+</section>
+{% endif %}
+{% endblock %}

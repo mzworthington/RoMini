@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="board">
+<section>
+<h2>Upload a track</h2>
+<form action="/tracks" method="post" enctype="multipart/form-data">
+<label for="file">Audio file</label>
+<input id="file" type="file" name="file" accept="audio/*">
+<label for="folder">Folder of tracks</label>
+<input id="folder" type="file" name="file" accept="audio/*" webkitdirectory multiple>
+<button>Upload</button>
+</form>
+</section>
+<section>
+<h2>Assign a figure</h2>
+<form action="/assign" method="post">
+<label for="uid">Figure</label>
+<select id="uid" name="uid" required>
+{% for tag in tags %}
+<option value="{{ tag.uid }}">{{ tag.name or tag.uid }}</option>
+{% endfor %}
+</select>
+{% if not tags %}
+<p class="hint">Register a figure first</p>
+{% endif %}
+<label for="title">Title</label>
+<input id="title" name="title" type="text" required>
+<label for="path">File in library</label>
+<select id="path" name="path" required>
+{% for path in library_paths %}
+<option value="{{ path }}">{{ path }}</option>
+{% endfor %}
+</select>
+{% if not library_paths %}
+<p class="hint">Upload a track first</p>
+{% endif %}
+<button>Assign</button>
+</form>
+</section>
+</div>
+<section>
+<h2>Library</h2>
+{% if tracks %}
+<table>
+<caption>Library</caption>
+<thead><tr><th>UID</th><th>Title</th><th>Path</th>{% if pad %}<th>Place</th>{% endif %}</tr></thead>
+<tbody>
+{% for track in tracks %}
+<tr>
+    <td>{{ track.uid }}</td>
+    <td>{{ track.title }}</td>
+    <td>{{ track.path }}</td>
+    {% if pad %}
+    <td><form action="/place/{{ track.uid }}" method="post"><button>Place</button></form></td>
+    {% endif %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No stories yet. Upload a track, then assign a figure.</p>
+{% endif %}
+</section>
+{% endblock %}

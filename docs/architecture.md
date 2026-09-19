@@ -147,7 +147,7 @@ gpio-style venv `python -m romini.composition.update` + timer ([ADR-0002](./ADRs
 
 ## 6. Parent dashboard
 
-`http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no battery tile, no Cloudflare. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
+`http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no Cloudflare. The masthead shows free space and remaining charge from the Waveshare UPS HAT (D) when INA219 `0x43` is on i2c-1; the laptop `sim` omits charge. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
 
 ## 7. Runtime
 
@@ -174,6 +174,7 @@ Domain talks these; adapters bind in `sim` / `pi` (`src/romini/`).
 | LibraryStore | out | SQLite cache after YAML import |
 | SessionStore | out | Position, volume, play_mode in `state.sqlite` |
 | Mixer | out | Volume with ceiling |
+| Battery | in | Remaining charge percent from UPS HAT (D) pack voltage; omitted when the HAT is missing |
 | StatusLed | out | Pulse / flash (GPIO 27 on `pi`) |
 | Halt | out | `LoggingHalt` on `sim`; `systemctl poweroff` on `pi` |
 
