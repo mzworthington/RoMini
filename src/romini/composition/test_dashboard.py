@@ -240,6 +240,16 @@ def test_dashboard_home_hides_charge_when_the_hat_is_unreadable() -> None:
     assert "% charged" not in html
 
 
+def test_dashboard_shows_the_installed_version() -> None:
+    from importlib.metadata import version
+
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert f"v{version('romini')}" in html
+
+
 def test_dashboard_home_is_labelled_for_a_parent() -> None:
     from fastapi.testclient import TestClient
 

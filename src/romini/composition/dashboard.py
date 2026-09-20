@@ -1,6 +1,7 @@
 import os
 from collections.abc import Callable
 from datetime import UTC, datetime
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from shutil import disk_usage
 from typing import Literal, Protocol
@@ -32,6 +33,13 @@ from romini.features.play_by_tag.place_figure import (
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+
+def installed_version() -> str:
+    try:
+        return version("romini")
+    except PackageNotFoundError:
+        return "0.0.0"
 
 
 def format_free_space(n: int) -> str:
@@ -527,6 +535,7 @@ def create_dashboard(
                 "page": page,
                 "page_title": page_title,
                 "free_space": format_free_space(storage.free_bytes),
+                "version": installed_version(),
                 "charge": battery.percent if battery is not None else None,
                 "notice": HOME_NOTICES.get(notice_key, ""),
                 "characters": notes["characters"],
