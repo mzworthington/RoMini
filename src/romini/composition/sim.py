@@ -97,6 +97,9 @@ class SimBox:
         if selected is not None and selected[0] == uid:
             self.note("select", f"Selected {uid}")
             return
+        if self.library.track_for(uid) is None:
+            self.note("place", f"No story for {uid}")
+            return
         self.note("place", f"Placed {uid}")
 
     def lift(self, uid: str, *, elapsed_sec: float, position_sec: float) -> None:

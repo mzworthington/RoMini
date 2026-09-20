@@ -2330,6 +2330,172 @@ def test_dashboard_parent_changes_appear_in_the_audit_log(tmp_path: Path) -> Non
     assert "el-secret" not in html
 
 
+def test_dashboard_draft_failure_shows_the_http_code_in_the_audit_log(tmp_path: Path) -> None:
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    class BoomDrafter:
+        def draft(self, *, title: str, characters: str, interests: str, outline: str) -> str:
+            raise HTTPError(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini",
+                429,
+                "Too Many Requests",
+                hdrs=None,
+                fp=BytesIO(b""),
+            )
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("GEMINI_API_KEY=gem-secret\n")
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            drafter=BoomDrafter(),
+            audit=log,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station"})
+    client.post("/stories/draft")
+
+    html = client.get("/settings").text
+
+    assert "Draft failed (429)" in html
+
+
+def test_dashboard_speak_failure_shows_the_http_code_in_the_audit_log(tmp_path: Path) -> None:
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    class BoomSpeech:
+        def speak(self, *, text: str, voice_id: str) -> bytes:
+            raise HTTPError(
+                "https://api.elevenlabs.io/v1/text-to-speech/voice",
+                401,
+                "Unauthorized",
+                hdrs=None,
+                fp=BytesIO(b""),
+            )
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            speech=BoomSpeech(),
+            audit=log,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "script": "Once upon a time"})
+    client.post("/stories/speak")
+
+    html = client.get("/settings").text
+
+    assert "Speak failed (401)" in html
+
+
+def test_dashboard_full_upload_appears_in_the_audit_log() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=0),
+            catalog=FakeCatalog(),
+            audit=log,
+        )
+    )
+    client.post("/tracks", files={"file": ("frog.mp3", b"id3", "audio/mpeg")})
+
+    html = client.get("/settings").text
+
+    assert "Could not store frog.mp3 (full)" in html
+
+
+def test_dashboard_speak_full_disk_appears_in_the_audit_log(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=0),
+            catalog=FakeCatalog(),
+            stories=tmp_path,
+            secrets=secrets,
+            speech=FakeSpeech(audio=b"ID3ok"),
+            audit=log,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "script": "Once upon a time"})
+    client.post("/stories/speak")
+
+    html = client.get("/settings").text
+
+    assert "Speak failed (full)" in html
+
+
+def test_dashboard_draft_without_a_key_appears_in_the_audit_log(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=tmp_path / "studio.env",
+            audit=log,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station"})
+    client.post("/stories/draft")
+
+    html = client.get("/settings").text
+
+    assert "Draft failed (no key)" in html
+
+
+def test_dashboard_speak_without_a_key_appears_in_the_audit_log(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=tmp_path / "studio.env",
+            audit=log,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "script": "Once upon a time"})
+    client.post("/stories/speak")
+
+    html = client.get("/settings").text
+
+    assert "Speak failed (no key)" in html
+
+
 def test_dashboard_library_page_puts_upload_and_assign_above_the_catalog() -> None:
     from fastapi.testclient import TestClient
 

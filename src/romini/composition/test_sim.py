@@ -66,6 +66,20 @@ def test_sim_place_records_the_audit_log() -> None:
     assert summaries == [f"Played {SIM_LIBRARY_ROOT}/{FROG_REL_PATH}"]
 
 
+def test_sim_unknown_figure_records_the_code_in_the_audit_log() -> None:
+    from romini.features.audit.memory import MemoryAuditLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led)
+    box.audit = MemoryAuditLog()
+
+    box.place("04deadbeef")
+
+    summaries = [entry.summary for entry in box.audit.recent()]
+    assert summaries == ["No story for 04deadbeef"]
+
+
 def test_sim_volume_and_halt_record_the_audit_log() -> None:
     from romini.features.audit.memory import MemoryAuditLog
 

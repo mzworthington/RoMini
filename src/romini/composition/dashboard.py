@@ -478,6 +478,11 @@ def create_dashboard(
             return
         record_event(audit, action=action, summary=summary, clock=lambda: datetime.now(UTC))
 
+    def note_failed(action: str, label: str, err: BaseException) -> None:
+        code = getattr(err, "code", None)
+        suffix = f" ({code})" if isinstance(code, int) else ""
+        note(action, f"{label} failed{suffix}")
+
     def brand_asset(name: str) -> FileResponse:
         path = ASSETS_DIR / name
         if not path.is_file():
@@ -682,6 +687,8 @@ def create_dashboard(
             )
             if stored:
                 note("upload", f"Stored {filename}")
+            else:
+                note("upload", f"Could not store {filename} (full)")
             stored_any = stored_any or stored
         notice = "uploaded" if stored_any else "full"
         return _notice("/library", notice)
@@ -866,6 +873,7 @@ def create_dashboard(
             raise HTTPException(status_code=404)
         key = _studio_keys(secrets, box_secrets)["GEMINI_API_KEY"]
         if not key:
+            note("story", "Draft failed (no key)")
             return _notice("/stories", "draft-needed")
         writer = drafter or GeminiScriptDraft(api_key=key, post=draft_post or gemini_http_post)
         notes = _load_story_notes(stories)
@@ -876,7 +884,8 @@ def create_dashboard(
                 interests=notes["interests"],
                 outline=notes["outline"],
             )
-        except Exception:
+        except Exception as err:
+            note_failed("story", "Draft", err)
             return _notice("/stories", "draft-needed")
         _write_story_notes(
             stories,
@@ -901,15 +910,18 @@ def create_dashboard(
         chosen = str(form.get("voice_id") or "").strip()
         voice_id = chosen if chosen in allowed else (named_voices[0]["id"] if named_voices else "")
         if not keys["ELEVENLABS_API_KEY"] or not voice_id:
+            note("speak", "Speak failed (no key)")
             return _notice("/stories", "speak-needed")
         notes = _load_story_notes(stories)
         script = notes["script"].strip()
         if not script:
+            note("speak", "Speak failed (no script)")
             return _notice("/stories", "speak-needed")
         speaker = speech or ElevenLabsSpeech(api_key=keys["ELEVENLABS_API_KEY"], post=speak_post or http_post)
         try:
             audio = speaker.speak(text=script, voice_id=voice_id)
-        except Exception:
+        except Exception as err:
+            note_failed("speak", "Speak", err)
             return _notice("/stories", "speak-needed")
         pack = _current_pack(stories)
         slug = pack.name if pack != stories else _story_slug(notes["title"])
@@ -931,6 +943,7 @@ def create_dashboard(
             catalog=catalog,
         )
         if not stored:
+            note("speak", "Speak failed (full)")
             return _notice("/stories", "full")
         if pack != stories and pack.is_dir():
             for old in pack.iterdir():
