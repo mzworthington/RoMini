@@ -425,7 +425,7 @@ def test_romini_core_dashboard_keeps_story_notes(tmp_path: Path, monkeypatch) ->
 
     box = main(player=FakePlayer(), led=FakeLed())
     try:
-        payload = urlencode({"characters": "Romy", "interests": "trains", "outline": "a station"}).encode()
+        payload = urlencode({"outline": "trains, then a station"}).encode()
         req = Request(
             f"http://127.0.0.1:{box.dashboard.port}/stories",
             data=payload,
@@ -442,8 +442,7 @@ def test_romini_core_dashboard_keeps_story_notes(tmp_path: Path, monkeypatch) ->
     finally:
         box.dashboard.close()
 
-    assert ">trains</textarea>" in body
-    assert ">a station</textarea>" in body
+    assert ">trains, then a station</textarea>" in body
     assert "<legend>Characters</legend>" in body
 
 

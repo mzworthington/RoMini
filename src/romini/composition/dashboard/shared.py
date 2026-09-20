@@ -388,15 +388,6 @@ def list_saved_characters(root: Path | None) -> list[dict[str, str]]:
     return found
 
 
-def list_story_extras(root: Path | None) -> list[str]:
-    if root is None:
-        return []
-    extras = current_pack(root) / "extras"
-    if not extras.is_dir():
-        return []
-    return sorted(path.name for path in extras.iterdir() if path.is_file() and not path.name.startswith("."))
-
-
 def spoken_file_name(root: Path | None) -> str:
     if root is None:
         return ""
@@ -409,29 +400,6 @@ def spoken_file_name(root: Path | None) -> str:
     stem = pack.name if pack != root else ""
     preferred = [name for name in names if stem and name.startswith(stem) and name.endswith(".mp3")]
     return preferred[-1] if preferred else names[0]
-
-
-async def save_story_extra(root: Path, extra: object) -> None:
-    filename = getattr(extra, "filename", None)
-    if not filename or not str(filename).strip():
-        return
-    name = Path(str(filename).replace("\\", "/")).name
-    if not name or name.startswith("."):
-        return
-    read = getattr(extra, "read", None)
-    if not callable(read):
-        return
-    dest_dir = root / "extras"
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    (dest_dir / name).write_bytes(await read())
-
-
-def remove_story_extra(root: Path, name: str) -> None:
-    if not name or name in {".", ".."} or "/" in name or "\\" in name:
-        return
-    target = root / "extras" / name
-    if target.is_file():
-        target.unlink()
 
 
 def is_audio_track(filename: str) -> bool:
@@ -590,7 +558,6 @@ def render_page(
             "charge": battery.percent if battery is not None else None,
             "notice": flash or detail or HOME_NOTICES.get(notice_key, ""),
             "characters": notes["characters"],
-            "interests": notes["interests"],
             "outline": notes["outline"],
             "script": notes["script"],
             "story_title": notes["title"],
@@ -598,7 +565,6 @@ def render_page(
             "story_length_label": listen_length_label(
                 duration_seconds=parse_duration_seconds(notes.get("duration_seconds"))
             ),
-            "extras": list_story_extras(stories),
             "spoken_file": spoken_file_name(stories),
             "saved_stories": list_saved_stories(stories),
             "saved_characters": list_saved_characters(characters),

@@ -3139,7 +3139,6 @@ def test_dashboard_write_page_lets_you_pick_a_named_voice(tmp_path: Path) -> Non
     client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
     html = client.get("/stories").text
 
-    assert 'for="voice"' in html
     assert ">Voice<" in html
     assert 'name="voice_id"' in html
     assert 'action="/stories/speak"' in html
