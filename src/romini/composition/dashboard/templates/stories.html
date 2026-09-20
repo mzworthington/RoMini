@@ -86,7 +86,7 @@ function updateStoryLength(value) {
 <tr>
     <td>{{ story.title }}</td>
     <td>
-        <form action="/stories/open" method="post"><button name="slug" value="{{ story.slug }}">Open</button></form>
+        <a class="button" href="/stories/{{ story.slug }}">Open</a>
         <form action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>
     </td>
 </tr>

@@ -265,7 +265,7 @@ fieldset input[type="checkbox"] {
   accent-color: var(--story-coral);
   flex-shrink: 0;
 }
-input, select, button, textarea { font: inherit; }
+input, select, button, a.button, textarea { font: inherit; }
 input[type="text"], input[type="password"], input[type="file"], select, textarea {
   width: 100%;
   min-height: 2.75rem;
@@ -328,7 +328,7 @@ label:has(.story-length-now) {
   border: 1px solid var(--line);
 }
 .volume-steps button:hover { background: #FFF7ED; }
-button {
+button, a.button {
   min-height: 2.75rem;
   margin-top: 0.85rem;
   padding: 0.4rem 0.95rem;
@@ -339,13 +339,17 @@ button {
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s ease, transform 0.15s ease;
 }
 button:disabled {
   opacity: 0.65;
   cursor: wait;
 }
-button:active { transform: translateY(1px); }
+button:active, a.button:active { transform: translateY(1px); }
 :focus-visible {
   outline: 3px solid var(--magic-ochre);
   outline-offset: 2px;
@@ -374,8 +378,9 @@ caption, td label {
   border: 0;
 }
 td form { margin: 0; }
-td:last-child form { display: inline-block; }
-td button { margin: 0; min-height: 2.25rem; }
+td:last-child form, td:last-child a { display: inline-block; vertical-align: middle; }
+td:last-child a.button { margin-right: 0.4rem; }
+td button, td a.button { margin: 0; min-height: 2.25rem; }
 .empty, .hint { color: var(--muted); margin: 0.4rem 0 0; font-weight: 500; }
 .audit-log {
   list-style: none;
@@ -414,12 +419,14 @@ td button { margin: 0; min-height: 2.25rem; }
   .jumps a,
   .jumps button.jump,
   nav[aria-label="Dashboard"] a,
-  button {
+  button,
+  a.button {
     transition: none;
   }
   .jumps a:hover,
   .jumps button.jump:hover,
-  button:active {
+  button:active,
+  a.button:active {
     transform: none;
   }
 }

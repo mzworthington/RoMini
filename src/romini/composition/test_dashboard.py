@@ -1447,6 +1447,34 @@ def test_dashboard_lists_a_saved_character_after_save(tmp_path: Path) -> None:
     assert "Loves trains and bedtime." in html
 
 
+def test_dashboard_saved_character_has_a_shareable_url(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    saved = client.post(
+        "/characters",
+        data={"name": "Romy", "background": "Loves trains."},
+        follow_redirects=False,
+    )
+
+    assert saved.status_code == 303
+    assert saved.headers["location"].startswith("/characters/romy")
+    html = client.get("/characters/romy").text
+    assert 'value="Romy"' in html
+    assert ">Loves trains.</textarea>" in html
+
+
+def test_dashboard_characters_index_redirects_to_the_saved_name(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    listed = client.get("/characters", follow_redirects=False)
+
+    assert listed.status_code == 303
+    assert listed.headers["location"].startswith("/characters/romy")
+
+
 def test_dashboard_opening_a_character_fills_the_form(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1458,6 +1486,17 @@ def test_dashboard_opening_a_character_fills_the_form(tmp_path: Path) -> None:
     assert 'value="Romy"' in html
     assert ">Loves trains.</textarea>" in html
     assert ">Open<" in html
+
+
+def test_dashboard_saved_character_open_is_a_shareable_link(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    listed = client.get("/characters").text.split("<h2>Characters</h2>", 1)[1]
+
+    assert 'href="/characters/romy"' in listed
+    assert 'action="/characters/open"' not in listed
 
 
 def test_dashboard_rejects_a_second_character_with_the_same_name(tmp_path: Path) -> None:
@@ -1663,6 +1702,29 @@ def test_dashboard_lists_a_saved_story_after_save(tmp_path: Path) -> None:
     assert "Open The little station" not in html
 
 
+def test_dashboard_saved_story_has_a_shareable_url(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    saved = client.post("/stories", data={"story_title": "The little station"}, follow_redirects=False)
+
+    assert saved.status_code == 303
+    assert saved.headers["location"].startswith("/stories/the-little-station")
+    html = client.get("/stories/the-little-station").text
+    assert 'value="The little station"' in html
+
+
+def test_dashboard_stories_index_redirects_to_the_saved_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    listed = client.get("/stories", follow_redirects=False)
+
+    assert listed.status_code == 303
+    assert listed.headers["location"].startswith("/stories/the-little-station")
+
+
 def test_dashboard_saved_stories_use_a_table_with_actions_on_the_right(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1678,6 +1740,29 @@ def test_dashboard_saved_stories_use_a_table_with_actions_on_the_right(tmp_path:
     assert "Open The little station" not in listed
     assert listed.index("<td>The little station</td>") < listed.index(">Open<")
     assert listed.index(">Open<") < listed.index(">Delete<")
+
+
+def test_dashboard_saved_story_open_is_a_shareable_link(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
+
+    assert 'href="/stories/the-little-station"' in listed
+    assert 'action="/stories/open"' not in listed
+
+
+def test_dashboard_saved_story_open_looks_like_a_button(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    html = client.get("/stories").text
+    listed = html.split("<h2>Saved stories</h2>", 1)[1]
+
+    assert '<a class="button" href="/stories/the-little-station">Open</a>' in listed
+    assert "a.button" in html
 
 
 def test_dashboard_saved_stories_let_you_delete_not_speak(tmp_path: Path) -> None:

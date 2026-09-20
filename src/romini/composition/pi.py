@@ -36,6 +36,7 @@ class MpvPlayer:
         cmd = [
             "mpv",
             "--ao=alsa",
+            "--audio-device=alsa/sysdefault:CARD=Headphones",
             f"--input-ipc-server={mpv_ipc_socket()}",
             f"--start={position_sec}",
         ]
@@ -109,7 +110,7 @@ class MpvPlayer:
         name = path.rsplit("/", 1)[-1]
         wav = files("romini").joinpath(name)
         audio = str(wav) if wav.is_file() else path
-        subprocess.Popen(["mpv", "--ao=alsa", audio])
+        subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
 
 
 class MpvIpcStatus:

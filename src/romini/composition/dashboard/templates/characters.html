@@ -28,7 +28,7 @@
 <tr>
     <td>{{ character.name }}</td>
     <td>
-        <form action="/characters/open" method="post"><button name="slug" value="{{ character.slug }}">Open</button></form>
+        <a class="button" href="/characters/{{ character.slug }}">Open</a>
     </td>
 </tr>
 {% endfor %}

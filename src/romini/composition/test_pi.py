@@ -32,6 +32,7 @@ def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
         [
             "mpv",
             "--ao=alsa",
+            "--audio-device=alsa/sysdefault:CARD=Headphones",
             f"--input-ipc-server={sock}",
             "--start=14.5",
             "/var/lib/romini/library/frog.mp3",
@@ -72,7 +73,11 @@ def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
     MpvPlayer().play_earcon("romini/connect.wav")
 
-    assert calls[0][:2] == ["mpv", "--ao=alsa"]
+    assert calls[0][:3] == [
+        "mpv",
+        "--ao=alsa",
+        "--audio-device=alsa/sysdefault:CARD=Headphones",
+    ]
     assert calls[0][-1].endswith("connect.wav")
 
 

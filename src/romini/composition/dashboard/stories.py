@@ -28,8 +28,24 @@ from romini.features.library.add_track import add_track
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
-    @app.get("/stories", response_class=HTMLResponse)
-    def stories_page(request: Request) -> HTMLResponse:
+    @app.get("/stories", response_model=None)
+    def stories_page(request: Request) -> HTMLResponse | RedirectResponse:
+        if ctx.stories is not None:
+            pack = current_pack(ctx.stories)
+            if pack != ctx.stories:
+                dest = f"/stories/{pack.name}"
+                if request.url.query:
+                    dest = f"{dest}?{request.url.query}"
+                return RedirectResponse(dest, status_code=303)
+        return ctx.page(request, "stories.html", page="stories", page_title="Stories")
+
+    @app.get("/stories/{slug}", response_class=HTMLResponse)
+    def story_page(request: Request, slug: str) -> HTMLResponse:
+        if ctx.stories is None:
+            raise HTTPException(status_code=404)
+        open_story_pack(ctx.stories, slug)
+        if current_pack(ctx.stories) != ctx.stories / slug:
+            raise HTTPException(status_code=404)
         return ctx.page(request, "stories.html", page="stories", page_title="Stories")
 
     @app.get("/write")
@@ -53,7 +69,8 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         )
         title = str(form.get("story_title") or "").strip() or pack.name
         ctx.note("story", f"Saved story {title}")
-        return notice("/stories", "story")
+        dest = f"/stories/{pack.name}" if pack != ctx.stories else "/stories"
+        return notice(dest, "story")
 
     @app.post("/stories/open", response_model=None)
     async def open_story(request: Request) -> RedirectResponse:
