@@ -334,6 +334,28 @@ def test_mpv_player_position_sec_reads_time_pos(monkeypatch) -> None:
     assert b"time-pos" in sent[0]
 
 
+def test_pn532_hat_turns_the_rf_field_on_and_raises_type_a_gain() -> None:
+    from romini.composition.pn532_hat import configure_pn532_rf
+
+    class Reader:
+        def __init__(self) -> None:
+            self.calls: list[object] = []
+
+        def SAM_configuration(self) -> None:
+            self.calls.append("sam")
+
+        def call_function(self, command: int, params: list[int] | None = None) -> bytes:
+            self.calls.append((command, list(params or [])))
+            return b""
+
+    reader = Reader()
+    configure_pn532_rf(reader)
+
+    assert reader.calls[0] == "sam"
+    assert reader.calls[1] == (0x32, [0x01, 0x01])
+    assert reader.calls[2] == (0x32, [0x0A, 0x79, 0xF4, 0x3F, 0x11, 0x4D, 0x85, 0x61, 0x6F, 0x26, 0x62, 0x87])
+
+
 def test_pn532_hat_exposes_pn532_spi() -> None:
     from romini.composition.pn532_hat import PN532_SPI
 

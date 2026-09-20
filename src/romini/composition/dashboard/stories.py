@@ -1,7 +1,7 @@
 import shutil
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from romini.composition.dashboard.shared import (
     DashboardCtx,
@@ -49,7 +49,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         return ctx.page(request, "stories.html", page="stories", page_title="Stories")
 
     @app.get("/stories/{slug}/spoken")
-    def preview_spoken(slug: str) -> Response:
+    def preview_spoken(slug: str) -> FileResponse:
         if ctx.stories is None:
             raise HTTPException(status_code=404)
         open_story_pack(ctx.stories, slug)
@@ -62,7 +62,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         path = pack / filename
         if not path.is_file():
             raise HTTPException(status_code=404)
-        return Response(content=path.read_bytes(), media_type="audio/mpeg")
+        return FileResponse(path, media_type="audio/mpeg")
 
     @app.get("/write")
     def write_page() -> RedirectResponse:

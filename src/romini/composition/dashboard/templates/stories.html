@@ -74,7 +74,21 @@ function updateStoryLength(value) {
 {% if spoken_file %}
 <section>
 <h2>Listen</h2>
-<audio id="player" controls preload="metadata" aria-label="Preview" src="/stories/{{ opened_story_slug }}/spoken"></audio>
+<select id="preview" hidden>
+<option value="/library/file/{{ spoken_file }}">{{ spoken_file }}</option>
+</select>
+<audio id="player" controls preload="metadata" aria-label="Preview"></audio>
+<script>
+(function () {
+  var select = document.getElementById("preview");
+  var player = document.getElementById("player");
+  function load() {
+    player.src = select.value;
+  }
+  select.addEventListener("change", load);
+  load();
+})();
+</script>
 <p class="hint">Spoken file: {{ spoken_file }}</p>
 </section>
 {% endif %}

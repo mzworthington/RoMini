@@ -3318,7 +3318,8 @@ def test_dashboard_story_page_lets_you_listen_to_the_spoken_file(tmp_path: Path)
     assert "<audio" in html
     assert "controls" in html
     assert 'id="player"' in html
-    assert 'src="/stories/the-little-station/spoken"' in html
+    assert 'value="/library/file/spoken.mp3"' in html
+    assert "player.src = select.value" in html
     assert 'aria-label="Preview"' in html
 
 
@@ -3353,3 +3354,46 @@ def test_dashboard_speak_warns_that_the_existing_track_will_be_replaced(tmp_path
     speak = html.split('action="/stories/speak"', 1)[1].split("</form>", 1)[0]
 
     assert "Speaking again replaces spoken.mp3." in speak
+
+
+def test_dashboard_spoken_preview_answers_a_range_request(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    pack = tmp_path / "super-story"
+    pack.mkdir()
+    (pack / "story.yaml").write_text("title: Super story\nscript: hello\n")
+    (pack / "super-story.mp3").write_bytes(b"ID3audio-bytes")
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path)).get(
+        "/stories/super-story/spoken",
+        headers={"Range": "bytes=0-2"},
+    )
+
+    assert response.status_code == 206
+    assert response.content == b"ID3"
+    assert response.headers["accept-ranges"] == "bytes"
+    assert response.headers["content-range"] == "bytes 0-2/14"
+
+
+def test_dashboard_story_listen_loads_the_library_preview_url(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    pack = tmp_path / "the-little-station"
+    pack.mkdir()
+    (pack / "story.yaml").write_text("title: The little station\nscript: hello\n")
+    (pack / "spoken.mp3").write_bytes(b"id3")
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"spoken.mp3": b"id3"}),
+                stories=tmp_path,
+            )
+        )
+        .get("/stories/the-little-station")
+        .text
+    )
+    listen = html.split("<h2>Listen</h2>", 1)[1]
+
+    assert 'id="player"' in listen
+    assert "player.src = select.value" in listen
+    assert 'value="/library/file/spoken.mp3"' in listen
+    assert 'src="/stories/' not in listen
