@@ -44,6 +44,16 @@ main { margin: 0; padding: 0; }
   margin: 0;
   min-width: 0;
 }
+.new-pack {
+  margin: 0 0 1rem;
+}
+.new-pack form { margin: 0; }
+.new-pack button {
+  margin: 0;
+  background: #fff;
+  color: var(--midnight-navy);
+  border: 2px solid var(--story-coral);
+}
 .masthead {
   display: flex;
   align-items: center;
@@ -274,6 +284,7 @@ input[type="text"]:focus-visible, input[type="password"]:focus-visible, select:f
   box-shadow: 0 0 0 3px rgba(229, 184, 135, 0.35);
 }
 textarea { min-height: 6rem; resize: vertical; }
+#script { min-height: 22rem; }
 audio {
   display: block;
   width: 100%;
@@ -363,6 +374,7 @@ caption, td label {
   border: 0;
 }
 td form { margin: 0; }
+td:last-child form { display: inline-block; }
 td button { margin: 0; min-height: 2.25rem; }
 .empty, .hint { color: var(--muted); margin: 0.4rem 0 0; font-weight: 500; }
 .audit-log {

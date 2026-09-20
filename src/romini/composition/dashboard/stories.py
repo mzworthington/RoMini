@@ -1,3 +1,5 @@
+import shutil
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -77,6 +79,26 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             raise HTTPException(status_code=404)
         clear_current(ctx.stories)
         return RedirectResponse("/stories", status_code=303)
+
+    @app.post("/stories/delete", response_model=None)
+    async def delete_story(request: Request) -> RedirectResponse:
+        if ctx.stories is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        slug = str(form.get("slug") or "").strip()
+        pack = ctx.stories / slug
+        if (
+            slug
+            and slug not in {".", ".."}
+            and "/" not in slug
+            and "\\" not in slug
+            and (pack / "story.yaml").is_file()
+        ):
+            if current_pack(ctx.stories) == pack:
+                clear_current(ctx.stories)
+            shutil.rmtree(pack)
+            ctx.note("story", f"Deleted story {slug}")
+        return notice("/stories", "story")
 
     @app.post("/stories/draft", response_model=None)
     def draft_story() -> RedirectResponse:

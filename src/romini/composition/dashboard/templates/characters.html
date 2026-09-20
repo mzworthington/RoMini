@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
+<p class="new-pack">
+<form action="/characters/new" method="post">
+<button>New character</button>
+</form>
+</p>
 <section>
 <h2>{% if opened_character_slug %}Edit a character{% else %}Add a character{% endif %}</h2>
 <form action="/characters" method="post">
@@ -10,27 +15,26 @@
 <textarea id="character-background" name="background">{{ character_background }}</textarea>
 <button>Save character</button>
 </form>
-{% if opened_character_slug %}
-<form action="/characters/new" method="post">
-<button>New character</button>
-</form>
-{% endif %}
 </section>
 <section>
 <h2>Characters</h2>
 {% if saved_characters %}
-<ul class="jumps">
+<div class="table-wrap">
+<table>
+<caption>Characters</caption>
+<thead><tr><th>Name</th><th>Action</th></tr></thead>
+<tbody>
 {% for character in saved_characters %}
-<li>
-<form action="/characters/open" method="post">
-<button class="jump" name="slug" value="{{ character.slug }}">
-<strong>{{ character.name }}</strong>
-Open {{ character.name }}
-</button>
-</form>
-</li>
+<tr>
+    <td>{{ character.name }}</td>
+    <td>
+        <form action="/characters/open" method="post"><button name="slug" value="{{ character.slug }}">Open</button></form>
+    </td>
+</tr>
 {% endfor %}
-</ul>
+</tbody>
+</table>
+</div>
 {% else %}
 <p class="empty">No characters yet</p>
 {% endif %}

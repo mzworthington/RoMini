@@ -1281,12 +1281,11 @@ def test_dashboard_keeps_story_notes_after_save(tmp_path: Path) -> None:
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
     client.post(
         "/stories",
-        data={"characters": "Romy", "interests": "trains", "outline": "a station"},
+        data={"outline": "trains, then a station"},
     )
     html = client.get("/write").text
 
-    assert ">trains</textarea>" in html
-    assert ">a station</textarea>" in html
+    assert ">trains, then a station</textarea>" in html
     assert "<legend>Characters</legend>" in html
 
 
@@ -1302,45 +1301,17 @@ def test_dashboard_keeps_story_length_after_save(tmp_path: Path) -> None:
     assert "4 minutes" in html
 
 
-def test_dashboard_lists_an_extra_file_on_the_story(tmp_path: Path) -> None:
-    from fastapi.testclient import TestClient
-
-    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
-    client.post(
-        "/stories",
-        data={"characters": "", "interests": "", "outline": ""},
-        files={"extra": ("scribbles.txt", b"hi", "text/plain")},
-    )
-    html = client.get("/write").text
-
-    assert "scribbles.txt" in html
-
-
-def test_dashboard_removes_an_extra_file_without_deleting_the_spoken_mp3(tmp_path: Path) -> None:
-    from fastapi.testclient import TestClient
-
-    spoken = tmp_path / "spoken.mp3"
-    spoken.write_bytes(b"id3")
-    extras = tmp_path / "extras"
-    extras.mkdir()
-    (extras / "scribbles.txt").write_bytes(b"hi")
-    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
-    client.post("/stories", data={"remove_extra": "scribbles.txt"})
-    html = client.get("/write").text
-
-    assert "scribbles.txt" not in html
-    assert spoken.read_bytes() == b"id3"
-
-
 def test_dashboard_home_has_labelled_story_note_fields() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
 
-    assert 'for="interests"' in html
-    assert "Points to cover / interests" in html
     assert 'for="outline"' in html
     assert "Story outline" in html
+    assert 'for="interests"' not in html
+    assert "Points to cover / interests" not in html
+    assert 'for="extra"' not in html
+    assert "Extra files" not in html
     assert "<legend>Characters</legend>" in html
     assert 'for="characters"' not in html
 
@@ -1391,7 +1362,7 @@ def test_dashboard_draft_and_speak_controls_are_labelled(tmp_path: Path) -> None
     from fastapi.testclient import TestClient
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
-    client.post("/stories", data={"story_title": "The little station"})
+    client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
     html = client.get("/stories").text
 
     assert 'action="/stories/draft"' in html
@@ -1400,29 +1371,23 @@ def test_dashboard_draft_and_speak_controls_are_labelled(tmp_path: Path) -> None
     assert ">Speak script<" in html
 
 
-def test_dashboard_draft_and_speak_join_the_board_after_save(tmp_path: Path) -> None:
+def test_dashboard_draft_sits_under_save_in_the_write_section(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
     empty = client.get("/stories").text
 
     assert 'action="/stories/draft"' not in empty
-    assert 'action="/stories/speak"' not in empty
     assert ">Draft script<" not in empty
-    assert ">Speak script<" not in empty
 
     client.post("/stories", data={"story_title": "The little station"})
-    saved = client.get("/stories").text
-    board = saved.index('class="board"')
-    write = saved.index("<h2>Write a story</h2>")
-    draft = saved.index('action="/stories/draft"')
-    speak = saved.index('action="/stories/speak"')
-    listed = saved.index("<h2>Saved stories</h2>")
+    html = client.get("/stories").text
+    write = html.split("<h2>Write a story</h2>", 1)[1].split("<h2>Saved stories</h2>", 1)[0]
 
-    assert board < write < draft < speak < listed
-    assert ">Draft script<" in saved
-    assert ">Speak script<" in saved
-    assert 'name="voice_id"' in saved
+    assert write.index(">Save story<") < write.index('action="/stories/draft"')
+    assert write.index('action="/stories/draft"') < write.index("</section>")
+    assert "#script" in html
+    assert "min-height: 22rem" in html
 
 
 def test_dashboard_saved_stories_empty_when_none_saved(tmp_path: Path) -> None:
@@ -1492,7 +1457,7 @@ def test_dashboard_opening_a_character_fills_the_form(tmp_path: Path) -> None:
 
     assert 'value="Romy"' in html
     assert ">Loves trains.</textarea>" in html
-    assert "Open Romy" in html
+    assert ">Open<" in html
 
 
 def test_dashboard_rejects_a_second_character_with_the_same_name(tmp_path: Path) -> None:
@@ -1512,11 +1477,14 @@ def test_dashboard_new_character_clears_the_form(tmp_path: Path) -> None:
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
     client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    saved = client.get("/characters").text
     html = client.post("/characters/new").text
 
+    assert ">New character<" in saved
+    assert saved.index(">New character<") < saved.index("<h2>Edit a character</h2>")
     assert 'value="Romy"' not in html
     assert 'type="hidden" name="slug"' not in html
-    assert "Open Romy" in html
+    assert ">Open<" in html
 
 
 def test_dashboard_saving_an_opened_character_updates_background(tmp_path: Path) -> None:
@@ -1692,32 +1660,37 @@ def test_dashboard_lists_a_saved_story_after_save(tmp_path: Path) -> None:
 
     assert "No saved stories yet" not in html
     assert "The little station" in html
-    assert "Open The little station" in html
+    assert "Open The little station" not in html
 
 
-def test_dashboard_saved_stories_use_the_home_jump_list(tmp_path: Path) -> None:
+def test_dashboard_saved_stories_use_a_table_with_actions_on_the_right(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
     client.post("/stories", data={"story_title": "The little station"})
-    html = client.get("/stories").text
+    listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
 
-    assert 'class="jumps"' in html
-    assert 'class="jump"' in html
-    assert "<strong>The little station</strong>" in html
+    assert 'class="table-wrap"' in listed
+    assert "<caption>Saved stories</caption>" in listed
+    assert "<th>Title</th>" in listed
+    assert "<th>Action</th>" in listed
+    assert "<td>The little station</td>" in listed
+    assert "Open The little station" not in listed
+    assert listed.index("<td>The little station</td>") < listed.index(">Open<")
+    assert listed.index(">Open<") < listed.index(">Delete<")
 
 
-def test_dashboard_saved_stories_let_you_pick_a_voice_and_speak(tmp_path: Path) -> None:
+def test_dashboard_saved_stories_let_you_delete_not_speak(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
     client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
     listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
 
-    assert 'action="/stories/speak"' in listed
-    assert 'name="voice_id"' in listed
-    assert 'name="slug" value="the-little-station"' in listed
-    assert ">Speak script<" in listed
+    assert 'action="/stories/speak"' not in listed
+    assert ">Speak script<" not in listed
+    assert 'name="voice_id"' not in listed
+    assert 'action="/stories/delete"' in listed
     assert ">Delete<" in listed
 
 
@@ -1769,9 +1742,11 @@ def test_dashboard_new_story_clears_the_form(tmp_path: Path) -> None:
     html = client.post("/stories/new").text
 
     assert ">New story<" in saved
+    assert saved.index(">New story<") < saved.index("<h2>Write a story</h2>")
     assert 'value="The little station"' not in html
     assert ">a ride</textarea>" not in html
-    assert "Open The little station" in html
+    assert ">Open<" in html
+    assert "The little station" in html
 
 
 def test_dashboard_opening_another_story_shows_that_story_notes(tmp_path: Path) -> None:
@@ -3161,7 +3136,7 @@ def test_dashboard_write_page_lets_you_pick_a_named_voice(tmp_path: Path) -> Non
     from fastapi.testclient import TestClient
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
-    client.post("/stories", data={"story_title": "The little station"})
+    client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
     html = client.get("/stories").text
 
     assert 'for="voice"' in html

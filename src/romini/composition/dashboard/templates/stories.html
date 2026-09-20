@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
+<p class="new-pack">
+<form action="/stories/new" method="post">
+<button>New story</button>
+</form>
+</p>
 <div class="board">
 <section>
 <h2>Write a story</h2>
@@ -35,39 +40,20 @@ function updateStoryLength(value) {
 <p class="hint"><a href="/characters">Add a character</a> first, then pick who is in this story.</p>
 {% endif %}
 </fieldset>
-<label for="interests">Points to cover / interests</label>
-<textarea id="interests" name="interests">{{ interests }}</textarea>
 <label for="outline">Story outline</label>
 <textarea id="outline" name="outline">{{ outline }}</textarea>
 <label for="script">Script</label>
 <textarea id="script" name="script">{{ script }}</textarea>
-<label for="extra">Extra files</label>
-<input id="extra" type="file" name="extra">
-{% if extras %}
-<ul>
-{% for name in extras %}
-<li>{{ name }} <button name="remove_extra" value="{{ name }}">Remove</button></li>
-{% endfor %}
-</ul>
-{% endif %}
 <button>Save story</button>
 </form>
 {% if story_title %}
-<form action="/stories/new" method="post">
-<button>New story</button>
-</form>
-{% endif %}
-{% if spoken_file %}
-<p class="hint">Spoken file: {{ spoken_file }}</p>
-{% endif %}
-</section>
-{% if story_title %}
-<section>
 <form action="/stories/draft" method="post" class="form-busy" data-busy="Writing the script…">
 <p id="draft-status" class="status" hidden role="status" aria-live="polite"></p>
 <button>Draft script</button>
 </form>
+{% endif %}
 </section>
+{% if story_title and script %}
 <section>
 <form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
 <p id="speak-status" class="status" hidden role="status" aria-live="polite"></p>
@@ -79,37 +65,32 @@ function updateStoryLength(value) {
 </select>
 <button>Speak script</button>
 </form>
+{% if spoken_file %}
+<p class="hint">Spoken file: {{ spoken_file }}</p>
+{% endif %}
 </section>
 {% endif %}
 </div>
 <section>
 <h2>Saved stories</h2>
 {% if saved_stories %}
-<ul class="jumps">
+<div class="table-wrap">
+<table>
+<caption>Saved stories</caption>
+<thead><tr><th>Title</th><th>Action</th></tr></thead>
+<tbody>
 {% for story in saved_stories %}
-<li>
-<form action="/stories/open" method="post">
-<button class="jump" name="slug" value="{{ story.slug }}">
-<strong>{{ story.title }}</strong>
-Open {{ story.title }}
-</button>
-</form>
-<form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
-<input type="hidden" name="slug" value="{{ story.slug }}">
-<label for="voice-{{ story.slug }}">Voice</label>
-<select id="voice-{{ story.slug }}" name="voice_id">
-{% for voice in voices %}
-<option value="{{ voice.id }}">{{ voice.name }}</option>
+<tr>
+    <td>{{ story.title }}</td>
+    <td>
+        <form action="/stories/open" method="post"><button name="slug" value="{{ story.slug }}">Open</button></form>
+        <form action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>
+    </td>
+</tr>
 {% endfor %}
-</select>
-<button>Speak script</button>
-</form>
-<form action="/stories/delete" method="post">
-<button name="slug" value="{{ story.slug }}">Delete</button>
-</form>
-</li>
-{% endfor %}
-</ul>
+</tbody>
+</table>
+</div>
 {% else %}
 <p class="empty">No saved stories yet</p>
 {% endif %}
