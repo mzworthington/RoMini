@@ -25,6 +25,9 @@ class FakeStorage:
     def paths(self) -> list[str]:
         return sorted(self.files)
 
+    def get(self, filename: str) -> bytes | None:
+        return self.files.get(filename)
+
 
 @dataclass
 class FakeNotices:
@@ -1287,6 +1290,18 @@ def test_dashboard_keeps_story_notes_after_save(tmp_path: Path) -> None:
     assert "<legend>Characters</legend>" in html
 
 
+def test_dashboard_keeps_story_length_after_save(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"duration_seconds": "240", "outline": "a ride"})
+    html = client.get("/write").text
+
+    assert 'id="story-length"' in html
+    assert 'value="240"' in html
+    assert "4 minutes" in html
+
+
 def test_dashboard_lists_an_extra_file_on_the_story(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1337,17 +1352,77 @@ def test_dashboard_home_has_labelled_story_title() -> None:
 
     assert 'for="story-title"' in html
     assert "Story title" in html
+    assert 'id="story-title" name="story_title" type="text" required' in html
 
 
-def test_dashboard_draft_and_speak_controls_are_labelled() -> None:
+def test_stories_page_has_story_length_slider() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
+
+    assert 'for="story-length"' in html
+    assert "Story length" in html
+    assert 'id="story-length"' in html
+    assert 'name="duration_seconds"' in html
+    assert 'type="range"' in html
+    assert 'min="10"' in html
+    assert 'max="600"' in html
+
+
+def test_stories_page_shows_story_length_in_time() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
+
+    assert 'id="story-length-now"' in html
+    assert "10 seconds" in html
+
+
+def test_stories_length_slider_has_live_time_label() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
+
+    assert 'oninput="updateStoryLength(this.value)"' in html
+    assert "function updateStoryLength" in html
+
+
+def test_dashboard_draft_and_speak_controls_are_labelled(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    html = client.get("/stories").text
 
     assert 'action="/stories/draft"' in html
     assert ">Draft script<" in html
     assert 'action="/stories/speak"' in html
     assert ">Speak script<" in html
+
+
+def test_dashboard_draft_and_speak_join_the_board_after_save(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    empty = client.get("/stories").text
+
+    assert 'action="/stories/draft"' not in empty
+    assert 'action="/stories/speak"' not in empty
+    assert ">Draft script<" not in empty
+    assert ">Speak script<" not in empty
+
+    client.post("/stories", data={"story_title": "The little station"})
+    saved = client.get("/stories").text
+    board = saved.index('class="board"')
+    write = saved.index("<h2>Write a story</h2>")
+    draft = saved.index('action="/stories/draft"')
+    speak = saved.index('action="/stories/speak"')
+    listed = saved.index("<h2>Saved stories</h2>")
+
+    assert board < write < draft < speak < listed
+    assert ">Draft script<" in saved
+    assert ">Speak script<" in saved
+    assert 'name="voice_id"' in saved
 
 
 def test_dashboard_saved_stories_empty_when_none_saved(tmp_path: Path) -> None:
@@ -1560,20 +1635,33 @@ def test_dashboard_draft_uses_character_background(tmp_path: Path) -> None:
             "characters": "Romy: A small train-loving girl.",
             "interests": "",
             "outline": "a ride",
+            "duration_seconds": "10",
         }
     ]
 
 
-def test_dashboard_draft_shows_writing_in_progress() -> None:
+def test_dashboard_draft_shows_writing_in_progress(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
-    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/stories").text
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    html = client.get("/stories").text
 
     assert 'action="/stories/draft"' in html
     assert "Writing the script" in html
     assert 'id="draft-status"' in html
     assert 'aria-live="polite"' in html
     assert "form-busy" in html
+
+
+def test_dashboard_busy_script_disables_every_button_and_blocks_a_second_submit() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+
+    assert 'document.querySelectorAll("button")' in html
+    assert "preventDefault" in html
+    assert "disabled = true" in html
 
 
 def test_dashboard_stories_page_puts_write_form_above_saved_list() -> None:
@@ -1728,31 +1816,42 @@ def test_dashboard_saved_keys_are_set_not_shown(tmp_path: Path) -> None:
         "/keys",
         data={
             "gemini_key": "gem-secret",
-            "elevenlabs_key": "el-secret",
+            "elevenlabs_key": "sk_el-secret",
         },
     )
     html = client.get("/settings").text
 
     assert "gem-secret" not in html
-    assert "el-secret" not in html
+    assert "sk_el-secret" not in html
     assert "Gemini key is set" in html
     assert "ElevenLabs key is set" in html
     text = secrets.read_text()
     assert "GEMINI_API_KEY=gem-secret" in text
-    assert "ELEVENLABS_API_KEY=el-secret" in text
+    assert "ELEVENLABS_API_KEY=sk_el-secret" in text
 
 
 def test_dashboard_settings_shows_masked_key_tails(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("GEMINI_API_KEY=sk-gemini-test-1a2b\nELEVENLABS_API_KEY=sk-eleven-test-9z8y\n")
+    secrets.write_text("GEMINI_API_KEY=sk-gemini-test-1a2b\nELEVENLABS_API_KEY=sk_eleven-test-9z8y\n")
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), secrets=secrets)).get("/settings").text
 
     assert "sk-gemini-test-1a2b" not in html
-    assert "sk-eleven-test-9z8y" not in html
+    assert "sk_eleven-test-9z8y" not in html
     assert "••••1a2b" in html
     assert "••••9z8y" in html
+
+
+def test_dashboard_does_not_treat_an_elevenlabs_key_id_as_set(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\n")
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), secrets=secrets)).get("/settings").text
+
+    assert "ElevenLabs key is set" not in html
+    assert "starts with sk_" in html
 
 
 @dataclass
@@ -1767,6 +1866,7 @@ class FakeDrafter:
         characters: str,
         interests: str,
         outline: str,
+        duration_seconds: int = 10,
     ) -> str:
         self.calls.append(
             {
@@ -1774,6 +1874,7 @@ class FakeDrafter:
                 "characters": characters,
                 "interests": interests,
                 "outline": outline,
+                "duration_seconds": str(duration_seconds),
             }
         )
         return self.script
@@ -1823,9 +1924,33 @@ def test_dashboard_draft_fills_script_from_notes(tmp_path: Path) -> None:
             "characters": "Romy",
             "interests": "trains",
             "outline": "a ride",
+            "duration_seconds": "10",
         }
     ]
     assert "gem-secret" not in html
+
+
+def test_dashboard_draft_uses_saved_story_length(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("GEMINI_API_KEY=gem-secret\n")
+    drafter = FakeDrafter(script="Rowmy waited at the station.")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            drafter=drafter,
+        )
+    )
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "duration_seconds": "240", "outline": "a ride"},
+    )
+    client.post("/stories/draft")
+
+    assert drafter.calls[0]["duration_seconds"] == "240"
 
 
 def test_dashboard_draft_without_gemini_key_explains_and_keeps_script(
@@ -1865,7 +1990,9 @@ def test_dashboard_draft_when_writer_fails_explains_and_keeps_script(tmp_path: P
 
     @dataclass
     class BoomDrafter:
-        def draft(self, *, title: str, characters: str, interests: str, outline: str) -> str:
+        def draft(
+            self, *, title: str, characters: str, interests: str, outline: str, duration_seconds: int = 10
+        ) -> str:
             raise RuntimeError("offline")
 
     secrets = tmp_path / "studio.env"
@@ -1949,7 +2076,7 @@ def test_dashboard_speak_stores_mp3_in_library_and_on_the_story(tmp_path: Path) 
     from fastapi.testclient import TestClient
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\nELEVENLABS_VOICE_IDS=voice-a,voice-b\n")
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\nELEVENLABS_VOICE_IDS=voice-a,voice-b\n")
     storage = FakeStorage(free_bytes=1024)
     catalog = FakeCatalog()
     speech = FakeSpeech(audio=b"ID3ok")
@@ -1981,11 +2108,38 @@ def test_dashboard_speak_stores_mp3_in_library_and_on_the_story(tmp_path: Path) 
     assert "sk-secret" not in html
 
 
+def test_dashboard_speak_links_the_library_track_back_to_the_story(tmp_path: Path) -> None:
+    import yaml
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            speech=FakeSpeech(audio=b"ID3ok"),
+        )
+    )
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "script": "Rowmy waited at the station."},
+    )
+    client.post("/stories/speak")
+    notes = yaml.safe_load((tmp_path / "the-little-station" / "story.yaml").read_text())
+    library = client.get("/library").text
+
+    assert notes["spoken_file"] == "the-little-station.mp3"
+    assert notes["library_path"] == "the-little-station.mp3"
+    assert ">the-little-station.mp3 · The little station<" in library
+
+
 def test_dashboard_speak_saves_the_spoken_file_as_a_unique_title_slug(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
     storage = FakeStorage(free_bytes=1024, files={"the-little-station.mp3": b"earlier"})
     speech = FakeSpeech(audio=b"ID3ok")
     client = TestClient(
@@ -2015,7 +2169,7 @@ def test_dashboard_speak_uses_the_voice_you_picked(tmp_path: Path) -> None:
     from romini.composition.story_audio import load_voices
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
     speech = FakeSpeech(audio=b"ID3ok")
     client = TestClient(
         create_dashboard(
@@ -2065,6 +2219,30 @@ def test_dashboard_speak_without_elevenlabs_key_explains_and_keeps_spoken_file(
     assert speech.calls == []
 
 
+def test_dashboard_speak_rejects_an_elevenlabs_key_id(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\n")
+    speech = FakeSpeech(audio=b"ID3ok")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            speech=speech,
+        )
+    )
+    client.post(
+        "/stories",
+        data={"story_title": "The little station", "script": "Rowmy waited at the station."},
+    )
+    html = client.post("/stories/speak").text
+
+    assert "starts with sk_" in html
+    assert speech.calls == []
+
+
 def test_dashboard_opening_a_story_shows_its_spoken_file(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -2088,7 +2266,7 @@ def test_dashboard_speak_again_replaces_the_spoken_file(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\nELEVENLABS_VOICE_IDS=voice-a\n")
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\nELEVENLABS_VOICE_IDS=voice-a\n")
     storage = FakeStorage(free_bytes=1024)
     speech = FakeSpeech(audio=b"first")
     client = TestClient(
@@ -2175,7 +2353,7 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     assert "<h2>Write a story</h2>" in stories
     assert "<h2>Saved stories</h2>" in stories
     assert "<legend>Characters</legend>" in stories
-    assert 'action="/stories/draft"' in stories
+    assert 'action="/stories/draft"' not in stories
     assert "<h2>Keys</h2>" in settings
     assert 'for="play_mode"' in settings
     assert "<h2>Volume</h2>" in settings
@@ -2313,7 +2491,7 @@ def test_dashboard_parent_changes_appear_in_the_audit_log(tmp_path: Path) -> Non
         "/stories",
         data={"story_title": "The station", "characters": "Romy", "interests": "trains", "outline": "a visit"},
     )
-    client.post("/keys", data={"gemini_key": "gem-secret", "elevenlabs_key": "el-secret"})
+    client.post("/keys", data={"gemini_key": "gem-secret", "elevenlabs_key": "sk_el-secret"})
 
     html = client.get("/settings").text
 
@@ -2327,7 +2505,7 @@ def test_dashboard_parent_changes_appear_in_the_audit_log(tmp_path: Path) -> Non
     assert "Saved story The station" in html
     assert "Saved studio keys" in html
     assert "gem-secret" not in html
-    assert "el-secret" not in html
+    assert "sk_el-secret" not in html
 
 
 def test_dashboard_draft_failure_shows_the_http_code_in_the_audit_log(tmp_path: Path) -> None:
@@ -2339,7 +2517,9 @@ def test_dashboard_draft_failure_shows_the_http_code_in_the_audit_log(tmp_path: 
     from romini.features.audit.memory import MemoryAuditLog
 
     class BoomDrafter:
-        def draft(self, *, title: str, characters: str, interests: str, outline: str) -> str:
+        def draft(
+            self, *, title: str, characters: str, interests: str, outline: str, duration_seconds: int = 10
+        ) -> str:
             raise HTTPError(
                 "https://generativelanguage.googleapis.com/v1beta/models/gemini",
                 429,
@@ -2387,7 +2567,7 @@ def test_dashboard_speak_failure_shows_the_http_code_in_the_audit_log(tmp_path: 
             )
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
     log = MemoryAuditLog()
     client = TestClient(
         create_dashboard(
@@ -2404,6 +2584,167 @@ def test_dashboard_speak_failure_shows_the_http_code_in_the_audit_log(tmp_path: 
     html = client.get("/settings").text
 
     assert "Speak failed (401)" in html
+
+
+def test_dashboard_speak_failure_shows_the_elevenlabs_error_in_the_audit_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+
+    quota = (
+        "This request exceeds your API key (Vengeful Giant Otter) quota of 0. "
+        "You have 0 credits remaining, while 595 credits are required for this request."
+    )
+
+    def fake_urlopen(request: object, timeout: object = None) -> object:
+        raise HTTPError(
+            "https://api.elevenlabs.io/v1/text-to-speech/qXdtsJJ9LgnQ8Z2TYfav",
+            401,
+            "Unauthorized",
+            hdrs=None,
+            fp=BytesIO(json.dumps({"detail": {"message": quota}}).encode()),
+        )
+
+    monkeypatch.setattr("romini.composition.story_audio.urlopen", fake_urlopen)
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
+    log = MemoryAuditLog()
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            audit=log,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "script": "Once upon a time"})
+    client.post("/stories/speak")
+
+    html = client.get("/settings").text
+
+    assert quota in html
+
+
+def test_dashboard_speak_shows_the_elevenlabs_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    from fastapi.testclient import TestClient
+
+    quota = (
+        "This request exceeds your API key (Vengeful Giant Otter) quota of 0. "
+        "You have 0 credits remaining, while 595 credits are required for this request."
+    )
+
+    def fake_urlopen(request: object, timeout: object = None) -> object:
+        raise HTTPError(
+            "https://api.elevenlabs.io/v1/text-to-speech/qXdtsJJ9LgnQ8Z2TYfav",
+            401,
+            "Unauthorized",
+            hdrs=None,
+            fp=BytesIO(json.dumps({"detail": {"message": quota}}).encode()),
+        )
+
+    monkeypatch.setattr("romini.composition.story_audio.urlopen", fake_urlopen)
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "script": "Once upon a time"})
+    html = client.post("/stories/speak").text
+
+    assert quota in html
+
+
+def test_dashboard_draft_shows_the_gemini_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    from fastapi.testclient import TestClient
+
+    demand = (
+        "This model is currently experiencing high demand. "
+        "Spikes in demand are usually temporary. Please try again later."
+    )
+
+    def fake_urlopen(request: object, timeout: object = None) -> object:
+        raise HTTPError(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+            503,
+            "Service Unavailable",
+            hdrs=None,
+            fp=BytesIO(json.dumps({"error": {"code": 503, "message": demand, "status": "UNAVAILABLE"}}).encode()),
+        )
+
+    monkeypatch.setattr("romini.composition.story_draft.urlopen", fake_urlopen)
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("GEMINI_API_KEY=gem-secret\n")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "outline": "a ride"})
+    html = client.post("/stories/draft").text
+
+    assert demand in html
+
+
+def test_dashboard_speak_keeps_the_elevenlabs_error_after_another_page(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    from fastapi.testclient import TestClient
+
+    quota = (
+        "This request exceeds your API key (Vengeful Giant Otter) quota of 0. "
+        "You have 0 credits remaining, while 595 credits are required for this request."
+    )
+
+    def fake_urlopen(request: object, timeout: object = None) -> object:
+        raise HTTPError(
+            "https://api.elevenlabs.io/v1/text-to-speech/qXdtsJJ9LgnQ8Z2TYfav",
+            401,
+            "Unauthorized",
+            hdrs=None,
+            fp=BytesIO(json.dumps({"detail": {"message": quota}}).encode()),
+        )
+
+    monkeypatch.setattr("romini.composition.story_audio.urlopen", fake_urlopen)
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+        )
+    )
+    client.post("/stories", data={"story_title": "The station", "script": "Once upon a time"})
+    response = client.post("/stories/speak", follow_redirects=False)
+    client.get("/library")
+    html = client.get(response.headers["location"]).text
+
+    assert response.status_code == 303
+    assert quota in html
 
 
 def test_dashboard_full_upload_appears_in_the_audit_log() -> None:
@@ -2432,7 +2773,7 @@ def test_dashboard_speak_full_disk_appears_in_the_audit_log(tmp_path: Path) -> N
     from romini.features.audit.memory import MemoryAuditLog
 
     secrets = tmp_path / "studio.env"
-    secrets.write_text("ELEVENLABS_API_KEY=sk-secret\n")
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
     log = MemoryAuditLog()
     client = TestClient(
         create_dashboard(
@@ -2760,12 +3101,86 @@ def test_dashboard_home_hides_now_playing_when_the_box_is_quiet() -> None:
     assert ">Story<" not in html
 
 
-def test_dashboard_write_page_lets_you_pick_a_named_voice() -> None:
+def test_dashboard_write_page_lets_you_pick_a_named_voice(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
-    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/write").text
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    html = client.get("/stories").text
 
     assert 'for="voice"' in html
     assert ">Voice<" in html
     assert 'name="voice_id"' in html
     assert 'action="/stories/speak"' in html
+
+
+def test_dashboard_pages_live_in_the_dashboard_package() -> None:
+    from romini.composition.dashboard import characters, figures, home, library, settings, stories
+
+    assert Path(characters.__file__).name == "characters.py"
+    assert Path(figures.__file__).name == "figures.py"
+    assert Path(home.__file__).name == "home.py"
+    assert Path(library.__file__).name == "library.py"
+    assert Path(settings.__file__).name == "settings.py"
+    assert Path(stories.__file__).name == "stories.py"
+
+
+def test_dashboard_library_lets_you_listen_to_a_track() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})))
+        .get("/library")
+        .text
+    )
+
+    assert "<h2>Listen</h2>" in html
+    assert 'for="preview"' in html
+    assert ">Track<" in html
+    assert 'id="preview"' in html
+    assert 'value="/library/file/frog.mp3"' in html
+    assert "<audio" in html
+    assert "controls" in html
+    assert 'id="player"' in html
+
+
+def test_dashboard_serves_a_library_file_for_preview() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})
+    response = TestClient(create_dashboard(storage=storage)).get("/library/file/frog.mp3")
+
+    assert response.status_code == 200
+    assert response.content == b"id3"
+    assert response.headers["content-type"].startswith("audio/")
+
+
+def test_dashboard_preview_rejects_a_path_outside_the_library() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})
+    response = TestClient(create_dashboard(storage=storage)).get("/library/file/../frog.mp3")
+
+    assert response.status_code == 404
+
+
+def test_dashboard_preview_serves_a_nested_library_file() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024, files={"stories/frog.mp3": b"id3"})
+    response = TestClient(create_dashboard(storage=storage)).get("/library/file/stories/frog.mp3")
+
+    assert response.status_code == 200
+    assert response.content == b"id3"
+
+
+def test_dashboard_preview_player_is_labelled() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})))
+        .get("/library")
+        .text
+    )
+
+    assert 'aria-label="Preview"' in html

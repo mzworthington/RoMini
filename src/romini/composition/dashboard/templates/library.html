@@ -27,8 +27,8 @@
 <input id="title" name="title" type="text" required>
 <label for="path">File in library</label>
 <select id="path" name="path" required>
-{% for path in library_paths %}
-<option value="{{ path }}">{{ path }}</option>
+{% for file in library_files %}
+<option value="{{ file.path }}">{{ file.label }}</option>
 {% endfor %}
 </select>
 {% if not library_paths %}
@@ -36,6 +36,31 @@
 {% endif %}
 <button>Assign</button>
 </form>
+</section>
+<section>
+<h2>Listen</h2>
+{% if library_paths %}
+<label for="preview">Track</label>
+<select id="preview">
+{% for file in library_files %}
+<option value="/library/file/{{ file.path }}">{{ file.label }}</option>
+{% endfor %}
+</select>
+<audio id="player" controls preload="metadata" aria-label="Preview"></audio>
+<script>
+(function () {
+  var select = document.getElementById("preview");
+  var player = document.getElementById("player");
+  function load() {
+    player.src = select.value;
+  }
+  select.addEventListener("change", load);
+  load();
+})();
+</script>
+{% else %}
+<p class="hint">Upload a track first</p>
+{% endif %}
 </section>
 </div>
 <section>

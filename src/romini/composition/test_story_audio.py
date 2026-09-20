@@ -246,9 +246,13 @@ def test_story_audio_ships_named_household_voices() -> None:
     names = [voice["name"] for voice in voices]
     ids = [voice["id"] for voice in voices]
 
-    assert names == ["Rowmy", "Maama", "Baaba"]
+    assert names == ["Lucy", "Amelia", "Elizabeth", "Leona G", "Global Artist", "Lucie", "Lexi"]
     assert ids == [
         "qXdtsJJ9LgnQ8Z2TYfav",
         "ZF6FPAbjXT4488VcRRnw",
         "AXdMgz6evoL7OPd7eU12",
+        "9BDgg2Q7WSrW0x8naPLw",
+        "NtSmOMyr386gAQrqbQcB",
+        "GPTk4QbvF7snDhImF5UF",
+        "OqZVGrLtQZd2v8du8NRg",
     ]

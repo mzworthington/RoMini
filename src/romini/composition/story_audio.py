@@ -108,6 +108,24 @@ def configured_voices() -> tuple[str, ...]:
     return from_env or from_yaml or VOICE_IDS
 
 
+def vendor_error_message(body: str) -> str:
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return body.strip()
+    if not isinstance(data, dict):
+        return body.strip()
+    for key in ("detail", "error"):
+        part = data.get(key)
+        if isinstance(part, dict):
+            message = str(part.get("message") or "").strip()
+            if message:
+                return message
+        if isinstance(part, str) and part.strip():
+            return part.strip()
+    return body.strip()
+
+
 def http_post(url: str, *, headers: dict[str, str], body: bytes) -> bytes:
     request = Request(url, data=body, headers=headers, method="POST")
     try:
@@ -116,6 +134,7 @@ def http_post(url: str, *, headers: dict[str, str], body: bytes) -> bytes:
     except HTTPError as err:
         detail = err.read().decode("utf-8", errors="replace")
         log.error("ElevenLabs HTTP %s for %s: %s", err.code, url.split("?", 1)[0], detail)
+        err.vendor_message = vendor_error_message(detail)
         raise
 
 
@@ -129,6 +148,8 @@ def main(argv: list[str] | None = None, *, post: Callable[..., bytes] | None = N
     api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
     if not api_key:
         raise SystemExit("set ELEVENLABS_API_KEY")
+    if not api_key.startswith("sk_"):
+        raise SystemExit("ELEVENLABS_API_KEY must start with sk_ (the secret, not the key ID)")
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     log.info("Rendering stories in %s with %s voices", args.folder, len(voices))
     render_stories(

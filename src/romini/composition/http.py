@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 from romini.composition.inject import apply_sim_line
 from romini.composition.sim import SimBox
 
-TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+TEMPLATES_DIR = Path(__file__).resolve().parent / "dashboard" / "templates"
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 SIM_ASSETS = {
     "/favicon.svg": "image/svg+xml",

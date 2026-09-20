@@ -38,10 +38,14 @@ class SqliteAudit:
             (limit,),
         ).fetchall()
         self._release(conn)
-        return [
-            AuditEntry(happened_at=datetime.fromisoformat(when), action=action, summary=summary)
-            for when, action, summary in rows
-        ]
+        entries: list[AuditEntry] = []
+        for when, action, summary in rows:
+            try:
+                happened_at = datetime.fromisoformat(when)
+            except ValueError:
+                continue
+            entries.append(AuditEntry(happened_at=happened_at, action=action, summary=summary))
+        return entries
 
     def _connect(self) -> sqlite3.Connection:
         if self._conn is not None:
