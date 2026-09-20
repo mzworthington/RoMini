@@ -8,7 +8,7 @@
 <div class="board">
 <section>
 <h2>Write a story</h2>
-<form action="/stories" method="post" enctype="multipart/form-data">
+<form action="/stories" method="post">
 <label for="story-title">Story title</label>
 <input id="story-title" name="story_title" type="text" required value="{{ story_title }}">
 <label for="story-length">Story length <output id="story-length-now" class="story-length-now" for="story-length" aria-live="polite">{{ story_length_label }}</output></label>

@@ -15,9 +15,7 @@ from romini.composition.dashboard.shared import (
     notice,
     open_story_pack,
     record_spoken_track,
-    remove_story_extra,
     safe_character_slugs,
-    save_story_extra,
     spoken_file_name,
     story_slug,
     studio_keys,
@@ -53,11 +51,6 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             character_slugs=safe_character_slugs(list(form.getlist("character"))),
             duration_seconds=parse_duration_seconds(form.get("duration_seconds")),
         )
-        extra_name = str(form.get("remove_extra") or "").strip()
-        if extra_name:
-            remove_story_extra(pack, extra_name)
-        else:
-            await save_story_extra(pack, form.get("extra"))
         title = str(form.get("story_title") or "").strip() or pack.name
         ctx.note("story", f"Saved story {title}")
         return notice("/stories", "story")
