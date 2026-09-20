@@ -1707,6 +1707,56 @@ def test_dashboard_saved_stories_use_the_home_jump_list(tmp_path: Path) -> None:
     assert "<strong>The little station</strong>" in html
 
 
+def test_dashboard_saved_stories_let_you_pick_a_voice_and_speak(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
+    listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
+
+    assert 'action="/stories/speak"' in listed
+    assert 'name="voice_id"' in listed
+    assert 'name="slug" value="the-little-station"' in listed
+    assert ">Speak script<" in listed
+    assert ">Delete<" in listed
+
+
+def test_dashboard_speak_from_the_list_uses_that_story(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.story_audio import load_voices
+
+    secrets = tmp_path / "studio.env"
+    secrets.write_text("ELEVENLABS_API_KEY=sk_secret\n")
+    speech = FakeSpeech(audio=b"ID3ok")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=tmp_path,
+            secrets=secrets,
+            speech=speech,
+        )
+    )
+    client.post("/stories", data={"story_title": "Station", "script": "station script"})
+    client.post("/stories", data={"story_title": "Helmet", "script": "helmet script"})
+    client.post("/stories/speak", data={"slug": "station", "voice_id": load_voices()[0]["id"]})
+
+    assert speech.calls == [{"text": "station script", "voice_id": load_voices()[0]["id"]}]
+
+
+def test_dashboard_deletes_a_saved_story(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station", "outline": "a ride"})
+    html = client.post("/stories/delete", data={"slug": "the-little-station"}).text
+
+    assert "Open The little station" not in html
+    assert "No saved stories yet" in html
+    assert 'value="The little station"' not in html
+    assert not (tmp_path / "the-little-station").exists()
+
+
 def test_dashboard_new_story_clears_the_form(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -2793,11 +2843,14 @@ def test_dashboard_speak_full_disk_appears_in_the_audit_log(tmp_path: Path) -> N
     assert "Speak failed (full)" in html
 
 
-def test_dashboard_draft_without_a_key_appears_in_the_audit_log(tmp_path: Path) -> None:
+def test_dashboard_draft_without_a_key_appears_in_the_audit_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from fastapi.testclient import TestClient
 
     from romini.features.audit.memory import MemoryAuditLog
 
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     log = MemoryAuditLog()
     client = TestClient(
         create_dashboard(
@@ -2815,11 +2868,14 @@ def test_dashboard_draft_without_a_key_appears_in_the_audit_log(tmp_path: Path) 
     assert "Draft failed (no key)" in html
 
 
-def test_dashboard_speak_without_a_key_appears_in_the_audit_log(tmp_path: Path) -> None:
+def test_dashboard_speak_without_a_key_appears_in_the_audit_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from fastapi.testclient import TestClient
 
     from romini.features.audit.memory import MemoryAuditLog
 
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
     log = MemoryAuditLog()
     client = TestClient(
         create_dashboard(

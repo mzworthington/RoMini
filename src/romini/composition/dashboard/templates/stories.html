@@ -94,6 +94,19 @@ function updateStoryLength(value) {
 Open {{ story.title }}
 </button>
 </form>
+<form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
+<input type="hidden" name="slug" value="{{ story.slug }}">
+<label for="voice-{{ story.slug }}">Voice</label>
+<select id="voice-{{ story.slug }}" name="voice_id">
+{% for voice in voices %}
+<option value="{{ voice.id }}">{{ voice.name }}</option>
+{% endfor %}
+</select>
+<button>Speak script</button>
+</form>
+<form action="/stories/delete" method="post">
+<button name="slug" value="{{ story.slug }}">Delete</button>
+</form>
 </li>
 {% endfor %}
 </ul>

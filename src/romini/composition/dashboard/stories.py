@@ -122,6 +122,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         named_voices = load_voices()
         allowed = {voice["id"] for voice in named_voices}
         form = await request.form()
+        open_story_pack(ctx.stories, str(form.get("slug") or "").strip())
         chosen = str(form.get("voice_id") or "").strip()
         voice_id = chosen if chosen in allowed else (named_voices[0]["id"] if named_voices else "")
         key = elevenlabs_api_key(keys["ELEVENLABS_API_KEY"])
