@@ -120,6 +120,48 @@ def test_mpv_player_play_does_not_wait_for_the_track_to_end(monkeypatch) -> None
     assert player.is_playing() is True
 
 
+def test_mpv_player_play_terminates_the_previous_track(monkeypatch) -> None:
+    class Proc:
+        def __init__(self) -> None:
+            self.terminated = False
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+    procs: list[Proc] = []
+
+    def popen(cmd: list[str], *args, **kwargs) -> Proc:
+        proc = Proc()
+        procs.append(proc)
+        return proc
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    player = MpvPlayer()
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
+    player.play("/var/lib/romini/library/helmet.mp3", position_sec=0.0, uid="bbb")
+
+    assert procs[0].terminated is True
+    assert procs[1].terminated is False
+
+
+def test_mpv_player_pause_terminates_the_running_track(monkeypatch) -> None:
+    class Proc:
+        def __init__(self) -> None:
+            self.terminated = False
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+    proc = Proc()
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: proc)
+    player = MpvPlayer()
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
+    player.pause()
+
+    assert proc.terminated is True
+    assert player.is_playing() is False
+
+
 def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
     from datetime import datetime
 

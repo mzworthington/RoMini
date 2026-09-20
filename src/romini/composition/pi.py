@@ -31,6 +31,16 @@ class MpvPlayer:
         self._path: str | None = None
         self._selected: tuple[str, str] | None = None
         self._started_at: datetime | None = None
+        self._proc: object | None = None
+
+    def _end_mpv(self) -> None:
+        previous = self._proc
+        self._proc = None
+        if previous is None:
+            return
+        terminate = getattr(previous, "terminate", None)
+        if callable(terminate):
+            terminate()
 
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
         cmd = [
@@ -43,7 +53,8 @@ class MpvPlayer:
         if self.mixer is not None:
             cmd.append(f"--volume={self.mixer.level}")
         cmd.append(path)
-        subprocess.Popen(cmd)
+        self._end_mpv()
+        self._proc = subprocess.Popen(cmd)
         self._playing = True
         self._uid = uid
         self._path = path
@@ -58,6 +69,7 @@ class MpvPlayer:
     def pause(self) -> None:
         if self._ipc is not None:
             self._ipc('{"command":["set_property","pause",true]}')
+        self._end_mpv()
         self._playing = False
 
     def stop(self) -> None:
