@@ -19,8 +19,9 @@ def run_core_ticks(
     previous_uid: str | None = None
     previous_mtime: float | None = None
     idle_sec = 0.0
+    absent_ticks = [0]
     for _ in ticks:
-        seen = poll_nfc(box, nfc, previous_uid=previous_uid)
+        seen = poll_nfc(box, nfc, previous_uid=previous_uid, absent_ticks=absent_ticks)
         if box.assign_mode:
             if seen is not None and seen != previous_uid:
                 idle_sec = 0.0

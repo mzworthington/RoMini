@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 from romini.composition.pi import MpvPlayer, Pn532Nfc, SystemdHalt
@@ -51,7 +52,9 @@ def test_mpv_player_play_uses_mixer_level(monkeypatch) -> None:
         return object()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    MpvPlayer(mixer=MemoryMixer(level=42)).play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
+    MpvPlayer(mixer=MemoryMixer(level=42), alsa=lambda cmd: None).play(
+        "/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC"
+    )
 
     assert "--volume=42" in calls[0]
 
@@ -61,6 +64,25 @@ def test_mpv_player_set_volume_sends_ipc() -> None:
     MpvPlayer(ipc=sent.append).set_volume(42)
 
     assert sent == ['{"command":["set_property","volume",42]}']
+
+
+def test_mpv_player_set_volume_sets_alsa_headphone() -> None:
+    sent: list[list[str]] = []
+    MpvPlayer(alsa=sent.append).set_volume(42)
+
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"]]
+
+
+def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
+    from romini.composition.mixer import MemoryMixer
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
+    sent: list[list[str]] = []
+    MpvPlayer(mixer=MemoryMixer(level=42), alsa=sent.append).play(
+        "/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC"
+    )
+
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"]]
 
 
 def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
@@ -142,6 +164,66 @@ def test_mpv_player_play_terminates_the_previous_track(monkeypatch) -> None:
 
     assert procs[0].terminated is True
     assert procs[1].terminated is False
+
+
+def test_mpv_player_play_waits_for_the_previous_track_to_exit(monkeypatch) -> None:
+    class Proc:
+        def __init__(self) -> None:
+            self.terminated = False
+            self.waited = False
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+        def wait(self, timeout: float | None = None) -> int:
+            self.waited = True
+            return 0
+
+    procs: list[Proc] = []
+
+    def popen(cmd: list[str], *args, **kwargs) -> Proc:
+        proc = Proc()
+        procs.append(proc)
+        return proc
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    player = MpvPlayer()
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
+    player.play("/var/lib/romini/library/helmet.mp3", position_sec=0.0, uid="bbb")
+
+    assert procs[0].terminated is True
+    assert procs[0].waited is True
+
+
+def test_mpv_player_kills_the_previous_track_if_terminate_is_ignored(monkeypatch) -> None:
+    class Proc:
+        def __init__(self) -> None:
+            self.killed = False
+
+        def terminate(self) -> None:
+            return
+
+        def wait(self, timeout: float | None = None) -> int:
+            if self.killed:
+                return 0
+            raise subprocess.TimeoutExpired(cmd="mpv", timeout=timeout or 0)
+
+        def kill(self) -> None:
+            self.killed = True
+
+    procs: list[Proc] = []
+
+    def popen(cmd: list[str], *args, **kwargs) -> Proc:
+        proc = Proc()
+        procs.append(proc)
+        return proc
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    player = MpvPlayer()
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
+    player.play("/var/lib/romini/library/helmet.mp3", position_sec=0.0, uid="bbb")
+
+    assert procs[0].killed is True
 
 
 def test_mpv_player_pause_terminates_the_running_track(monkeypatch) -> None:

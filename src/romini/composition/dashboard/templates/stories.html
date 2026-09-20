@@ -67,9 +67,16 @@ function updateStoryLength(value) {
 {% endfor %}
 </select>
 <button>Speak script</button>
+{% if spoken_file %}
+<p class="hint">Speaking again replaces {{ spoken_file }}.</p>
+{% endif %}
 </form>
 {% if spoken_file %}
+<section>
+<h2>Listen</h2>
+<audio id="player" controls preload="metadata" aria-label="Preview" src="/stories/{{ opened_story_slug }}/spoken"></audio>
 <p class="hint">Spoken file: {{ spoken_file }}</p>
+</section>
 {% endif %}
 </section>
 {% endif %}

@@ -19,7 +19,7 @@ from romini.composition.halt import LoggingHalt
 from romini.composition.http import apply_sim_http, start_sim_http
 from romini.composition.inject import apply_sim_line, run_sim_lines
 from romini.composition.loop import run_core_ticks
-from romini.composition.nfc import NFC_POLL_SEC, FakeNfc, poll_nfc, run_nfc_ticks
+from romini.composition.nfc import NFC_ABSENT_TICKS, NFC_POLL_SEC, FakeNfc, poll_nfc, run_nfc_ticks
 from romini.composition.pi import SystemdHalt
 from romini.composition.sim import load_sim_box, load_sim_box_from_env
 from romini.fakes import (
@@ -803,6 +803,22 @@ def test_nfc_poll_places_when_uid_appears() -> None:
     assert player.plays == [(f"{SIM_LIBRARY_ROOT}/{FROG_REL_PATH}", 0.0)]
 
 
+def test_nfc_one_missed_poll_does_not_retrigger_tap_playback() -> None:
+    player = FakePlayer()
+    box = frog_sim_box(player, FakeLed(), play_mode=PlayMode.TAP)
+    nfc = FakeNfc(uid=FROG_UID)
+
+    seen = poll_nfc(box, nfc)
+    nfc.clear()
+    seen = poll_nfc(box, nfc, previous_uid=seen)
+    nfc = FakeNfc(uid=FROG_UID)
+    poll_nfc(box, nfc, previous_uid=seen)
+
+    assert player.plays == [(f"{SIM_LIBRARY_ROOT}/{FROG_REL_PATH}", 0.0)]
+    assert player.pauses == 0
+    assert player.is_playing() is True
+
+
 def test_nfc_poll_lifts_when_uid_disappears() -> None:
     player = FakePlayer()
     box = frog_sim_box(player, FakeLed())
@@ -810,7 +826,9 @@ def test_nfc_poll_lifts_when_uid_disappears() -> None:
 
     seen = poll_nfc(box, nfc)
     nfc.clear()
-    poll_nfc(box, nfc, previous_uid=seen)
+    absent = [0]
+    for _ in range(NFC_ABSENT_TICKS):
+        seen = poll_nfc(box, nfc, previous_uid=seen, absent_ticks=absent)
 
     assert player.pauses == 1
 
@@ -823,6 +841,8 @@ def test_nfc_ticks_lift_after_uid_clears() -> None:
     def ticks() -> None:
         yield None
         nfc.clear()
+        yield None
+        yield None
         yield None
 
     run_nfc_ticks(box, nfc, ticks())

@@ -566,6 +566,9 @@ def render_page(
                 duration_seconds=parse_duration_seconds(notes.get("duration_seconds"))
             ),
             "spoken_file": spoken_file_name(stories),
+            "opened_story_slug": (
+                current_pack(stories).name if stories is not None and current_pack(stories) != stories else ""
+            ),
             "saved_stories": list_saved_stories(stories),
             "saved_characters": list_saved_characters(characters),
             "selected_character_slugs": character_slug_list(notes),

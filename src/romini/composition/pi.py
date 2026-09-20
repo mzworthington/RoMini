@@ -21,11 +21,14 @@ class SystemdHalt:
 
 
 class MpvPlayer:
-    def __init__(self, ipc=None, mixer=None, connect=None, clock: Callable[[], datetime] = datetime.now) -> None:
+    def __init__(
+        self, ipc=None, mixer=None, connect=None, clock: Callable[[], datetime] = datetime.now, alsa=None
+    ) -> None:
         self._ipc = ipc
         self.mixer = mixer
         self._connect = connect
         self._clock = clock
+        self._alsa = alsa
         self._playing = False
         self._uid: str | None = None
         self._path: str | None = None
@@ -41,6 +44,15 @@ class MpvPlayer:
         terminate = getattr(previous, "terminate", None)
         if callable(terminate):
             terminate()
+        wait = getattr(previous, "wait", None)
+        if callable(wait):
+            try:
+                wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                kill = getattr(previous, "kill", None)
+                if callable(kill):
+                    kill()
+                    wait(timeout=1)
 
     def play(self, path: str, *, position_sec: float, uid: str) -> None:
         cmd = [
@@ -52,6 +64,7 @@ class MpvPlayer:
         ]
         if self.mixer is not None:
             cmd.append(f"--volume={self.mixer.level}")
+            self._apply_alsa(self.mixer.level)
         cmd.append(path)
         self._end_mpv()
         self._proc = subprocess.Popen(cmd)
@@ -75,6 +88,7 @@ class MpvPlayer:
     def stop(self) -> None:
         if self._ipc is not None:
             self._ipc('{"command":["stop"]}')
+        self._end_mpv()
         self._playing = False
         self._uid = None
 
@@ -105,6 +119,7 @@ class MpvPlayer:
         return 0.0
 
     def set_volume(self, level: int) -> None:
+        self._apply_alsa(level)
         payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))
         if self._ipc is not None:
             self._ipc(payload)
@@ -113,6 +128,14 @@ class MpvPlayer:
             sock = _unix_connect(mpv_ipc_socket())
             sock.sendall(payload.encode() + b"\n")
             sock.close()
+        except OSError:
+            return
+
+    def _apply_alsa(self, level: int) -> None:
+        cmd = ["amixer", "-c", "Headphones", "--", "sset", "Headphone", f"{level}%"]
+        apply_alsa = self._alsa if self._alsa is not None else _alsa_run
+        try:
+            apply_alsa(cmd)
         except OSError:
             return
 
@@ -150,6 +173,10 @@ def _unix_connect(path: str) -> object:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(path)
     return sock
+
+
+def _alsa_run(cmd: list[str]) -> None:
+    subprocess.run(cmd, check=False)
 
 
 class Pn532Nfc:
