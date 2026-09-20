@@ -5,6 +5,20 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: Cut a GitHub Release even if path detect would skip
+        type: boolean
+        default: false
+      force_level:
+        description: Semver bump when forcing (from the highest v* tag)
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: minor
 
 permissions:
   contents: read
@@ -35,7 +49,7 @@ jobs:
 
   release:
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,6 +63,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Detect application changes since last release
+        if: github.event.inputs.force_release != 'true'
         id: changes
         uses: mzworthington/dotfiles/.github/actions/detect-release-changes@main
         with:
@@ -57,15 +72,17 @@ jobs:
             pyproject.toml
 
       - name: Install mise
-        if: steps.changes.outputs.release == 'true'
+        if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
         uses: jdx/mise-action@v4.3.0
 
       - name: Bootstrap
-        if: steps.changes.outputs.release == 'true'
+        if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
         run: make bootstrap
 
       - name: Release
-        if: steps.changes.outputs.release == 'true'
+        if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
         uses: mzworthington/dotfiles/.github/actions/python-semantic-release@main
+        with:
+          force-level: ${{ github.event.inputs.force_release == 'true' && github.event.inputs.force_level || '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
