@@ -714,6 +714,199 @@ def test_dashboard_place_returns_with_notice() -> None:
     assert response.headers["location"] == "/library?notice=placed"
 
 
+def test_dashboard_library_has_play_form_for_each_track(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=FakePlayer(),
+            )
+        )
+        .get("/library")
+        .text
+    )
+
+    assert 'action="/library/play/04aabbccddeeff"' in html
+    assert ">Play<" in html
+
+
+def test_dashboard_library_offers_stop_for_the_playing_track(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 21, 6, 15)
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        '  - uid: "04bbccddeeff00"\n'
+        '    path: "stories/bear.mp3"\n'
+        '    title: "Bear"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/library")
+        .text
+    )
+
+    assert 'action="/library/stop"' in html
+    assert ">Stop<" in html
+    assert 'action="/library/play/04bbccddeeff00"' in html
+    assert 'action="/library/play/04aabbccddeeff"' not in html
+
+
+def test_dashboard_library_play_starts_the_mapped_track(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "stories").mkdir()
+    (library / "stories" / "frog-prince.mp3").write_bytes(b"id3")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    player = FakePlayer()
+    response = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+            settings=SqliteSettings(tmp_path / "state.sqlite"),
+            player=player,
+        )
+    ).post("/library/play/04aabbccddeeff", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/library?notice=playing"
+    assert player.is_playing() is True
+    assert player.playing_uid() == "04aabbccddeeff"
+    assert player.plays == [(str(library / "stories" / "frog-prince.mp3"), 0.0)]
+
+
+def test_dashboard_library_stop_stops_the_playing_track() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    player = FakePlayer()
+    player.play("stories/frog-prince.mp3", position_sec=0.0, uid="04aabbccddeeff")
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=player)).post(
+        "/library/stop",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/library?notice=stopped"
+    assert player.is_playing() is False
+    assert player.stops == 1
+
+
+def test_dashboard_library_play_replaces_the_running_track(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    (library / "stories").mkdir(parents=True)
+    (library / "stories" / "frog-prince.mp3").write_bytes(b"id3")
+    (library / "stories" / "bear.mp3").write_bytes(b"id3")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        '  - uid: "04bbccddeeff00"\n'
+        '    path: "stories/bear.mp3"\n'
+        '    title: "Bear"\n'
+    )
+    player = FakePlayer()
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+            settings=SqliteSettings(tmp_path / "state.sqlite"),
+            player=player,
+        )
+    )
+    client.post("/library/play/04aabbccddeeff")
+    response = client.post("/library/play/04bbccddeeff00", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert player.stops == 1
+    assert player.playing_uid() == "04bbccddeeff00"
+    assert player.plays[-1] == (str(library / "stories" / "bear.mp3"), 0.0)
+
+
+def test_dashboard_library_play_in_tap_mode_pauses_the_same_track(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    (library / "stories").mkdir(parents=True)
+    (library / "stories" / "frog-prince.mp3").write_bytes(b"id3")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/frog-prince.mp3"\n    title: "The Frog Prince"\n'
+    )
+    settings = SqliteSettings(tmp_path / "state.sqlite")
+    settings.remember_play_mode(PlayMode.TAP)
+    player = FakePlayer()
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+            settings=settings,
+            player=player,
+        )
+    )
+    client.post("/library/play/04aabbccddeeff")
+    response = client.post("/library/play/04aabbccddeeff", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert player.pauses == 1
+    assert player.is_playing() is False
+
+
 def test_dashboard_pi_profile_may_bind_lan(monkeypatch) -> None:
     from fastapi import FastAPI
 
@@ -3314,7 +3507,6 @@ def test_dashboard_story_page_lets_you_listen_to_the_spoken_file(tmp_path: Path)
         .text
     )
 
-    assert "<h2>Listen</h2>" in html
     assert "<audio" in html
     assert "controls" in html
     assert 'id="player"' in html
@@ -3391,7 +3583,7 @@ def test_dashboard_story_listen_loads_the_library_preview_url(tmp_path: Path) ->
         .get("/stories/the-little-station")
         .text
     )
-    listen = html.split("<h2>Listen</h2>", 1)[1]
+    listen = html.split('<label for="preview">Preview</label>', 1)[1]
 
     assert 'id="player"' in listen
     assert "player.src = select.value" in listen

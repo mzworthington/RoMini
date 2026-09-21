@@ -8,6 +8,16 @@ from pydantic import BaseModel
 from romini.composition.dashboard.shared import DashboardCtx, has_required, is_audio_track, library_paths, notice
 from romini.features.library.add_track import add_track
 from romini.features.library.assign import confirm_assign
+from romini.features.library.import_catalog import import_catalog
+from romini.features.play_by_tag.place_figure import PlayMode, on_figure_placed
+
+
+class QuietLed:
+    def pulse(self) -> None:
+        return
+
+    def flash(self) -> None:
+        return
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
@@ -80,6 +90,43 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         ctx.pad.place(uid)
         ctx.note("place", f"Placed {uid}")
         return notice("/library", "placed")
+
+    @app.post("/library/play/{uid}")
+    def play_library_track(uid: str) -> RedirectResponse:
+        if ctx.player is None or ctx.assign_catalog is None:
+            raise HTTPException(status_code=404)
+        root = getattr(ctx.storage, "_root", None)
+        if root is None:
+            raise HTTPException(status_code=404)
+        play_mode = PlayMode.PRESENCE
+        if ctx.settings is not None:
+            play_mode = ctx.settings.play_mode() or PlayMode.PRESENCE
+        on_figure_placed(
+            uid,
+            play_mode=play_mode,
+            assign_mode=False,
+            library=import_catalog(
+                ctx.assign_catalog.read_text(),
+                library_root=str(root),
+                audio_exists=lambda rel: (root / rel).is_file(),
+            ),
+            player=ctx.player,
+            led=getattr(ctx.pad, "led", None) or QuietLed(),
+            sessions=getattr(ctx.pad, "sessions", None),
+        )
+        if ctx.player.is_playing():
+            ctx.note("play", f"Played {ctx.player.playing_path()}")
+        else:
+            ctx.note("play", f"Played {uid}")
+        return notice("/library", "playing")
+
+    @app.post("/library/stop")
+    def stop_library_track() -> RedirectResponse:
+        if ctx.player is None:
+            raise HTTPException(status_code=404)
+        ctx.player.stop()
+        ctx.note("play", "Stopped")
+        return notice("/library", "stopped")
 
     @app.get("/library/file/{path:path}")
     def preview_track(path: str) -> Response:

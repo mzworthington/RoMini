@@ -164,7 +164,7 @@ def test_romini_core_dashboard_place_starts_the_track(tmp_path: Path, monkeypatc
         box.dashboard.close()
 
     assert status == 200
-    assert "Place" in body
+    assert ">Stop<" in body
     assert player.plays == [(str(frog_story_path(data)), 0.0)]
 
 

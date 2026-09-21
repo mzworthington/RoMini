@@ -77,6 +77,7 @@ HOME_NOTICES = {
     "placed": "Figure placed",
     "paused": "Paused",
     "playing": "Playing",
+    "stopped": "Stopped",
     "needed": "Fill in the required fields",
     "volume": "Volume saved",
     "story": "Story saved",
@@ -591,6 +592,7 @@ def render_page(
             "presence": PlayMode.PRESENCE.value,
             "tap": PlayMode.TAP.value,
             "pad": pad is not None,
+            "has_player": player is not None,
             "register": register is not None,
             "assign_mode": bool(register.assign_mode) if register is not None else False,
             "poll": page == "figures" and register is not None and register.assign_mode,
@@ -598,6 +600,7 @@ def render_page(
             "volume_level": mixer.level if mixer is not None else 0,
             "volume_ceiling": mixer.ceiling if mixer is not None else 100,
             "now_playing": describe_now_playing(player, tracks=tracks, tags=tags) if player is not None else None,
+            "playing_uid": (player.playing_uid() or "") if player is not None and player.is_playing() else "",
             "audit_entries": audit_entries,
         },
     )

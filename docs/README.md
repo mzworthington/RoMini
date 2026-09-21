@@ -5,6 +5,7 @@ Start here: **[guide.md](./guide.md)** (laptop `sim`, what we emulate, Pi bring-
 | Doc | Role |
 |-----|------|
 | [guide.md](./guide.md) | Step-by-step local + Pi |
+| [dashboard.md](./dashboard.md) | Parent UI screenshots |
 | [PRD_001.md](./PRD_001.md) | Product requirements (v1 box) |
 | [PRD_002.md](./PRD_002.md) | Bet: story studio on the parent dashboard |
 | [PRESS_RELEASE.md](./PRESS_RELEASE.md) | Launch narrative |

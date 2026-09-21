@@ -60,13 +60,19 @@ Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/
 
 On the box, Avahi is `http://<hostname>.local` (usually [http://romini.local](http://romini.local)).
 
-<p align="center">
+<!-- <p align="center">
   <img src="docs/brand/dashboard.png" alt="RoMini parent dashboard" width="720">
-</p>
+</p> -->
+
+![Home](./docs/images/home.png)
+
+
+Tab-by-tab screens: [docs/dashboard.md](docs/dashboard.md).
 
 | Doc | Role |
 |-----|------|
 | [docs/guide.md](docs/guide.md) | Full laptop + Pi walkthrough |
+| [docs/dashboard.md](docs/dashboard.md) | Parent UI screenshots |
 | [docs/hardware.md](docs/hardware.md) | BOM, PN532 SPI, UPS, GPIO |
 | [docs/pi-setup.md](docs/pi-setup.md) | Headless flash checklist |
 | [docs/PRD_001.md](docs/PRD_001.md) | Product requirements |

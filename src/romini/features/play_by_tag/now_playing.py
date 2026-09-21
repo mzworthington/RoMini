@@ -13,6 +13,8 @@ class NowPlayingPlayer(Protocol):
 
     def started_at(self) -> datetime | None: ...
 
+    def stop(self) -> None: ...
+
 
 @dataclass(frozen=True)
 class NowPlaying:
