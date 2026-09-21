@@ -45,6 +45,10 @@ pythonpath = ["src"]
 addopts = "--import-mode=importlib"
 python_files = ["test_*.py"]
 
+[tool.coverage.run]
+source = ["romini"]
+omit = ["**/test_*.py"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"
