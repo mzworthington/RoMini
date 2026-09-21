@@ -24,6 +24,7 @@ dev = [
     "httpx>=0.28.0",
     "pre-commit>=4.6.2",
     "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
     "python-semantic-release>=10.6.2",
     "ruff>=0.16.6",
 ]

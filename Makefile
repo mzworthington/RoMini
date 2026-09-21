@@ -25,7 +25,7 @@ format: $(VENV)/bin/python
 
 test: lint
 	mkdir -p junit
-	./$(VENV)/bin/python -m pytest -v --junitxml=junit/test-results.xml
+	./$(VENV)/bin/python -m pytest -v --junitxml=junit/test-results.xml --cov=romini --cov-report=xml
 
 build: $(VENV)/bin/python
 	rm -rf build/ dist/ *.egg-info
