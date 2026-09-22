@@ -160,6 +160,7 @@ def main(
             player=box.player,
             audit=getattr(box, "audit", None),
             update_status=data / "update-check.json",
+            halt=box.halt,
         )
         box.dashboard = start_dashboard(
             app,

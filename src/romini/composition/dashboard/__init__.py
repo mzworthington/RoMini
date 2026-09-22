@@ -11,7 +11,7 @@ from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
 from romini.features.library.assign import CatalogFile
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer
-from romini.features.play_by_tag.place_figure import Mixer
+from romini.features.play_by_tag.place_figure import Halt, Mixer
 
 from . import characters as characters_page
 from . import figures, home, library
@@ -60,6 +60,7 @@ def create_dashboard(
     player: NowPlayingPlayer | None = None,
     audit: AuditLog | None = None,
     update_status: Path | None = None,
+    halt: Halt | None = None,
 ) -> FastAPI:
     app = FastAPI()
 
@@ -96,6 +97,7 @@ def create_dashboard(
         player=player,
         audit=audit,
         update_status=update_status,
+        halt=halt,
         note=note,
         note_failed=note_failed,
     )
