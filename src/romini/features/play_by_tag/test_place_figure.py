@@ -9,6 +9,7 @@ from romini.features.play_by_tag.place_figure import (
     on_halt_pressed,
     on_play_long_pressed,
     on_play_pressed,
+    on_seek_relative,
     on_track_ended,
     on_volume_down,
     on_volume_set,
@@ -519,3 +520,20 @@ def test_short_press_halt_remembers_position_and_powers_off() -> None:
 
 def test_assign_ends_on_idle() -> None:
     assert next_assign_mode(assign_mode=True, idle_sec=60.0) is False
+
+
+def test_seek_relative_replays_from_the_shifted_place() -> None:
+    player = FakePlayer()
+    player.play("/var/lib/romini/tracks/bear.mp3", position_sec=40.0, uid="04AABBCC")
+
+    moved = on_seek_relative(player=player, delta_sec=-15)
+
+    assert moved is True
+    assert player.plays[-1] == ("/var/lib/romini/tracks/bear.mp3", 25.0)
+
+
+def test_seek_relative_does_nothing_when_the_plate_is_empty() -> None:
+    player = FakePlayer()
+
+    assert on_seek_relative(player=player, delta_sec=15) is False
+    assert player.plays == []
