@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 from romini.adapters.sqlite.schema import ensure_schema, open_state
@@ -24,6 +25,30 @@ class SqliteSettings:
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (play_mode.value,),
         )
+        conn.commit()
+        self._release(conn)
+
+    def remember_sleep_until(self, when: datetime) -> None:
+        conn = self._connect()
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES ('sleep_until', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (when.isoformat(),),
+        )
+        conn.commit()
+        self._release(conn)
+
+    def sleep_until(self) -> datetime | None:
+        conn = self._connect()
+        row = conn.execute("SELECT value FROM settings WHERE key = 'sleep_until'").fetchone()
+        self._release(conn)
+        if row is None:
+            return None
+        return datetime.fromisoformat(str(row[0]))
+
+    def clear_sleep(self) -> None:
+        conn = self._connect()
+        conn.execute("DELETE FROM settings WHERE key = 'sleep_until'")
         conn.commit()
         self._release(conn)
 
