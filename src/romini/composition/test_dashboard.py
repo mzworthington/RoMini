@@ -1663,6 +1663,28 @@ def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> 
     assert ">Characters<" in sub
 
 
+def test_dashboard_story_bookmarks_keep_library_current_and_the_studio() -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
+
+    for path, here in (("/stories", "Stories"), ("/characters", "Characters")):
+        html = client.get(path).text
+        primary = html.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
+        library = primary.split('href="/library"', 1)[1].split("</a>", 1)[0]
+        assert 'aria-current="page"' in library
+        assert ">Stories<" not in primary
+        assert ">Characters<" not in primary
+        sub = html.split('<nav aria-label="Library">', 1)[1].split("</nav>", 1)[0]
+        current = sub.split(f">{here}<", 1)[0]
+        assert 'aria-current="page"' in current
+
+    stories = client.get("/stories").text
+    assert "<legend>Characters</legend>" in stories
+    assert "<h2>Write a story</h2>" in stories
+    assert "<h2>Add a character</h2>" in client.get("/characters").text
+
+
 def test_dashboard_nav_has_stories_without_a_separate_write_page() -> None:
     from fastapi.testclient import TestClient
 
