@@ -7,8 +7,9 @@
 <li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
 </ul>
 <div class="board">
-<section class="card drop">
+<section class="card drop" id="upload-well">
 <h2>Upload a track</h2>
+<p>Drop an audio file here</p>
 <form action="/tracks" method="post" enctype="multipart/form-data">
 <label for="file">Audio file</label>
 <input id="file" type="file" name="file" accept="audio/*">
@@ -16,6 +17,29 @@
 <input id="folder" type="file" name="file" accept="audio/*" webkitdirectory multiple>
 <button>Upload</button>
 </form>
+<script>
+(function () {
+  var well = document.getElementById("upload-well");
+  var input = document.getElementById("file");
+  ["dragenter", "dragover"].forEach(function (name) {
+    well.addEventListener(name, function (event) {
+      event.preventDefault();
+      well.classList.add("dropping");
+    });
+  });
+  well.addEventListener("dragleave", function () {
+    well.classList.remove("dropping");
+  });
+  well.addEventListener("drop", function (event) {
+    event.preventDefault();
+    well.classList.remove("dropping");
+    if (!event.dataTransfer || !event.dataTransfer.files.length) {
+      return;
+    }
+    input.files = event.dataTransfer.files;
+  });
+})();
+</script>
 </section>
 <section class="card">
 <h2>Assign a figure</h2>

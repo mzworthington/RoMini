@@ -51,6 +51,12 @@ main { margin: 0; padding: 0; }
   margin: 0;
   min-width: 0;
 }
+.board:has(.drop) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.9fr);
+  align-items: stretch;
+}
+.board:has(.drop) > .drop { grid-row: span 2; }
 .card {
   background: #fff;
   border: 1px solid var(--line);
@@ -353,10 +359,20 @@ section {
   box-shadow: 0 2px 4px rgba(43, 40, 37, 0.02), 0 8px 24px rgba(43, 40, 37, 0.05);
 }
 section.drop {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 16rem;
+  text-align: center;
   background: #F9F7F2;
   border-style: dashed;
   border-width: 1.5px;
 }
+section.drop.dropping {
+  border-color: var(--story-coral);
+  background: #FFF7ED;
+}
+section.drop form { text-align: left; }
 .pods {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
@@ -441,7 +457,9 @@ section.drop {
 @media (max-width: 800px) {
   .studio-main,
   .studio:has(.plate),
-  .studio:has(.live-deck) { grid-template-columns: 1fr; }
+  .studio:has(.live-deck),
+  .board:has(.drop) { grid-template-columns: 1fr; }
+  .board:has(.drop) > .drop { grid-row: auto; }
 }
 @media (max-width: 40rem) {
   .masthead { align-items: flex-start; }

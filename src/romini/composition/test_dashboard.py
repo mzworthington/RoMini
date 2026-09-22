@@ -401,6 +401,17 @@ def test_dashboard_library_upload_sits_in_a_drop_well() -> None:
     assert 'for="folder"' in html
 
 
+def test_dashboard_library_upload_well_takes_a_dropped_audio_file() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    well = html.split('id="upload-well"', 1)[1].split("</section>", 1)[0]
+
+    assert well.index("Drop an audio file here") < well.index('id="file"')
+    assert 'addEventListener("drop"' in well
+    assert "input.files = event.dataTransfer.files" in well
+
+
 def test_dashboard_assign_path_lists_library_files() -> None:
     from fastapi.testclient import TestClient
 
