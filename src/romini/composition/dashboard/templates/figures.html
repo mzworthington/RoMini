@@ -44,6 +44,10 @@
 </section>
 {% endif %}
 </div>
+<p class="filters">
+<a href="/figures"{% if not unmapped %} aria-current="page"{% endif %}>All figures</a>
+<a href="/figures?unmapped=1"{% if unmapped %} aria-current="page"{% endif %}>No story linked</a>
+</p>
 <ul class="metrics">
 <li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
 <li><span>Tracks</span><span class="metric">{{ tracks|length }}</span></li>
@@ -55,7 +59,7 @@
 <h2>Figures</h2>
 {% if tags %}
 <ul class="figures">
-{% for tag in tags %}
+{% for tag in tags if not unmapped or not tag.linked %}
 <li class="figure">
 <img class="figure-mark" src="/mark.svg" width="48" height="48" alt="">
 <form action="/tags/{{ tag.uid }}/name" method="post">
@@ -65,6 +69,7 @@
 <p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}{% if track.size %} · {{ track.size }}{% endif %}</p>
 {% else %}
 <p class="hint">No story linked</p>
+<p><a href="/library#assign">Assign audio</a></p>
 {% endfor %}
 <label for="tag-name-{{ tag.uid }}">Name</label>
 <input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
@@ -75,6 +80,23 @@
 </ul>
 {% else %}
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
+{% endif %}
+</section>
+<section class="card">
+<h2>Box safety</h2>
+<p class="hint">Stop the story, or ask the box to pause itself after a quiet half hour.</p>
+{% if has_player %}
+<form action="/stop" method="post"><button>Stop and eject</button></form>
+{% else %}
+<p class="hint">The player is not connected.</p>
+{% endif %}
+{% if has_settings %}
+<form action="/sleep" method="post">
+<input type="hidden" name="minutes" value="30">
+<input type="hidden" name="next" value="/figures">
+<button>Sleep in 30m</button>
+</form>
+{% if sleep_label %}<p class="hint">Sleeping at {{ sleep_label }}</p>{% endif %}
 {% endif %}
 </section>
 <aside class="card">
