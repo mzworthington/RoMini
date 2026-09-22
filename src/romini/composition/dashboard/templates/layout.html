@@ -38,6 +38,7 @@
 <ul class="status-pills">
 <li>{{ free_space }}</li>
 {% if charge is not none %}<li>{{ charge }}% charged</li>{% endif %}
+{% if mixer %}<li>Max {{ volume_ceiling }}</li>{% endif %}
 </ul>
 <a class="scan" href="/figures">Scan tag</a>
 </div>
@@ -81,13 +82,21 @@
 {% if page == "home" %}
 <div class="page-actions">
 <span class="soft-pill">Bedtime fade</span>
+{% if mixer %}
+<form action="/mute" method="post"><button class="danger-pill" type="submit">Emergency mute</button></form>
+{% else %}
 <button type="button" class="danger-pill" disabled>Emergency mute</button>
+{% endif %}
 </div>
 {% elif page == "settings" %}
 <div class="page-actions">
 <button type="button" class="soft-pill" disabled>Restart</button>
 <button type="button" class="soft-pill" disabled>Reboot</button>
+{% if can_power %}
+<form action="/power" method="post"><button class="danger-pill" type="submit">Safe power down</button></form>
+{% else %}
 <button type="button" class="danger-pill" disabled>Safe power down</button>
+{% endif %}
 </div>
 {% endif %}
 </div>

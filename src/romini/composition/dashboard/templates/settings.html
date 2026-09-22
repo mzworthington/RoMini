@@ -8,6 +8,34 @@
 </ul>
 <h2 class="band">Live hardware subsystems</h2>
 <div class="pods">
+<section class="card" aria-label="Host node">
+<p class="kicker">Host node</p>
+<h2>{{ hostname or "This box" }}</h2>
+{% if cpu_temp_c %}<p class="bound">{{ cpu_temp_c }}°C</p>{% else %}<p class="hint">Temperature not reported</p>{% endif %}
+{% if ram_total_mb %}<p>{{ ram_used_mb }} MB of {{ ram_total_mb }} MB</p>{% endif %}
+{% if load_pct is not none %}<p>Load {{ load_pct }}%</p>{% endif %}
+<p class="hint">{{ free_space }}</p>
+</section>
+<section class="card" aria-label="NFC deck">
+<p class="kicker">Proximity sensor</p>
+<h2>NFC deck</h2>
+{% if now_playing %}
+<p class="bound">{{ now_playing.trigger }}</p>
+<p class="hint">Figure present</p>
+{% else %}
+<p class="hint">Reader idle</p>
+{% endif %}
+</section>
+<section class="card" aria-label="Acoustic path">
+<p class="kicker">Acoustic path</p>
+<h2>Player</h2>
+<p>{% if has_player %}Player connected{% else %}Waiting for the player{% endif %}</p>
+</section>
+<section class="card" aria-label="Battery">
+<p class="kicker">Power</p>
+<h2>Battery</h2>
+{% if charge is not none %}<p class="bound">{{ charge }}%</p>{% else %}<p class="hint">No battery hat</p>{% endif %}
+</section>
 <section class="card" aria-label="On the plate">
 <h2>On the plate</h2>
 {% if now_playing %}
@@ -61,11 +89,14 @@
 <input id="volume-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}">
 <button>Set volume</button>
 </form>
+<p class="guard-scale"><span>Quiet</span><span>60</span><span>70</span><span>75</span><span>Ceiling {{ volume_ceiling }}</span></p>
 </section>
 {% endif %}
 <section class="card">
+<p class="kicker">Firmware</p>
 <h2>Player update</h2>
 <p>{{ update_status }}</p>
+<p class="hint">The box checks GitHub for a newer player when a story is not playing.</p>
 </section>
 <section class="card span">
 <h2>Audit log</h2>
@@ -79,6 +110,12 @@
 {% else %}
 <p class="empty">Nothing has happened yet</p>
 {% endif %}
+</section>
+<section class="card">
+<h2>Network</h2>
+<p>{{ hostname or "romini.local" }}</p>
+{% if lan_ip %}<p class="hint">{{ lan_ip }}</p>{% endif %}
+<p class="hint">Wi-Fi stays on the box. Change it over SSH with nmtui.</p>
 </section>
 </div>
 </div>
