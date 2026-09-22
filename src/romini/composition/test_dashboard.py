@@ -3240,6 +3240,36 @@ def test_dashboard_figures_page_puts_actions_above_the_figure_list() -> None:
     assert "<h2>Library</h2>" not in html
 
 
+def test_dashboard_figures_use_nordic_cards() -> None:
+    from fastapi.testclient import TestClient
+
+    @dataclass
+    class Pad:
+        def place(self, uid: str) -> None:
+            return
+
+    @dataclass
+    class Register:
+        assign_mode: bool = False
+
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                register=Register(),
+                pad=Pad(),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+
+    assert html.count('class="card"') >= 3
+    assert 'for="register"' in html
+    assert 'for="present-uid"' in html
+    assert "No figures yet. Turn register on, then place a figure on the box." in html
+
+
 def test_dashboard_chrome_sits_in_the_same_column_as_the_page() -> None:
     from fastapi.testclient import TestClient
 
