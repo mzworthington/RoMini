@@ -1,0 +1,658 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-tertiary-container":"#fffbff","on-surface-variant":"#554336","on-secondary":"#ffffff","on-error":"#ffffff","surface-container-highest":"#e8e1dc","on-error-container":"#93000a","primary-fixed-dim":"#ffb77d","on-tertiary-fixed":"#3b0900","on-primary-container":"#fffbff","tertiary":"#984229","inverse-primary":"#ffb77d","on-secondary-fixed-variant":"#374b41","error-container":"#ffdad6","surface-container":"#f4ece7","on-secondary-fixed":"#0b1f17","tertiary-container":"#b7593f","on-primary":"#ffffff","secondary-container":"#d1e8da","surface-container-low":"#faf2ed","on-background":"#1e1b18","primary-fixed":"#ffdcc3","surface-variant":"#e8e1dc","outline":"#887364","secondary-fixed":"#d1e8da","secondary-fixed-dim":"#b5ccbf","surface-container-lowest":"#ffffff","surface-tint":"#904d00","on-surface":"#1e1b18","tertiary-fixed-dim":"#ffb5a0","on-primary-fixed-variant":"#6e3900","inverse-on-surface":"#f7efea","surface-bright":"#fff8f4","inverse-surface":"#33302d","background":"#fff8f4","error":"#ba1a1a","on-primary-fixed":"#2f1500","primary":"#8d4b00","tertiary-fixed":"#ffdbd1","on-secondary-container":"#54695e","surface-dim":"#e0d9d4","outline-variant":"#dbc2b0","surface-container-high":"#eee7e2","on-tertiary-fixed-variant":"#7c2d17","secondary":"#4e6358","primary-container":"#b15f00","surface":"#fff8f4","on-tertiary":"#ffffff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-lg":"1.5rem","gutter-mobile":"0.75rem","space-xs":"0.25rem","margin-mobile":"1rem","space-sm":"0.5rem","space-xl":"2.5rem","gutter":"1.25rem","space-md":"1rem","margin":"2rem"},"fontFamily":{"body-sm":["Plus Jakarta Sans"],"display-lg":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"title-sm":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"]},"fontSize":{"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"display-lg":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"700"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"600"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.015em","fontWeight":"700"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"title-sm":["16px",{"lineHeight":"22px","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}]}}}}</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-margin flex items-center justify-between gap-gutter"><div class="flex items-center gap-space-md"><img src="https://lh3.googleusercontent.com/aida/AEtjO1U3xdwE4b3JHzF5neILtmoHvaOH0omjSx3bIQFsiGIXhYcsSi7tlurZW9-PZU-HlGTMfhgkK3oZBMjLh82_wgbyMsVtad96ydN86zsy0FZUs19aiIog6bO0J1wXyG-sTUuIghbD04y3zb4s-sY254j9uZ24CR729p1sgmDX3KsZysIrP-kJNb3v5sPgUdtmAi73g-ReRhbYIpiMKMDl-78jBLhwQYqX0eueJiW25tdUpg" alt="RoMini Storybox Logo" class="w-10 h-10 rounded-xl object-contain shadow-sm bg-amber-50/50 p-0.5 border border-amber-200/60"><div class="flex flex-col"><div class="flex items-center gap-space-sm"><span class="font-headline-md text-headline-md text-on-surface leading-none">RoMini</span><span class="px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm tracking-wide shadow-sm font-semibold">Companion Dashboard</span></div><div class="flex items-center gap-1.5 mt-1"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span></span><span class="font-label-sm text-label-sm text-secondary">romini.local · Online</span></div></div></div><nav class="hidden xl:flex items-center bg-surface-container p-1 rounded-full shadow-[inset_0_1px_3px_rgba(43,40,37,0.06)]" data-active-classes="bg-primary-container text-on-primary-container font-headline-md shadow-sm"><a aria-current="page" class="px-space-md py-1.5 rounded-full transition-all bg-primary-container text-on-primary-container font-headline-md shadow-sm" data-path="figures-and-tags" href="#">Figures &amp; Tags</a><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" data-path="audio-library" href="#">Audio Library</a><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" data-path="live-player" href="#">Live Player</a><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" data-path="hardware-and-system" href="#">Hardware &amp; System</a></nav><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-secondary">battery_charging_full</span><span class="font-label-sm text-label-sm text-on-surface">84%</span></div><div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-secondary">wifi</span><span class="font-label-sm text-label-sm text-on-surface">-52 dBm</span></div><div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-primary">lock</span><span class="font-label-sm text-label-sm text-on-surface">Max 75%</span></div><button class="flex items-center gap-1.5 px-space-md py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors shadow-[0_2px_4px_rgba(43,40,37,0.04)]"><span class="material-symbols-outlined text-[18px]">contactless</span><span class="">Scan Tag</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-20 bg-surface min-h-[calc(100vh-5rem)]"><div class="flex flex-col w-full">
+<!-- Interactive Toast Notification (NFC Tap Alert) -->
+<div class="mb-space-lg mx-auto w-full max-w-6xl px-margin" id="nfcAlertToast">
+<div class="flex items-center justify-between gap-space-md p-space-md rounded-xl bg-surface-container-high shadow-sm transition-all duration-300 shadow-md">
+<div class="flex items-center gap-space-md">
+<div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-outlined text-[20px] animate-pulse">contactless</span>
+<span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-secondary"></span>
+</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface">Physical NFC Deck Status</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary text-on-secondary font-label-sm text-label-sm">Coil Active · PN532 I²C</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Continuous proximity sensing active at 13.56 MHz (Domestic Ear-Safe Guard locked at 75dB)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="hidden sm:inline font-label-sm text-label-sm text-on-surface-variant">Tap response: 42ms</span>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" onclick="document.getElementById('nfcAlertToast').style.display='none'">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Workstation View -->
+<div class="w-full max-w-6xl mx-auto px-margin flex flex-col gap-space-xl pb-space-xl">
+<!-- 1. LIVE NFC DECK / TOP SPLIT BANNER -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-stretch">
+<!-- Active Figurine on Reader (Large Spotlight Deck) -->
+<div class="lg:col-span-8 flex flex-col p-space-lg rounded-xl bg-surface-container-lowest shadow-sm relative overflow-hidden">
+<!-- Ambient Warm Subtle Corner Gradient -->
+<div class="absolute -top-16 -right-16 w-52 h-52 rounded-full bg-primary/10 blur-2xl pointer-events-none"></div>
+<div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-2">
+<span class="flex h-3 w-3 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary">Live Physical Deck</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">• ISO 14443-A Detected</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant">UID: 04:A2:8E:91</span>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="NFC Signal Diagnostic">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Figurine Main Layout -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-space-lg my-auto py-space-sm">
+<!-- Tactile Figurine Halo Avatar -->
+<div class="relative flex-shrink-0 mx-auto sm:mx-0">
+<div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-surface-container flex items-center justify-center shadow-inner">
+<img class="w-full h-full object-cover rounded-full shadow-sm" data-alt="Curated handcrafted wooden figurine of The Gruffalo children book character with soft warm studio lighting on natural birch background Scandinavian aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJyGv2YXcFE22o1aGEJj8-xB9kk-_KKR7Anxtq_BwLpAgzkR_CLnWu3fzZaFLQZJ7QPaoWnIJyG-bT-lcKUBdFtz7cjSAGS8ErMwj3ZKxz0aS1xAZcGBAa_3e4LIUl3mccj4vWdcgUIocTGnld_M-FXV6EJEYp9jSA-n2UxpByQRJvTawtQ-WKegC3xGiPhbwSDunc2yTmwA4Hfw4htEElXWR5HCG38SvSS5a9adcb">
+</div>
+<div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-[18px]">graphic_eq</span>
+</div>
+</div>
+<!-- Metadata & Story Title -->
+<div class="flex-1 min-w-0 text-center sm:text-left">
+<div class="flex items-center justify-center sm:justify-start gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Bedtime Story</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Julia Donaldson Collection</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface truncate">The Gruffalo Figurine</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Now Playing: <span class="text-on-surface font-label-md text-label-md">"Deep Dark Wood"</span></p>
+<!-- Recessed Audio Scrubber -->
+<div class="mt-space-md flex flex-col gap-1.5">
+<div class="w-full h-2.5 rounded-full bg-surface-container p-0.5 shadow-inner relative flex items-center">
+<div class="h-full rounded-full bg-primary transition-all duration-300" style="width: 24%;"></div>
+<div class="absolute left-[24%] -translate-x-1/2 w-4 h-4 rounded-full bg-surface-container-lowest shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span class="">04:12</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">volume_up</span> 62% Safe Max</span>
+<span class="">18:45 (Full Story)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Integrated Hardware Touch Controls -->
+<div class="mt-space-md pt-space-md flex flex-wrap items-center justify-between gap-space-md bg-surface-container-low -mx-space-lg -mb-space-lg p-space-md">
+<!-- Playback Actions -->
+<div class="flex items-center gap-space-sm mx-auto sm:mx-0">
+<button class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-transform active:translate-y-0.5" title="Previous Track">
+<span class="material-symbols-outlined text-[20px]">skip_previous</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-primary hover:bg-primary-container text-on-primary flex items-center justify-center shadow-md transition-transform active:translate-y-0.5" id="playbackToggleBtn" title="Pause / Play">
+<span class="material-symbols-outlined text-[26px]" id="playIcon">pause</span>
+</button>
+<button class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-transform active:translate-y-0.5" title="Next Track">
+<span class="material-symbols-outlined text-[20px]">skip_next</span>
+</button>
+<button class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-transform active:translate-y-0.5" title="Loop Figurine Album">
+<span class="material-symbols-outlined text-[18px]">repeat</span>
+</button>
+</div>
+<!-- Quick Audio Level Stepper -->
+<div class="flex items-center gap-space-md mx-auto sm:mx-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">volume_down</span>
+<div class="w-24 h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 65%;"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface">65%</span>
+</div>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary">edit</span>
+<span class="">Edit Mapping</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Scan & Map Quick Dock Card -->
+<div class="lg:col-span-4 flex flex-col justify-between p-space-lg rounded-xl bg-surface-container-low shadow-sm relative overflow-hidden">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-tertiary">Quick Reader Sensor</span>
+<span class="flex h-2 w-2 rounded-full bg-tertiary"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Scan &amp; Map Tag</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Touch any unconfigured NTAG213/215 sticker, token or wooden toy figure to the wooden top plate.</p>
+</div>
+<!-- Tactile Target Box with Pulse -->
+<div class="my-space-md p-space-lg rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center text-center shadow-inner relative group cursor-pointer shadow-md">
+<div class="relative w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-space-sm">
+<span class="material-symbols-outlined text-[32px] text-primary animate-bounce">contactless</span>
+<div class="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
+</div>
+<span class="font-title-sm text-title-sm text-on-surface">Reader is Listening</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Place figurine on RoMini box</span>
+</div>
+<div class="flex flex-col gap-2">
+<button class="w-full py-2.5 px-space-md rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm transition-transform active:translate-y-0.5">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span class="">Register Detected Token</span>
+</button>
+<span class="text-center font-label-sm text-label-sm text-on-surface-variant">Last Tag Read: 04:55:A1:09 (10 min ago)</span>
+</div>
+</div>
+</section>
+<!-- 2. METRICS & TELEMETRY ROW -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Metric 1: Mapped Figures -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Mapped Figurines</span>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">toys</span>
+</div>
+</div>
+<div class="my-space-sm">
+<div class="font-display-lg text-display-lg text-on-surface">14 <span class="font-headline-md text-headline-md text-on-surface-variant font-normal">Active</span></div>
+<div class="flex items-center gap-1.5 mt-1 font-body-sm text-body-sm text-tertiary">
+<span class="material-symbols-outlined text-[16px]">priority_high</span>
+<span class="">2 tags require audio link</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 87.5%;"></div>
+</div>
+</div>
+<!-- Metric 2: Audio Tracks & Storage -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Audio Track Library</span>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">library_music</span>
+</div>
+</div>
+<div class="my-space-sm">
+<div class="font-display-lg text-display-lg text-on-surface">128 <span class="font-headline-md text-headline-md text-on-surface-variant font-normal">Tracks</span></div>
+<div class="flex items-center gap-1.5 mt-1 font-body-sm text-body-sm text-on-surface-variant">
+<span class="">4.2 GB of 32 GB MicroSD</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 14%;"></div>
+</div>
+</div>
+<!-- Metric 3: Today's Listening Time -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Today's Session</span>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">cloud_download</span>
+</div>
+</div>
+<div class="my-space-sm">
+<div class="font-display-lg text-display-lg text-on-surface">1h 35m</div>
+<div class="flex items-center gap-1.5 mt-1 font-body-sm text-body-sm text-secondary">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="">45m left until bedtime lock</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- Metric 4: Player Hardware Health -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Pi 4 Hardware</span>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+</div>
+</div>
+<div class="my-space-sm">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-on-surface">42°C</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Cool · mpv active</span>
+</div>
+<div class="flex items-center gap-1.5 mt-1 font-body-sm text-body-sm text-on-surface-variant">
+<span class="">Uptime: 4 days 12 hours</span>
+</div>
+</div>
+<div class="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
+<span class="inline-block w-2 h-2 rounded-full bg-secondary"></span>
+<span class="">Audio DAC: HiFiBerry Mini (I²S)</span>
+</div>
+</div>
+</section>
+<!-- 3. FIGURINES & TAG GALLERY + SIDE ACTIVITY LOG -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Main Figurine Cards Stream (8 Columns) -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<!-- Controls Bar: Title, Search & Filter Pills -->
+<div class="flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Figurine &amp; Tag Library</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Select a physical tag to reassign audio files, modify playlists, or adjust safety decibel volume limits.</p>
+</div>
+<button class="self-start sm:self-auto px-space-md py-2 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1.5 shadow-sm transition-transform active:translate-y-0.5">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span class="">Add New Figure</span>
+</button>
+</div>
+<!-- Search Input + Filters Bar -->
+<div class="flex flex-col md:flex-row items-stretch md:items-center gap-space-sm">
+<!-- Tactile Search Input -->
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-full bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant/70 font-body-sm text-body-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" id="tagSearchInput" placeholder="Search figures, stories, tags or UID..." type="text">
+</div>
+<!-- Filter Pills Horizontal Bar -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+<button class="px-3.5 py-1.5 rounded-full bg-inverse-surface text-inverse-on-surface font-label-sm text-label-sm whitespace-nowrap shadow-sm">All (14)</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-sm text-label-sm whitespace-nowrap shadow-sm transition-colors">Bedtime (5)</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-sm text-label-sm whitespace-nowrap shadow-sm transition-colors">Music (4)</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-sm text-label-sm whitespace-nowrap shadow-sm transition-colors">Audiobooks (3)</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-tertiary font-label-sm text-label-sm whitespace-nowrap shadow-sm transition-colors flex items-center gap-1">
+<span class="">Unmapped (2)</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</button>
+</div>
+</div>
+</div>
+<!-- Figurine Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Card 1: The Gruffalo (Currently Decked) -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-md">
+<div class="relative w-14 h-14 rounded-full bg-surface-container p-0.5 flex-shrink-0">
+<img class="w-full h-full object-cover rounded-full" data-alt="Handcrafted wooden animal toy miniature of The Gruffalo with horns and amber eyes soft focus warm lighting Scandinavian wooden nursery background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAc6HsLeX6KV2bRvorIIvoMliwkl-SOhYpYjlaFEPFoSrb8SEiTXx0khS98Gv_-lhBI_JEY6oTjBJEAzhK5uf-kNcxoHh8obskRoJ_37BlnFHHu7DaWL2CEenn_6yapKMZWiolOJSQyAOz9t4hvNvvmMmPY3fDM_xt5IyPcQ2MRLvPtXg8UO5u1jDyz7JKHzofkfdzKuvQEteRIX3i1z9Bu0YZMk5KKgF-sreKlNb7Z">
+<span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px]">
+<span class="material-symbols-outlined text-[12px]">graphic_eq</span>
+</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.2 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Bedtime Story</span>
+</div>
+<h4 class="font-title-sm text-title-sm text-on-surface truncate mt-0.5">The Gruffalo</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Julia Donaldson Collection</span>
+</div>
+</div>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- Card Specs & Status -->
+<div class="p-space-sm rounded-lg bg-surface-container-low mb-space-md flex flex-col gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex justify-between items-center">
+<span class="">Tag UID:</span>
+<span class="font-mono text-on-surface">04:A2:8E:91</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Audio Payload:</span>
+<span class="text-on-surface">Single Story · 18 min</span>
+</div>
+<div class="flex justify-between items-center text-primary">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Deck Status:</span>
+<span class="font-semibold">Currently on Deck</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Local MP3 · 320kbps</span>
+<button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
+                Configure Tag
+              </button>
+</div>
+</div>
+<!-- Card 2: Paddington Bear -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-14 h-14 rounded-full bg-surface-container p-0.5 flex-shrink-0">
+<img class="w-full h-full object-cover rounded-full" data-alt="Artisanal wooden Paddington bear figurine with blue duffle coat and red hat sitting on clean light wood surface warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDemIh2C72wSYfFOPQvkytwulsg2MyUE0WgEjJAaNE52WCKJAS1trVXFag0_DftBFr2Q6NckMO1gaXdDSrMzAWqoFOyj_mRu87-YTK_CoWsHwdc4d3vIHYd7yss9Wv5ijZITLrcytR0DwFIxyl9Zz-KAVDPlPt6F4GHl8wgeYaRTV59t6iq1Ydln8DRAdOzD8Ydjg5keRJ8vOZTJYooijYoXTfqYsbAhZOlRhbWwpZf">
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Audiobook</span>
+</div>
+<h4 class="font-title-sm text-title-sm text-on-surface truncate mt-0.5">Paddington Bear</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Paddington Goes to Town</span>
+</div>
+</div>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low mb-space-md flex flex-col gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex justify-between items-center">
+<span class="">Tag UID:</span>
+<span class="font-mono text-on-surface">04:3B:11:F2</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Audio Payload:</span>
+<span class="text-on-surface">Audiobook Tale · 24 min</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Last Played:</span>
+<span class="text-on-surface">Yesterday at 19:10</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Ready
+              </span>
+<button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
+                Configure Tag
+              </button>
+</div>
+</div>
+<!-- Card 3: Sleepy Whale Lullaby -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-14 h-14 rounded-full bg-surface-container p-0.5 flex-shrink-0">
+<img class="w-full h-full object-cover rounded-full" data-alt="Smooth rounded blue-grey wooden whale toy designed as nursery sound figurine on soft linen surface warm ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1h7nthNZTJgffDUNcHAEhFr3FajTKJr6StHoxcdLZuX_-IE9ixwwRhUgAkI2egDMX-gIUf9gGKE7xCTvKaDPfhZJmxFlQRIQTKAPD9ZUrHbf4RPsNR29Wv_xjLvnbAOLT0kLVbrujC1AjTja5ZxVK7_NVhWbIqeRn4p5hFKZtj5XsxMuX-eNveOPBidayX8yHZhC-8WdmdQWJCXkHLdw_Hc5zNTM9xyEZ-FnlHQkH">
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Ambient / Music</span>
+<span class="material-symbols-outlined text-[14px] text-primary" title="Bedtime Nightlight Linked">bedtime</span>
+</div>
+<h4 class="font-title-sm text-title-sm text-on-surface truncate mt-0.5">Sleepy Whale Lullaby</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">White Noise &amp; Ocean Waves</span>
+</div>
+</div>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low mb-space-md flex flex-col gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex justify-between items-center">
+<span class="">Tag UID:</span>
+<span class="font-mono text-on-surface">04:98:C3:44</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Audio Payload:</span>
+<span class="text-on-surface">Ambient Soundscape · 45 min</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Night Mode:</span>
+<span class="text-secondary font-medium">Auto-fade out (45m)</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync</span> Infinite Loop
+              </span>
+<button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
+                Configure Tag
+              </button>
+</div>
+</div>
+<!-- Card 4: Peter Rabbit -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-14 h-14 rounded-full bg-surface-container p-0.5 flex-shrink-0">
+<img class="w-full h-full object-cover rounded-full" data-alt="Delicate painted wooden rabbit figurine with small blue jacket standing on clean minimalist pine table softly lit Nordic home style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRhRuDg882B9DRUgR6iSqjSfjEiu8MhNqN1ntB1khon4tnxHh5nUvMkn83XvBEY7cPi0OOVng0AbfeGQwvwSRE5B-MxsspnOFyrBdEy7JRhEmPlNXNgxKqN1u7D_Cza2trh7RctkY00sjlnwEZknHEWdX1LpxyEZA-XZtNLF5gW0UPljwpO1gAdXoZCdO9T914W92myknvi_pRUflDaKyGyd_9Ks5EOW0e4TBsdsyD">
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Classic Stories</span>
+</div>
+<h4 class="font-title-sm text-title-sm text-on-surface truncate mt-0.5">Peter Rabbit</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Beatrix Potter Stories</span>
+</div>
+</div>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low mb-space-md flex flex-col gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex justify-between items-center">
+<span class="">Tag UID:</span>
+<span class="font-mono text-on-surface">04:D1:77:AA</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Audio Payload:</span>
+<span class="text-on-surface">Classic Tale · 15 min</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Last Played:</span>
+<span class="text-on-surface">3 days ago</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">volume_mute</span> Max 68 dB
+              </span>
+<button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
+                Configure Tag
+              </button>
+</div>
+</div>
+<!-- Card 5: Wooden Train Figurine -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-14 h-14 rounded-full bg-surface-container p-0.5 flex-shrink-0">
+<img class="w-full h-full object-cover rounded-full" data-alt="Traditional Scandinavian wooden locomotive train toy with magnetic link placed gently on blonde wood table warm home sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJb3mVXKrVa90VglHFytZwSSOopvKsNbMIplXjnsk8Fpvz5n7uYW9fMfSBQ2V93M9uWN2x23oQLFWyCHA4U1gDS85iCB_GZ3-1DXFZHPP_08kCpdfhuyKSNKfea2jybIi-8OqGovTR4UJXQR9VEjFOknNvm0V-f0ziCWN0M7_I97yZVCSTXoxNsrr75-v56-_JlaQq5Jsu3-DpFDuyQ5Z3lJqWBXKmS3H4wRDSFzsO">
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Sound &amp; Songs</span>
+</div>
+<h4 class="font-title-sm text-title-sm text-on-surface truncate mt-0.5">Wooden Steam Train</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">24 Nursery Rhymes &amp; Chugs</span>
+</div>
+</div>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low mb-space-md flex flex-col gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex justify-between items-center">
+<span class="">Tag UID:</span>
+<span class="font-mono text-on-surface">04:EF:22:90</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Audio Payload:</span>
+<span class="text-on-surface">Single Story · 22 min</span>
+</div>
+<div class="flex justify-between items-center"><span class="">Play Mode:</span><span class="text-on-surface">Tap to Play</span></div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">play_circle</span> Single Story</span>
+<button class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
+                Configure Tag
+              </button>
+</div>
+</div>
+<!-- Card 6: UNMAPPED TAG (Needs Audio Assignment) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between relative group">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-14 h-14 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]">contactless</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.2 rounded-full bg-tertiary text-on-tertiary font-label-sm text-label-sm">Needs Audio</span>
+</div>
+<h4 class="font-title-sm text-title-sm text-on-surface truncate mt-0.5">Blue Disc Tag #09</h4>
+<span class="font-body-sm text-body-sm text-tertiary block truncate">Unassigned NFC Sticker</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm">New</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-lowest mb-space-md flex flex-col gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex justify-between items-center">
+<span class="">Tag UID:</span>
+<span class="font-mono text-tertiary font-semibold">04:55:A1:09</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Detected:</span>
+<span class="text-on-surface">10 minutes ago</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Memory Capacity:</span>
+<span class="text-on-surface">NTAG215 (504 Bytes)</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">No tracks linked</span>
+<button class="px-3.5 py-1.5 rounded-full bg-tertiary hover:bg-tertiary-container text-on-tertiary font-label-md text-label-md flex items-center gap-1 shadow-sm transition-transform active:translate-y-0.5">
+<span class="material-symbols-outlined text-[16px]">link</span>
+<span class="">Assign Audio</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Activity Stream & Raspberry Pi Hardware Guard (4 Columns) -->
+<div class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Live System Activity Log Card -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-secondary">history</span>
+<h4 class="font-headline-md text-headline-md text-on-surface">Activity Stream</h4>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant">Live FIFO</span>
+</div>
+<!-- Chronological Activity Items -->
+<div class="flex flex-col gap-space-md relative">
+<!-- Timeline Item 1 -->
+<div class="flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between text-on-surface font-label-md text-label-md">
+<span class="truncate">The Gruffalo placed</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant ml-2">14:22</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Story started instantly from saved bookmark.</p>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-secondary mt-1.5 flex-shrink-0"></div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between text-on-surface font-label-md text-label-md">
+<span class="truncate">Physical dial turned</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant ml-2">13:45</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Volume adjusted: 65% → 50% (Potentiometer).</p>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-surface-variant mt-1.5 flex-shrink-0"></div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between text-on-surface font-label-md text-label-md">
+<span class="truncate">Tag lifted: Paddington</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant ml-2">11:30</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Playback gracefully paused at 24:12.</p>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="flex items-start gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-secondary mt-1.5 flex-shrink-0"></div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between text-on-surface font-label-md text-label-md">
+<span class="truncate">Auto-sync OTA update</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant ml-2">09:15</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">RoMini daemon v1.4.2 synchronized via local Git.</p>
+</div>
+</div>
+</div>
+<button class="mt-space-md w-full py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors">
+            View Complete Hardware Journal
+          </button>
+</div>
+<!-- Quick Raspberry Pi Master Controls -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col">
+<div class="flex items-center gap-2 mb-space-sm">
+<span class="material-symbols-outlined text-[20px] text-primary">power_settings_new</span>
+<h4 class="font-headline-md text-headline-md text-on-surface">Raspberry Pi Safety</h4>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Manage power and bedtime state without pulling the physical power cord from the wall.</p>
+<div class="grid grid-cols-2 gap-space-sm mb-space-md">
+<button class="p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex flex-col items-center justify-center text-center gap-1 transition-colors" onclick="alert('Playback stopped. RFID reader on standby.')">
+<span class="material-symbols-outlined text-[22px] text-tertiary">stop_circle</span>
+<span class="">Stop &amp; Eject</span>
+</button>
+<button class="p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex flex-col items-center justify-center text-center gap-1 transition-colors" onclick="alert('Bedtime timer started: Device will sleep in 30 minutes.')">
+<span class="material-symbols-outlined text-[22px] text-primary">snooze</span>
+<span class="">Sleep in 30m</span>
+</button>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low font-body-sm text-body-sm">
+<span class="text-on-surface">NFC Beep Feedback</span>
+<button class="w-10 h-6 bg-secondary rounded-full relative p-0.5 transition-colors">
+<div class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm ml-auto"></div>
+</button>
+</div>
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low font-body-sm text-body-sm">
+<span class="text-on-surface">Parental Decibel Lock</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Locked at 75dB</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex justify-between items-center">
+<button class="text-tertiary font-label-sm text-label-sm hover:underline flex items-center gap-1" onclick="confirm('Are you sure you want to reboot the Raspberry Pi audio server?')">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+<span class="">Clean Pi OS Reboot</span>
+</button>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">192.168.1.140</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive JavaScript Behavior -->
+<script>
+    (function initRoMiniStudio() {
+      // Audio playback toggle simulation
+      const playbackToggleBtn = document.getElementById('playbackToggleBtn');
+      const playIcon = document.getElementById('playIcon');
+      let isPlaying = true;
+
+      if (playbackToggleBtn && playIcon) {
+        playbackToggleBtn.addEventListener('click', () => {
+          isPlaying = !isPlaying;
+          playIcon.innerText = isPlaying ? 'pause' : 'play_arrow';
+          playbackToggleBtn.title = isPlaying ? 'Pause Playback' : 'Resume Playback';
+        });
+      }
+
+      // Filter search simulator for tags
+      const searchInput = document.getElementById('tagSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase();
+          const cards = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-2 > div');
+          cards.forEach(card => {
+            const cardText = card.innerText.toLowerCase();
+            if (cardText.includes(query)) {
+              card.style.display = 'flex';
+            } else {
+              card.style.display = 'none';
+            }
+          });
+        });
+      }
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-low py-space-lg mt-space-xl"><div class="w-full px-margin flex flex-col md:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><div class="flex items-center gap-space-sm"><span class="">RoMini OS v2.4.1 (Nordic Sand Build)</span><span class="">•</span><span class="">Hardware ID: RPI4-NFC-802F</span></div><div class="">Screen-free domestic audio for growing minds. Local network hosted.</div></div></footer>
+
+
+
+
+
+</body></html>

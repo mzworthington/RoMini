@@ -1,0 +1,692 @@
+<!DOCTYPE html><html lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-tertiary-container":"#fffbff","on-surface-variant":"#554336","on-secondary":"#ffffff","on-error":"#ffffff","surface-container-highest":"#e8e1dc","on-error-container":"#93000a","primary-fixed-dim":"#ffb77d","on-tertiary-fixed":"#3b0900","on-primary-container":"#fffbff","tertiary":"#984229","inverse-primary":"#ffb77d","on-secondary-fixed-variant":"#374b41","error-container":"#ffdad6","surface-container":"#f4ece7","on-secondary-fixed":"#0b1f17","tertiary-container":"#b7593f","on-primary":"#ffffff","secondary-container":"#d1e8da","surface-container-low":"#faf2ed","on-background":"#1e1b18","primary-fixed":"#ffdcc3","surface-variant":"#e8e1dc","outline":"#887364","secondary-fixed":"#d1e8da","secondary-fixed-dim":"#b5ccbf","surface-container-lowest":"#ffffff","surface-tint":"#904d00","on-surface":"#1e1b18","tertiary-fixed-dim":"#ffb5a0","on-primary-fixed-variant":"#6e3900","inverse-on-surface":"#f7efea","surface-bright":"#fff8f4","inverse-surface":"#33302d","background":"#fff8f4","error":"#ba1a1a","on-primary-fixed":"#2f1500","primary":"#8d4b00","tertiary-fixed":"#ffdbd1","on-secondary-container":"#54695e","surface-dim":"#e0d9d4","outline-variant":"#dbc2b0","surface-container-high":"#eee7e2","on-tertiary-fixed-variant":"#7c2d17","secondary":"#4e6358","primary-container":"#b15f00","surface":"#fff8f4","on-tertiary":"#ffffff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-lg":"1.5rem","gutter-mobile":"0.75rem","space-xs":"0.25rem","margin-mobile":"1rem","space-sm":"0.5rem","space-xl":"2.5rem","gutter":"1.25rem","space-md":"1rem","margin":"2rem"},"fontFamily":{"body-sm":["Plus Jakarta Sans"],"display-lg":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"title-sm":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"]},"fontSize":{"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"display-lg":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"700"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"600"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.015em","fontWeight":"700"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"title-sm":["16px",{"lineHeight":"22px","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}]}}}}</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-margin flex items-center justify-between gap-gutter"><div class="flex items-center gap-space-md"><img src="https://lh3.googleusercontent.com/aida/AEtjO1U3xdwE4b3JHzF5neILtmoHvaOH0omjSx3bIQFsiGIXhYcsSi7tlurZW9-PZU-HlGTMfhgkK3oZBMjLh82_wgbyMsVtad96ydN86zsy0FZUs19aiIog6bO0J1wXyG-sTUuIghbD04y3zb4s-sY254j9uZ24CR729p1sgmDX3KsZysIrP-kJNb3v5sPgUdtmAi73g-ReRhbYIpiMKMDl-78jBLhwQYqX0eueJiW25tdUpg" alt="RoMini Storybox Logo" class="w-10 h-10 rounded-xl object-contain shadow-sm bg-amber-50/50 p-0.5 border border-amber-200/60"><div class="flex flex-col"><div class="flex items-center gap-space-sm"><span class="font-headline-md text-headline-md text-on-surface leading-none">RoMini</span><span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm tracking-wide">Companion Dashboard</span></div><div class="flex items-center gap-1.5 mt-1"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span></span><span class="font-label-sm text-label-sm text-secondary">romini.local · Online</span></div></div></div><nav class="hidden xl:flex items-center bg-surface-container p-1 rounded-full shadow-[inset_0_1px_3px_rgba(43,40,37,0.06)]" data-active-classes="bg-primary-container text-on-primary-container font-headline-md shadow-sm"><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" data-path="figures-and-tags" href="#">Figures &amp; Tags</a><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container font-headline-md shadow-sm transition-all" data-path="audio-library" href="#">Audio Library</a><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" data-path="live-player" href="#">Live Player</a><a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" data-path="hardware-and-system" href="#">Hardware &amp; System</a></nav><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-secondary">battery_charging_full</span><span class="font-label-sm text-label-sm text-on-surface">84%</span></div><div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-secondary">wifi</span><span class="font-label-sm text-label-sm text-on-surface">-52 dBm</span></div><div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-primary">lock</span><span class="font-label-sm text-label-sm text-on-surface">Max 75%</span></div><button class="flex items-center gap-1.5 px-space-md py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors shadow-[0_2px_4px_rgba(43,40,37,0.04)]"><span class="material-symbols-outlined text-[18px]">contactless</span><span class="">Scan Tag</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-20 bg-surface min-h-[calc(100vh-5rem)]"><div class="flex flex-col w-full">
+<div class="w-full max-w-[1240px] mx-auto px-margin-mobile md:px-margin pb-32">
+<!-- Top Action Bar & Editorial Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-lg pt-space-lg pb-space-xl">
+<div class="space-y-space-xs max-w-2xl">
+<div class="flex items-center gap-space-sm mb-1">
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm tracking-wider uppercase">Storage &amp; Audio Assets</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">/var/lib/romini/library</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-surface tracking-tight">Audio Library &amp; Soundtracks</h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Upload lossless audio stories, verify MicroSD domestic quotas, and assign stories directly to physical wooden NFC figures.</p>
+</div>
+<!-- Quick Action Buttons -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-space-md py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md shadow-sm transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">pie_chart</span>
+<span class="">Storage Analysis</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-md py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md shadow-sm transition-all active:scale-[0.98]"><span class="material-symbols-outlined text-[18px] text-primary">add_circle</span><span class="">Upload New Story</span></button>
+<button class="flex items-center gap-1.5 px-space-lg py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md shadow-md hover:bg-primary-container transition-all active:scale-[0.98]" id="triggerUploadBtn">
+<span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+<span class="">Upload Audio Files</span>
+</button>
+</div>
+</div>
+<!-- Storage & Telemetry Quota Bento Ribbon -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-md mb-space-xl">
+<!-- Card 1: MicroSD Allocation -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-on-surface-variant mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">MicroSD Capacity</span>
+<span class="material-symbols-outlined text-secondary text-[20px]">sd_card</span>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-lg text-headline-lg text-on-surface">4.2 GB</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">/ 32 GB (13%)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">~85.4 hours available storage</p>
+</div>
+<div class="mt-space-md">
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 13.1%;"></div>
+</div>
+</div>
+</div>
+<!-- Card 2: Total Tracks -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-on-surface-variant mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Total Audio Assets</span>
+<span class="material-symbols-outlined text-primary text-[20px]">audio_file</span>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-lg text-headline-lg text-on-surface">128</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Master Tracks</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Standalone story audio files</p>
+</div>
+<div class="flex items-center gap-1.5 mt-space-md text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="">FLAC &amp; MP3 verified healthy</span>
+</div>
+</div>
+<!-- Card 3: Figurine Associations -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-on-surface-variant mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">NFC Pairing</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">toys</span>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-lg text-headline-lg text-on-surface">14</span>
+<span class="font-body-sm text-body-sm text-tertiary font-label-md">(2 unbound)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Physical wooden tokens bound</p>
+</div>
+<div class="flex items-center gap-1.5 mt-space-md">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-tertiary">2 stories awaiting NFC token tap</span>
+</div>
+</div>
+<!-- Card 4: Audio Hardware Quality Profile -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-on-surface-variant mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">DAC Configuration</span>
+<span class="material-symbols-outlined text-secondary text-[20px]">tune</span>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-title-sm text-title-sm text-on-surface">HiFiBerry Mini</span>
+<span class="font-label-sm text-label-sm text-secondary">I2S DAC</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">320 kbps Studio Quality preset</p>
+</div>
+<div class="flex items-center gap-2 mt-space-md">
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">48 kHz</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">24-Bit</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Stereo</span>
+</div>
+</div>
+</div>
+<!-- Drag & Drop Upload Zone + In-Progress Transmission -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-md mb-space-xl">
+<!-- Milled Dropzone Area (Spans 2 cols) -->
+<div class="lg:col-span-2 relative p-space-lg rounded-xl bg-surface-container-low shadow-[inset_0_1px_3px_rgba(43,40,37,0.06)] hover:bg-surface-container transition-colors cursor-pointer group flex flex-col md:flex-row items-center gap-space-lg" id="dropzone">
+<div class="w-16 h-16 rounded-full bg-surface-container-lowest shadow-sm flex items-center justify-center text-primary group-hover:scale-105 transition-transform flex-shrink-0">
+<span class="material-symbols-outlined text-[32px]">upload_file</span>
+</div>
+<div class="flex-1 text-center md:text-left space-y-1">
+<h2 class="font-title-sm text-title-sm text-on-surface">Drag audio files directly onto this panel</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-lg">
+            Supports MP3, M4A, AAC, and uncompressed FLAC. Audio is directly cataloged into the domestic Pi filesystem with auto-ID3 metadata parsing.
+          </p>
+<div class="flex flex-wrap items-center justify-center md:justify-start gap-space-sm pt-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md shadow-sm hover:bg-surface-bright transition-all">
+              Browse Laptop Disk
+            </button>
+<span class="text-outline font-body-sm text-body-sm">or</span>
+<label class="flex items-center gap-1.5 cursor-pointer font-label-sm text-label-sm text-on-surface-variant hover:text-primary">
+<input checked="" class="rounded accent-primary w-4 h-4 cursor-pointer" type="checkbox">
+<span class="">Prompt physical tag binding immediately after transfer</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Live Uploading Pipeline Card -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between text-on-surface-variant mb-space-sm">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-semibold">Active Sync Queue</span>
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+</div>
+<div class="flex items-start gap-3 mt-1">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">music_note</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">The_Gruffalo_Full_Story.mp3</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">12.1 MB of 15.4 MB · 78%</div>
+</div>
+</div>
+</div>
+<div class="mt-space-md">
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant mb-1">
+<span class="">Transferring (Local Wi-Fi)</span>
+<span class="text-primary font-semibold">3.8 MB/s</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-300" style="width: 78%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter & Directory Controls -->
+<div class="space-y-space-md mb-space-lg">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<!-- Search Input -->
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline">search</span>
+<input class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md text-body-md shadow-sm focus:outline-none focus:bg-surface-bright focus:shadow-md transition-all" placeholder="Search audio titles, authors, narrators, or figure links..." type="text">
+</div>
+<!-- Layout View Toggle -->
+<div class="flex items-center gap-space-sm self-end md:self-auto">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Display Mode:</span>
+<div class="flex items-center bg-surface-container p-1 rounded-lg">
+<button class="p-1.5 rounded-md bg-surface-container-lowest text-on-surface shadow-sm" title="Detailed Table View">
+<span class="material-symbols-outlined text-[18px] block">format_list_bulleted</span>
+</button>
+<button class="p-1.5 rounded-md text-on-surface-variant hover:text-on-surface transition-colors" title="Grid View">
+<span class="material-symbols-outlined text-[18px] block">grid_view</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Segment Filter Pills -->
+<div class="flex items-center gap-space-xs overflow-x-auto pb-1 no-scrollbar">
+<button class="px-space-md py-1.5 rounded-full bg-on-surface text-surface-bright font-label-md text-label-md whitespace-nowrap shadow-sm">
+          All Tracks (128)
+        </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap shadow-sm transition-colors">
+          Bedtime Stories (42)
+        </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap shadow-sm transition-colors">
+          Audiobooks (38)
+        </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap shadow-sm transition-colors">
+          Music &amp; Rhymes (34)
+        </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap shadow-sm transition-colors">
+          Ambient &amp; White Noise (14)
+        </button>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container text-tertiary font-label-md text-label-md whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="">Unassigned to Figures (6)</span>
+</button>
+</div>
+</div>
+<!-- Audio Tracks Directory Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-xl">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-outline font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-3 px-space-lg w-12 text-center">#</th>
+<th class="py-3 px-space-md">Story Title</th>
+<th class="py-3 px-space-md">Author / Narrator</th>
+<th class="py-3 px-space-md">Duration</th>
+<th class="py-3 px-space-md">File Spec</th>
+<th class="py-3 px-space-md">Physical Figurine Link</th>
+<th class="py-3 px-space-lg text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-body-md text-on-surface">
+<!-- Row 1: The Gruffalo (Currently Active / Playing) -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group bg-primary/5">
+<td class="py-4 px-space-lg text-center font-label-md text-primary">
+<button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm hover:scale-105 transition-transform" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Warm atmospheric illustrated cover of a mythical brown woodland monster creature with orange eyes and tusks standing in a deep green Scandinavian forest with mist and tall pine trees" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbVCs9eMZibZfS1pPsg0lqehDYCNdb7NBVS0rjG1DIH1Wyy4EbAm94LmvZBKfCkFDyJUPl6XFP6Pb7gROWm2bNn086ocXD21bcp9mZKsS3DOWq22kILlQq3dIfQikZRXGAuBOkdePg2IPQf34VJsnv2haZwoLGYjgQdctilUPaTrwFr7JtPPd8uROcRmq79v5RVHS1BMMI_WDPepbTCC-uRmXQkB1m4IMZxEmBZkxA">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate flex items-center gap-2">
+<span class="">The Gruffalo (Full Story)</span>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold">Active Preview</span>
+</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">Julia Donaldson</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Narrated by Imelda Staunton</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                18:45
+              </td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">42.8 MB</div>
+<div class="font-label-sm text-label-sm text-outline">MP3 · 320 kbps</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">contactless</span>
+<span class="">The Gruffalo Figurine</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Paddington -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 px-space-lg text-center font-label-md text-on-surface-variant">
+<button class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Delicate watercolor illustration of a small polite bear wearing a blue duffle coat and red bush hat holding a battered leather suitcase in a clean train station" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNXPx15dB9VCed6oNf_72MAoMPbp2MTPpMc6v-Iubp5fIs0OnvkRsZt4bwSLYsSPuChNuL2QLq45Q-2oNmEnjDYGaJbRlyiKpHBtP1glMfiepvufKnkzOq8pkuua8aU0p-MZkLND4IvZLXxufzDQ45_ZBYue2euzGhV4m9MxrN1vo2P4ZRxVh6dOa-CfULLQ4s2YltWkJVQqQBFaJ-CiyfiFxS9pk2bL7lraOYIvt8">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate">Paddington Goes to Town</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">Michael Bond</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Narrated by Stephen Fry</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                24:12
+              </td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">55.4 MB</div>
+<div class="font-label-sm text-label-sm text-outline">M4A · 320 kbps</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">contactless</span>
+<span class="">Paddington Bear</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Deep Ocean Sleep Waves -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 px-space-lg text-center font-label-md text-on-surface-variant">
+<button class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Minimalist abstract Scandinavian design of deep indigo and soft teal ocean waves with a peaceful whale swimming under gentle moonlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTC6M6_BZqOU6kzfhqNMbBVixw621lFA61SS6ieLO2DnuF3nzBCqa3w5TfJ6HNbVkIS8_mSeyF5wPkXjPxzXn5xTZ9ftAPT82bSqmadSWsy05xBXA7ZHyV8wM4Lh4LkA2WKIG185Ffm5QafjqnJBqxVyHVRskwTLLfSnZkN24puDzc8RVIfwhhpaV61x7nTrmBPAR_isX2qFSoRC5130-cARRp7TZopGgrfAyb_fMu">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate">Deep Ocean Sleep Waves &amp; Whale Song</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">RoMini Ambient Labs</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Binaural Hydrophone Loop</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                45:00 <span class="text-secondary font-label-sm text-label-sm">(Seamless)</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">103.2 MB</div>
+<div class="font-label-sm text-label-sm text-outline">FLAC Lossless</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">contactless</span>
+<span class="">Sleepy Whale Lullaby</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Peter Rabbit -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 px-space-lg text-center font-label-md text-on-surface-variant">
+<button class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Classic vintage botanical storybook illustration of a mischievous young brown rabbit wearing a powder-blue jacket eating carrots inside a leafy cottage garden" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdf8Taz1_jefJNyneHg3rXS62ZgkMAQOD8mWk0IuXluhFWPKLjyGZQ64V3Axj98MP90UXd4hmRU1Q_wR1irAMQKp_2C_3xVBEwQa62zr7zk5j4yoEJ5Ld7OtTuSA14ysnQQK2eaDmTXDtyrcNYD9GfZgY2swb9RCstgEfIe16vKPEd5wwdwzmulhOB3b2xisPInnrzKHjHNft18ym6H9I242KFIIXOq1KzF0Fkr6NJ">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate">Peter Rabbit &amp; Friends</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">Beatrix Potter</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Narrated by Emma Thompson</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                15:30
+              </td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">35.1 MB</div>
+<div class="font-label-sm text-label-sm text-outline">MP3 · 320 kbps</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">contactless</span>
+<span class="">Peter Rabbit</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Old MacDonald & 12 Nursery Rhymes -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 px-space-lg text-center font-label-md text-on-surface-variant">
+<button class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Playful Scandinavian woodblock print of a joyful red steam locomotive rolling past rolling green farmland with singing farm animals in soft pastel tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9k3WdOjMmwH5copeSe7sIXQKqyA07zcUZMZScBN2s35NM11_6Y3DG03DVcdkaSNYdz6AVY2tzHD_5NmC_gimAh2_t52LcY-3kR_dOLh4ywnfN-L6j0YtmWpNp1HUgXZeEtxrK9gZC3rq7C8k25WxXT3QT1Z995BLXje1_5abQgwPSJ2E-I5m3-8Qogx_5cr6lYaXPK_ePWcBmKJzpLGoaO_Dl18PkBHkbDNA7hTT9">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate">Old MacDonald &amp; 12 Nursery Rhymes</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">Kids Folk Collective</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Acoustic Guitar &amp; Accordion</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                22:10
+              </td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">50.8 MB</div>
+<div class="font-label-sm text-label-sm text-outline">MP3 · 320 kbps</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">contactless</span>
+<span class="">Wooden Steam Train</span>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 6: Unassigned 1 (The Very Hungry Caterpillar) -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group bg-error-container/20">
+<td class="py-4 px-space-lg text-center font-label-md text-on-surface-variant">
+<button class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Vibrant collage artwork in textured painted tissue paper depicting a cheerful green caterpillar munching on a crisp red apple slice" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmSbLOnS2ef1IWqW0_HzYn6lR1Cvnb8cY6OMpEQWpK7gCurLADVjsqoFRaJjM_sjdmrFXAt_KsEMPFMbkcYIxb3cIXlhpK__dHfh3sdHiyVLQVDx_DpTnKnk7kq4H_omOiPBuLCF_Wi03Xsy8EJOJ7mYWmzPF5mMnaD5Kmjcx8wv9WnyW-bhBxJPgCkEdXkXwGRO8uFzguNJkS3v26P5swxOPZcKNEBEH1sGxjaOpy">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate">The Very Hungry Caterpillar</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">Eric Carle</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Full Audio Dramatization</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                08:30
+              </td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">19.5 MB</div>
+<div class="font-label-sm text-label-sm text-outline">MP3 · 320 kbps</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span class="">No Figurine Linked</span>
+</span>
+<button class="px-2.5 py-1 rounded-md bg-surface-container-high hover:bg-surface-dim text-on-surface font-label-sm text-label-sm shadow-sm transition-all">
+                    Link Tag
+                  </button>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 7: Unassigned 2 (Brahms Lullaby & Soft Rain) -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group bg-error-container/20">
+<td class="py-4 px-space-lg text-center font-label-md text-on-surface-variant">
+<button class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all" title="Preview track">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Serene minimalist oil painting of soft rainfall against a bedroom window with cozy warm candlelight glowing on a polished wooden floor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAva-_fmd8UQAj4oJUTbL46oPCE6xUh4W6OReXYq3h_63Hpd90QgkpjZCP5Vj6owEFMzn5jL5RWsniUllSvuSzhAFBeKf_b6yenDFOQeuIVMqQ2nlrfdUqOjr53BitoLOuvvdjKalmwXkJSHN-5Go_rkaKyNxP4RisywkHKe2VB7a2wIkg5KHA8Aph_0XlylOBiuWHm-4PUsc8u-r7egazYX5-iTPgwYBwbJiAgMysZ">
+</div>
+<div class="min-w-0">
+<div class="font-title-sm text-title-sm text-on-surface truncate">Brahms Lullaby &amp; Soft Rain</div>
+
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="font-label-md text-label-md text-on-surface">Bedtime Classics</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Acoustic Piano &amp; Rain Recorders</div>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">
+                30:00
+              </td>
+<td class="py-4 px-space-md">
+<div class="font-label-sm text-label-sm text-on-surface">68.7 MB</div>
+<div class="font-label-sm text-label-sm text-outline">MP3 · 320 kbps</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span class="">No Figurine Linked</span>
+</span>
+<button class="px-2.5 py-1 rounded-md bg-surface-container-high hover:bg-surface-dim text-on-surface font-label-sm text-label-sm shadow-sm transition-all">
+                    Link Tag
+                  </button>
+</div>
+</td>
+<td class="py-4 px-space-lg text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Edit Metadata">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Reassign Figurine Tag">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer Metadata & Pagination -->
+<div class="p-space-md bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
+<div class="flex items-center gap-2">
+<span class="">Showing 7 of 128 registered audio files</span>
+<span class="">•</span>
+<span class="text-secondary font-label-sm text-label-sm">Local Storage Synchronized</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-3 py-1 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm opacity-50 cursor-not-allowed">Previous</button>
+<span class="px-3 py-1 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm">1</span>
+<button class="px-3 py-1 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm hover:bg-surface-container">2</button>
+<button class="px-3 py-1 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm hover:bg-surface-container">3</button>
+<button class="px-3 py-1 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm hover:bg-surface-container">Next</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Persistent Floating Bottom Audio Mini-Player Widget -->
+<div class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-5xl z-40 bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl p-space-md shadow-[0_12px_40px_rgba(43,40,37,0.12)]">
+<div class="flex flex-col md:flex-row items-center justify-between gap-space-md">
+<!-- Current Active Track Info -->
+<div class="flex items-center gap-3 w-full md:w-auto">
+<div class="w-12 h-12 rounded-xl bg-surface-container overflow-hidden flex-shrink-0 shadow-sm relative group">
+<img class="w-full h-full object-cover" data-alt="Warm atmospheric illustrated cover of a woodland creature standing among deep green pine trees in morning mist" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnGgtJ2vBFK-npUOsmH5fgG7J_l_qEKud0h-PmPjmMhWzb3wxZ7-cYi84rebZ_ybFF9c8QV_WmKkBL3CWxT4YDnRBKxC9uXTnssmU7XjB0wM4YeEJ6q6hKPEx556p59UUagdkzAtysuLgIqMko6sON5NBMzTGI2mV_104zuDHzOPJ7KIm07TMFUzT8Fu8L2T_owDD9StusW1G3odazer9UdFqzo5iIjTSdrYyQxrPV">
+<div class="absolute inset-0 bg-on-surface/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-white text-[20px]">fullscreen</span>
+</div>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-title-sm text-title-sm text-on-surface truncate">The Gruffalo (Full Story)</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Local Audition</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Julia Donaldson · Linked: The Gruffalo</p>
+</div>
+</div>
+<!-- Scrubber, Playhead & Waveform -->
+<div class="flex-1 w-full max-w-xl flex flex-col items-center gap-1.5">
+<div class="flex items-center gap-space-md">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" title="Previous Story">
+<span class="material-symbols-outlined text-[20px]">skip_previous</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px]">pause</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" title="Next Story">
+<span class="material-symbols-outlined text-[20px]">skip_next</span>
+</button>
+</div>
+<!-- Milled Recessed Sound Scrubber -->
+<div class="w-full flex items-center gap-3">
+<span class="font-label-sm text-label-sm text-outline w-10 text-right">04:12</span>
+<div class="flex-1 h-3 rounded-full bg-surface-container shadow-[inset_0_1px_2px_rgba(43,40,37,0.1)] relative flex items-center cursor-pointer group">
+<!-- Active Fill Progress -->
+<div class="h-full bg-primary rounded-full relative" style="width: 22.4%;">
+<!-- Tactile Scrub Handle -->
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-surface-container-lowest shadow-md group-hover:scale-125 transition-transform"></div>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline w-10">18:45</span>
+</div>
+</div>
+<!-- Preview Volume & Send to Hardware Button -->
+<div class="flex items-center justify-between md:justify-end gap-space-md w-full md:w-auto">
+<!-- Local Laptop Volume -->
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+<div class="w-16 h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-on-surface-variant rounded-full" style="width: 65%;"></div>
+</div>
+</div>
+<!-- Cast / Test Trigger on Physical Speaker -->
+<button class="flex items-center gap-1.5 px-space-md py-2 rounded-xl bg-secondary text-on-secondary font-label-md text-label-md shadow-sm hover:bg-secondary-fixed-dim hover:text-on-secondary-fixed transition-all" title="Stream directly to domestic RoMini speaker box">
+<span class="material-symbols-outlined text-[18px]">speaker</span>
+<span class="">Test on RoMini Box</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Ensure Audio Library nav is highlighted active in app shell
+  document.addEventListener('DOMContentLoaded', () => {
+    const navItems = document.querySelectorAll('header nav a');
+    navItems.forEach(item => {
+      if (item.getAttribute('data-path') === 'audio-library' || item.textContent.trim() === 'Audio Library') {
+        item.className = 'px-space-md py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container font-headline-md shadow-sm transition-all';
+      } else {
+        item.className = 'px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all';
+      }
+    });
+
+    // Dropzone feedback interaction
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.classList.add('bg-surface-container-high');
+        });
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('bg-surface-container-high');
+        });
+      });
+    }
+  });
+</script></main><footer class="w-full bg-surface-container-low py-space-lg mt-space-xl"><div class="w-full px-margin flex flex-col md:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><div class="flex items-center gap-space-sm"><span class="">RoMini OS v2.4.1 (Nordic Sand Build)</span><span class="">•</span><span class="">Hardware ID: RPI4-NFC-802F</span></div><div class="">Screen-free domestic audio for growing minds. Local network hosted.</div></div></footer>
+
+
+
+</body></html>
