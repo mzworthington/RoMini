@@ -214,6 +214,19 @@ def test_dashboard_live_player_is_playback_without_the_old_jump_list() -> None:
     assert ">Settings<" not in html
 
 
+def test_dashboard_header_has_no_account_control() -> None:
+    from fastapi.testclient import TestClient
+
+    header = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
+        .get("/")
+        .text.split("<header", 1)[1]
+        .split("</header>", 1)[0]
+    )
+
+    assert 'class="account"' not in header
+
+
 def test_dashboard_header_matches_the_prototype_top_bar() -> None:
     from fastapi.testclient import TestClient
 
@@ -4426,6 +4439,75 @@ def test_dashboard_home_hides_now_playing_when_the_box_is_quiet() -> None:
 
     assert 'aria-label="Now playing"' not in html
     assert ">Story<" not in html
+
+
+def test_dashboard_quiet_deck_play_submits_when_a_player_is_connected() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=FakePlayer())).get("/").text
+    quiet = html.split('class="deck card quiet"', 1)[1].split("</section>", 1)[0]
+
+    assert 'action="/play"' in quiet
+    assert 'class="play-main" disabled' not in quiet
+    assert "cursor: wait" not in html
+
+
+def test_dashboard_deck_play_draws_a_play_mark() -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    quiet = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=FakePlayer()))
+        .get("/")
+        .text.split('class="deck card quiet"', 1)[1]
+        .split("</section>", 1)[0]
+    )
+
+    assert 'class="play-glyph"' in quiet
+    assert "M8 5v14l11-7z" in quiet
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+    playing = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=Playing()))
+        .get("/")
+        .text.split('aria-label="Now playing"', 1)[1]
+        .split("</section>", 1)[0]
+    )
+
+    assert 'class="play-glyph"' in playing
+    assert "M6 5h4v14H6z" in playing
+
+
+def test_dashboard_quiet_deck_draws_seek_marks() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    quiet = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=FakePlayer()))
+        .get("/")
+        .text.split('class="deck card quiet"', 1)[1]
+        .split("</section>", 1)[0]
+    )
+
+    assert quiet.count('class="seek-glyph"') == 3
 
 
 def test_dashboard_write_page_lets_you_pick_a_named_voice(tmp_path: Path) -> None:
