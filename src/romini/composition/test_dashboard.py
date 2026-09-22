@@ -1387,6 +1387,34 @@ def test_dashboard_settings_shows_volume_when_mixer_is_wired() -> None:
     assert "power button" in html.lower()
 
 
+def test_dashboard_hardware_shows_percent_volume_studio_keys_and_box_facts() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                mixer=FakeMixer(level=10),
+                battery=FakeBattery(percent=72),
+            )
+        )
+        .get("/settings")
+        .text
+    )
+
+    assert "<h2>Studio keys</h2>" in html
+    assert "software ceiling" not in html.lower()
+    assert "dB" not in html
+    assert "75%" not in html
+    assert "10 of 100" in html
+    assert "72% charged" in html
+    assert "1.0 KB free" in html
+    assert 'for="volume-level"' in html
+    assert 'for="gemini-key"' in html
+    assert 'for="play_mode"' in html
+    assert html.count('class="card"') >= 4
+
+
 def test_dashboard_volume_quieter_steps_the_mixer() -> None:
     from fastapi.testclient import TestClient
 
@@ -2145,7 +2173,7 @@ def test_dashboard_keys_form_is_labelled() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
 
-    assert "<h2>Keys</h2>" in html
+    assert "<h2>Studio keys</h2>" in html
     assert 'for="gemini-key"' in html
     assert "Gemini key" in html
     assert 'for="elevenlabs-key"' in html
@@ -2700,7 +2728,7 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     assert "<h2>Saved stories</h2>" in stories
     assert "<legend>Characters</legend>" in stories
     assert 'action="/stories/draft"' not in stories
-    assert "<h2>Keys</h2>" in settings
+    assert "<h2>Studio keys</h2>" in settings
     assert 'for="play_mode"' in settings
     assert "<h2>Volume</h2>" in settings
 
