@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="studio">
+<ul class="metrics">
+<li><span>Stories saved</span><span class="metric">{{ saved_stories|length }}</span></li>
+<li><span>Characters</span><span class="metric">{{ saved_characters|length }}</span></li>
+</ul>
 <p class="new-pack">
 <form action="/stories/new" method="post">
 <button>New story</button>
@@ -120,4 +125,5 @@ function updateStoryLength(value) {
 <p class="empty">No saved stories yet</p>
 {% endif %}
 </section>
+</div>
 {% endblock %}

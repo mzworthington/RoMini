@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="studio">
+<ul class="metrics">
+<li><span>Characters saved</span><span class="metric">{{ saved_characters|length }}</span></li>
+</ul>
 <p class="new-pack">
 <form action="/characters/new" method="post">
 <button>New character</button>
@@ -31,4 +35,5 @@
 <p class="empty">No characters yet</p>
 {% endif %}
 </section>
+</div>
 {% endblock %}

@@ -1,5 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="studio">
+<ul class="metrics">
+<li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
+{% if charge is not none %}<li><span>Charged</span><span class="metric">{{ charge }}%</span></li>{% endif %}
+<li><span>Player</span><span class="metric">v{{ version }}</span></li>
+</ul>
 <div class="pods">
 <section class="card">
 <h2>Studio keys</h2>
@@ -64,5 +70,6 @@
 <p class="empty">Nothing has happened yet</p>
 {% endif %}
 </section>
+</div>
 </div>
 {% endblock %}

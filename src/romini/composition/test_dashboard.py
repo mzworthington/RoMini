@@ -692,6 +692,29 @@ def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> Non
     assert ">Banana<" in row
 
 
+def test_dashboard_library_row_says_when_no_figure_is_linked(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tracks:\n  - path: "stories/romy.mp3"\n    title: "Romy"\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    row = html.split("<tbody>", 1)[1].split("</tr>", 1)[0]
+
+    assert 'class="chip missing"' in row
+    assert "No figure linked" in row
+
+
 def test_dashboard_library_studio_counts_tracks(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1561,6 +1584,26 @@ def test_dashboard_hardware_lays_care_out_as_pods() -> None:
     assert pods.index("Audit log") > pods.index("Player update")
 
 
+def test_dashboard_hardware_studio_puts_box_facts_above_the_care_cards() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                battery=FakeBattery(percent=72),
+            )
+        )
+        .get("/settings")
+        .text
+    )
+    facts = html.split('class="studio"', 1)[1].split('class="pods"', 1)[0]
+
+    assert "Charged" in facts
+    assert ">72%<" in facts
+    assert "Free on the box" in facts
+
+
 def test_dashboard_hardware_shows_when_the_update_check_skipped(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1915,6 +1958,18 @@ def test_dashboard_saved_characters_are_cards_not_a_table(tmp_path: Path) -> Non
     assert 'href="/characters/romy"' in html
 
 
+def test_dashboard_characters_studio_counts_saved_characters(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    html = client.get("/characters").text
+    counted = html.split("Characters saved", 1)[1]
+
+    assert 'class="studio"' in html
+    assert ">1<" in counted[:80]
+
+
 def test_dashboard_saved_character_has_a_shareable_url(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -2180,6 +2235,18 @@ def test_dashboard_saved_story_has_a_shareable_url(tmp_path: Path) -> None:
     assert saved.headers["location"].startswith("/stories/the-little-station")
     html = client.get("/stories/the-little-station").text
     assert 'value="The little station"' in html
+
+
+def test_dashboard_stories_studio_counts_saved_stories(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
+    html = client.get("/stories").text
+    counted = html.split("Stories saved", 1)[1]
+
+    assert 'class="studio"' in html
+    assert ">1<" in counted[:80]
 
 
 def test_dashboard_stories_index_redirects_to_the_saved_title(tmp_path: Path) -> None:
@@ -3503,6 +3570,80 @@ def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
     assert ">1<" in mapped.split("Tracks", 1)[0]
 
 
+def test_dashboard_figure_card_shows_the_story_bound_to_it(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy-and-the-banana.mp3"\n'
+        '    title: "Romy and the banana"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert "Romy and the banana" in card
+
+
+def test_dashboard_figure_card_says_when_no_story_is_linked(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tags:\n  - uid: "04aabbccddeeff"\n    name: "Banana"\ntracks: []\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert "No story linked" in card
+
+
+def test_dashboard_figure_card_leads_with_the_figure_name(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tags:\n  - uid: "04aabbccddeeff"\n    name: "Banana"\ntracks: []\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert card.index("<h3>Banana</h3>") < card.index('class="uid"')
+
+
 def test_dashboard_figures_use_nordic_cards() -> None:
     from fastapi.testclient import TestClient
 
@@ -3624,6 +3765,77 @@ def test_dashboard_home_shows_what_is_playing_now(tmp_path: Path) -> None:
     assert "Frog" in html
     assert ">Time<" in html
     assert "22:33" in html
+
+
+def test_dashboard_live_player_splits_the_plate_from_the_story(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 125.0
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+    studio = html.split('class="studio"', 1)[1].split("</script>", 1)[0]
+
+    assert studio.index("On the plate") < studio.index('class="deck-title"')
+    assert ">Frog<" in studio
+    assert 'querySelector(".studio")' in html
+
+
+def test_dashboard_live_player_plate_shows_the_mark() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    plate = html.split('aria-label="On the plate"', 1)[1].split("</section>", 1)[0]
+
+    assert 'class="plate-mark"' in plate
+    assert 'src="/mark.svg"' in plate
+
+
+def test_dashboard_figures_plate_shows_the_mark() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/figures").text
+    plate = html.split('aria-label="On the plate"', 1)[1].split("</section>", 1)[0]
+
+    assert 'class="plate-mark"' in plate
+    assert 'src="/mark.svg"' in plate
 
 
 def test_dashboard_live_player_deck_leads_with_the_story(tmp_path: Path) -> None:

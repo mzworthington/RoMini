@@ -80,7 +80,7 @@
 {% for track in tracks %}
 <tr>
     <td><span class="track-title">{{ track.title }}</span></td>
-    <td><span class="chip">{{ track.figure }}</span></td>
+    <td>{% if track.figure %}<span class="chip">{{ track.figure }}</span>{% else %}<span class="chip missing">No figure linked</span>{% endif %}</td>
     <td>{{ track.path }}</td>
     {% if has_player %}
     <td>{% if playing_uid == track.uid %}<form action="/library/stop" method="post"><button>Stop</button></form>{% else %}<form action="/library/play/{{ track.uid }}" method="post"><button>Play</button></form>{% endif %}</td>
