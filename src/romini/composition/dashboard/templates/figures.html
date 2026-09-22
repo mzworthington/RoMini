@@ -1,8 +1,22 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="studio">
+<section class="card deck live-deck" aria-label="On the plate">
+{% if now_playing %}
+<p class="kicker">{% if now_playing.is_playing %}On the plate{% else %}Lifted{% endif %}</p>
+<h2 class="deck-title">{{ now_playing.trigger }}</h2>
+<p>{{ now_playing.story }}</p>
+<p class="hint">Place {{ now_playing.place }}</p>
+{% else %}
+<p class="kicker">On the plate</p>
+<h2>No figure yet</h2>
+<p class="hint">Place a figure on the box to see it here.</p>
+{% endif %}
+</section>
 <div class="board">
 {% if register %}
 <section class="card">
+<p class="kicker">Scan and map</p>
 <h2>Register figures</h2>
 <form action="/register-mode" method="post">
 <label for="register">NFC register</label>
@@ -25,6 +39,13 @@
 </section>
 {% endif %}
 </div>
+<ul class="metrics">
+<li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
+<li><span>Tracks</span><span class="metric">{{ tracks|length }}</span></li>
+<li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
+{% if charge is not none %}<li><span>Charged</span><span class="metric">{{ charge }}%</span></li>{% endif %}
+</ul>
+<div class="studio-main">
 <section class="card">
 <h2>Figures</h2>
 {% if tags %}
@@ -44,4 +65,18 @@
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
 {% endif %}
 </section>
+<aside class="card">
+<h2>Activity</h2>
+{% if audit_entries %}
+<ul class="activity">
+{% for entry in audit_entries %}
+<li><span>{{ entry.when }}</span> {{ entry.summary }}</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="empty">No activity yet</p>
+{% endif %}
+</aside>
+</div>
+</div>
 {% endblock %}

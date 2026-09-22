@@ -692,6 +692,29 @@ def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> Non
     assert ">Banana<" in row
 
 
+def test_dashboard_library_studio_counts_tracks(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tracks:\n  - uid: "04aabbccddeeff"\n    path: "stories/romy.mp3"\n    title: "Romy"\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    counted = html.split("Tracks in the library", 1)[1]
+
+    assert 'class="studio"' in html
+    assert ">1<" in counted[:80]
+
+
 def test_dashboard_home_lays_out_actions_in_a_flex_board_below_library() -> None:
     from fastapi.testclient import TestClient
 
@@ -3447,6 +3470,37 @@ def test_dashboard_figures_page_puts_actions_above_the_figure_list() -> None:
     assert 'action="/tracks"' not in html
     assert 'action="/assign"' not in html
     assert "<h2>Library</h2>" not in html
+
+
+def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy.mp3"\n'
+        '    title: "Romy"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    studio = html.split('class="studio"', 1)[1]
+    mapped = studio.split("Mapped figures", 1)[1]
+
+    assert ">1<" in mapped.split("Tracks", 1)[0]
 
 
 def test_dashboard_figures_use_nordic_cards() -> None:

@@ -1,5 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="studio">
+<ul class="metrics">
+<li><span>Tracks in the library</span><span class="metric">{{ tracks|length }}</span></li>
+<li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
+<li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
+</ul>
 <div class="board">
 <section class="card drop">
 <h2>Upload a track</h2>
@@ -90,4 +96,5 @@
 <p class="empty">No stories yet. Upload a track, then assign a figure.</p>
 {% endif %}
 </section>
+</div>
 {% endblock %}
