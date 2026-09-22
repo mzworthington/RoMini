@@ -78,3 +78,11 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             return notice("/settings", "speak-key-id")
         ctx.note("keys", "Saved studio keys")
         return notice("/settings", "keys")
+
+    @app.post("/power")
+    def power_down() -> RedirectResponse:
+        if ctx.halt is None:
+            raise HTTPException(status_code=404)
+        ctx.note("halt", "Powering down")
+        ctx.halt.poweroff()
+        return notice("/settings", "power")

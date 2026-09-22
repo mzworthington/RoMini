@@ -2,7 +2,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from romini.composition.dashboard.shared import ASSETS_DIR, DashboardCtx, notice
-from romini.features.play_by_tag.place_figure import on_play_long_pressed, on_play_pressed
+from romini.features.play_by_tag.place_figure import (
+    on_play_long_pressed,
+    on_play_pressed,
+    on_seek_relative,
+    on_volume_set,
+)
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
@@ -57,4 +62,26 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             raise HTTPException(status_code=404)
         on_play_long_pressed(player=ctx.player)
         ctx.note("play", f"Restarted {ctx.player.playing_path()}")
+        return notice("/", "playing")
+
+    @app.post("/mute")
+    def mute() -> RedirectResponse:
+        if ctx.mixer is None:
+            raise HTTPException(status_code=404)
+        on_volume_set(mixer=ctx.mixer, level=0)
+        ctx.note("volume", "Muted")
+        return notice("/", "muted")
+
+    @app.post("/play/seek")
+    async def seek(request: Request) -> RedirectResponse:
+        if ctx.player is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        try:
+            delta = float(str(form.get("delta") or "0"))
+        except ValueError:
+            return notice("/", "needed")
+        if not on_seek_relative(player=ctx.player, delta_sec=delta):
+            return notice("/", "needed")
+        ctx.note("play", f"Seeked {delta:g}s")
         return notice("/", "playing")

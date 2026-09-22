@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from romini.composition.dashboard.shared import DashboardCtx, notice
 from romini.features.library.register_tag import name_tag
+from romini.features.play_by_tag.sleep import next_sleep
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
@@ -41,3 +44,36 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         name_tag(uid=uid, name=name, catalog=ctx.assign_catalog)
         ctx.note("name", f"Named {uid} {name}".strip())
         return notice("/figures", "named")
+
+    @app.post("/stop")
+    def stop_and_eject() -> RedirectResponse:
+        if ctx.player is None:
+            raise HTTPException(status_code=404)
+        ctx.player.stop()
+        ctx.note("play", "Stopped")
+        return notice("/figures", "stopped")
+
+    @app.post("/sleep")
+    async def sleep(request: Request) -> RedirectResponse:
+        if ctx.settings is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        try:
+            minutes = int(str(form.get("minutes") or "30"))
+        except ValueError:
+            return notice("/figures", "needed")
+        if minutes < 1 or minutes > 180:
+            return notice("/figures", "needed")
+        extend = str(form.get("extend") or "") == "1"
+        target = str(form.get("next") or "/figures")
+        if target not in {"/", "/figures"}:
+            target = "/figures"
+        when = next_sleep(
+            until=ctx.settings.sleep_until(),
+            now=datetime.now(UTC),
+            minutes=minutes,
+            extend=extend,
+        )
+        ctx.settings.remember_sleep_until(when)
+        ctx.note("sleep", f"Sleep at {when.strftime('%H:%M')}")
+        return notice(target, "sleep")
