@@ -1,4 +1,7 @@
+import json
 from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
 from typing import Protocol
 
 
@@ -14,6 +17,27 @@ def latest_release(payload: dict) -> tuple[str, str]:
         if name.endswith(".whl") and name.startswith("romini-"):
             return version, str(asset["browser_download_url"])
     raise ValueError("no romini wheel in release")
+
+
+def plain_update_status(path: Path | None) -> str:
+    if path is None or not path.is_file():
+        return "The box has not checked for an update yet."
+    record = json.loads(path.read_text())
+    when = str(record.get("when") or "").strip()
+    phrase = {
+        "skipped": "It skipped the install because a story was playing.",
+        "current": "The player is already up to date.",
+        "updated": "It installed a newer player.",
+    }.get(str(record.get("result") or ""))
+    if not when or phrase is None:
+        return "The box has not checked for an update yet."
+    return f"Last checked {when}. {phrase}"
+
+
+def record_update_check(path: Path, result: str, when: datetime) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    spoken = f"{when.day} {when.strftime('%B %Y at %H:%M')}"
+    path.write_text(json.dumps({"when": spoken, "result": result}))
 
 
 def apply_update(
@@ -95,6 +119,11 @@ def main() -> int:
         install=install,
         restart=restart,
     )
+    root = Path(os.environ.get("ROMINI_DATA", "/var/lib/romini"))
+    configured = os.environ.get("ROMINI_UPDATE_STATUS")
+    status = Path(configured) if configured else root / "update-check.json"
+    if status.parent.is_dir():
+        record_update_check(status, result, datetime.now())
     raise SystemExit(0 if result in {"updated", "current", "skipped"} else 1)
 
 

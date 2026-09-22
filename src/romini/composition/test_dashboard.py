@@ -1415,6 +1415,21 @@ def test_dashboard_hardware_shows_percent_volume_studio_keys_and_box_facts() -> 
     assert html.count('class="card"') >= 4
 
 
+def test_dashboard_hardware_shows_when_the_update_check_skipped(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    status = tmp_path / "update-check.json"
+    status.write_text('{"when": "22 September 2026 at 10:04", "result": "skipped"}')
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), update_status=status)).get("/settings").text
+    )
+
+    assert "Last checked 22 September 2026 at 10:04." in html
+    assert "skipped the install because a story was playing" in html
+    assert "romini-update" not in html
+    assert 'action="/update"' not in html
+
+
 def test_dashboard_volume_quieter_steps_the_mixer() -> None:
     from fastapi.testclient import TestClient
 

@@ -159,6 +159,7 @@ def main(
             box_secrets=Path("/etc/romini/env"),
             player=box.player,
             audit=getattr(box, "audit", None),
+            update_status=data / "update-check.json",
         )
         box.dashboard = start_dashboard(
             app,

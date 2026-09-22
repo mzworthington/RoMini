@@ -59,6 +59,7 @@ def create_dashboard(
     speak_post: Callable[..., bytes] | None = None,
     player: NowPlayingPlayer | None = None,
     audit: AuditLog | None = None,
+    update_status: Path | None = None,
 ) -> FastAPI:
     app = FastAPI()
 
@@ -94,6 +95,7 @@ def create_dashboard(
         speak_post=speak_post,
         player=player,
         audit=audit,
+        update_status=update_status,
         note=note,
         note_failed=note_failed,
     )

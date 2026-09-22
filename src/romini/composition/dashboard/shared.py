@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.story_audio import Speech, load_voices
 from romini.composition.story_draft import listen_length_label, parse_duration_seconds
+from romini.composition.update import plain_update_status
 from romini.features.audit.record import KEEP, AuditLog
 from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
@@ -502,6 +503,7 @@ def render_page(
     mixer: Mixer | None,
     player: NowPlayingPlayer | None,
     audit: AuditLog | None,
+    update_status: Path | None = None,
     flash: str = "",
 ) -> HTMLResponse:
     tracks: list[dict[str, str]] = []
@@ -602,6 +604,7 @@ def render_page(
             "now_playing": describe_now_playing(player, tracks=tracks, tags=tags) if player is not None else None,
             "playing_uid": (player.playing_uid() or "") if player is not None and player.is_playing() else "",
             "audit_entries": audit_entries,
+            "update_status": plain_update_status(update_status),
         },
     )
 
@@ -627,6 +630,7 @@ class DashboardCtx:
     speak_post: Callable[..., bytes] | None
     player: NowPlayingPlayer | None
     audit: AuditLog | None
+    update_status: Path | None
     note: Callable[[str, str], None]
     note_failed: Callable[[str, str, BaseException], None]
 
@@ -651,5 +655,6 @@ class DashboardCtx:
             mixer=self.mixer,
             player=self.player,
             audit=self.audit,
+            update_status=self.update_status,
             flash=flash,
         )

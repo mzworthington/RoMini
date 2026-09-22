@@ -151,3 +151,41 @@ def test_update_main_skips_when_mpv_is_playing(monkeypatch) -> None:
     except SystemExit as exc:
         assert exc.code == 0
     assert installed == ["MpvIpcStatus"]
+
+
+def test_update_main_records_a_skip_in_plain_language(monkeypatch, tmp_path) -> None:
+    from romini.composition.update import main as update_main
+    from romini.composition.update import plain_update_status
+
+    status = tmp_path / "update-check.json"
+
+    def urlopen(request, timeout: int = 30):
+        class Resp:
+            def read(self) -> bytes:
+                return (
+                    b'{"tag_name":"v0.2.0","assets":[{"name":"romini-0.2.0-py3-none-any.whl",'
+                    b'"browser_download_url":"https://example.test/romini.whl"}]}'
+                )
+
+            def __enter__(self) -> object:
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        return Resp()
+
+    monkeypatch.setenv("ROMINI_UPDATE_STATUS", str(status))
+    monkeypatch.setattr("romini.composition.update.run_cli", lambda **kwargs: "skipped")
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+
+    try:
+        update_main()
+    except SystemExit as exc:
+        assert exc.code == 0
+
+    spoken = plain_update_status(status)
+    assert spoken.startswith("Last checked ")
+    assert "skipped the install because a story was playing" in spoken
+    assert "romini-update" not in spoken
+    assert "systemctl" not in spoken
