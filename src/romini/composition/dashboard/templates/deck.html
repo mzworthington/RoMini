@@ -26,13 +26,13 @@
 <p class="kicker">{% if now_playing.is_playing %}Now playing{% else %}Paused{% endif %}</p>
 <h2 class="deck-title">{{ now_playing.story }}</h2>
 <p class="hint">{{ now_playing.trigger }}{% if now_playing.length %} · {{ now_playing.length }}{% endif %}</p>
-<div class="waveform" style="--play: {{ now_playing.progress }}%" aria-hidden="true"><div class="scrub"><span style="width: {{ now_playing.progress }}%"></span></div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+<div class="waveform" style="--play: {{ now_playing.progress }}%" aria-hidden="true"><div class="scrub"><span style="width: {{ now_playing.progress }}%"></span></div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 <p class="scrub-times"><span>{{ now_playing.place }}</span><span>Track progress</span>{% if now_playing.length %}<span>{{ now_playing.length }}</span>{% endif %}</p>
 <div class="transport">
 <form class="now-playing-transport" action="/play/restart" method="post"><button type="submit" class="seek restart" aria-label="Restart"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>Restart</span></button></form>
-<button type="button" class="seek" disabled title="Seek arrives with the player source"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c2.8 0 5 2.2 5 5s-2.2 5-5 5-5-2.2-5-5H5c0 3.9 3.1 7 7 7s7-3.1 7-7-3.1-7-7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>−15</span></button>
+<form class="now-playing-transport" action="/play/seek" method="post"><input type="hidden" name="delta" value="-15"><button type="submit" class="seek" aria-label="Back 15 seconds"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c2.8 0 5 2.2 5 5s-2.2 5-5 5-5-2.2-5-5H5c0 3.9 3.1 7 7 7s7-3.1 7-7-3.1-7-7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>−15</span></button></form>
 <form class="now-playing-transport" action="/play" method="post"><button class="play-main{% if now_playing.is_playing %} is-pause{% endif %}" type="submit"><svg class="play-glyph" viewBox="0 0 24 24" aria-hidden="true">{% if now_playing.is_playing %}<path d="M6 5h4v14H6z"/><path d="M14 5h4v14h-4z"/>{% else %}<path d="M8 5v14l11-7z"/>{% endif %}</svg><span>{% if now_playing.is_playing %}Pause{% else %}Play{% endif %}</span></button></form>
-<button type="button" class="seek" disabled title="Seek arrives with the player source"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2l4 4-4 4V7c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5h2c0 3.9-3.1 7-7 7s-7-3.1-7-7 3.1-7 7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>+15</span></button>
+<form class="now-playing-transport" action="/play/seek" method="post"><input type="hidden" name="delta" value="15"><button type="submit" class="seek" aria-label="Forward 15 seconds"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2l4 4-4 4V7c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5h2c0 3.9-3.1 7-7 7s-7-3.1-7-7 3.1-7 7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>+15</span></button></form>
 </div>
 <div class="guard">
 <div class="guard-head">
@@ -40,7 +40,7 @@
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
 </div>
 <div class="guard-track" aria-hidden="true"><span style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
-<p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Ceiling {{ volume_ceiling }}</span></p>
+<p class="guard-scale"><span>Quiet</span><span>60</span><span>70</span><span>75</span><span>Ceiling {{ volume_ceiling }}</span></p>
 </div>
 </section>
 {% else %}
@@ -61,7 +61,7 @@
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
 </div>
 <div class="guard-track" aria-hidden="true"><span style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
-<p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Ceiling {{ volume_ceiling }}</span></p>
+<p class="guard-scale"><span>Quiet</span><span>60</span><span>70</span><span>75</span><span>Ceiling {{ volume_ceiling }}</span></p>
 </div>
 </section>
 {% endif %}
@@ -79,7 +79,17 @@
 </div>
 <div class="fade-row">
 <p><strong>Bedtime volume fade</strong><span>Gradual drop while the story plays</span></p>
+{% if has_settings %}
+<form action="/sleep" method="post">
+<input type="hidden" name="minutes" value="15">
+<input type="hidden" name="extend" value="1">
+<input type="hidden" name="next" value="/">
+<button class="soft-pill" type="submit">Extend +15m</button>
+</form>
+{% if sleep_label %}<p class="hint">Sleeping at {{ sleep_label }}</p>{% endif %}
+{% else %}
 <button type="button" class="soft-pill" disabled>Extend +15m</button>
+{% endif %}
 </div>
 </section>
 <section class="card story-facts">
