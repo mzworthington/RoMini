@@ -29,10 +29,10 @@
 <div class="waveform" style="--play: {{ now_playing.progress }}%" aria-hidden="true"><div class="scrub"><span style="width: {{ now_playing.progress }}%"></span></div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 <p class="scrub-times"><span>{{ now_playing.place }}</span><span>Track progress</span>{% if now_playing.length %}<span>{{ now_playing.length }}</span>{% endif %}</p>
 <div class="transport">
-<form class="now-playing-transport" action="/play/restart" method="post"><button type="submit" aria-label="Restart">Restart</button></form>
-<button type="button" class="seek" disabled title="Seek arrives with the player source">−15</button>
-<form class="now-playing-transport" action="/play" method="post"><button class="play-main" type="submit">{% if now_playing.is_playing %}Pause{% else %}Play{% endif %}</button></form>
-<button type="button" class="seek" disabled title="Seek arrives with the player source">+15</button>
+<form class="now-playing-transport" action="/play/restart" method="post"><button type="submit" class="seek restart" aria-label="Restart"><span>Restart</span></button></form>
+<button type="button" class="seek" disabled title="Seek arrives with the player source"><span>−15</span></button>
+<form class="now-playing-transport" action="/play" method="post"><button class="play-main{% if now_playing.is_playing %} is-pause{% endif %}" type="submit"><span>{% if now_playing.is_playing %}Pause{% else %}Play{% endif %}</span></button></form>
+<button type="button" class="seek" disabled title="Seek arrives with the player source"><span>+15</span></button>
 </div>
 <div class="guard">
 <div class="guard-head">
@@ -50,10 +50,10 @@
 <p class="hint">Place a figure on the box, or start a track from the library.</p>
 <div class="waveform" style="--play: 0%" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 <div class="transport">
-<button type="button" class="seek" disabled>Restart</button>
-<button type="button" class="seek" disabled>−15</button>
-<button type="button" class="play-main" disabled>Play</button>
-<button type="button" class="seek" disabled>+15</button>
+<button type="button" class="seek restart" disabled><span>Restart</span></button>
+<button type="button" class="seek" disabled><span>−15</span></button>
+<button type="button" class="play-main" disabled><span>Play</span></button>
+<button type="button" class="seek" disabled><span>+15</span></button>
 </div>
 <div class="guard">
 <div class="guard-head">
