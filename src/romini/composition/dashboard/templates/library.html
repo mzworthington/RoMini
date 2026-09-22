@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="board">
-<section>
+<section class="card">
 <h2>Upload a track</h2>
 <form action="/tracks" method="post" enctype="multipart/form-data">
 <label for="file">Audio file</label>
@@ -11,7 +11,7 @@
 <button>Upload</button>
 </form>
 </section>
-<section>
+<section class="card">
 <h2>Assign a figure</h2>
 <form action="/assign" method="post">
 <label for="uid">Figure</label>
@@ -37,7 +37,7 @@
 <button>Assign</button>
 </form>
 </section>
-<section>
+<section class="card">
 <h2>Listen</h2>
 {% if library_paths %}
 <label for="preview">Track</label>
@@ -63,7 +63,7 @@
 {% endif %}
 </section>
 </div>
-<section>
+<section class="card">
 <h2>Library</h2>
 {% if tracks %}
 <div class="table-wrap">

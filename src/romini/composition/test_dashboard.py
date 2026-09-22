@@ -340,6 +340,18 @@ def test_dashboard_assign_form_marks_required_fields() -> None:
     assert 'id="path" name="path" required>' in html
 
 
+def test_dashboard_library_tracks_use_nordic_cards_and_an_empty_state() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+
+    assert html.count('class="card"') >= 3
+    assert "No stories yet. Upload a track, then assign a figure." in html
+    assert 'for="file"' in html
+    assert 'for="uid"' in html
+    assert 'aria-label="Preview"' not in html
+
+
 def test_dashboard_assign_path_lists_library_files() -> None:
     from fastapi.testclient import TestClient
 
@@ -1252,17 +1264,24 @@ def test_dashboard_home_uses_romini_brand() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
-    assert "--story-coral: #FF6B6B" in html
-    assert "--magic-ochre: #F7B731" in html
-    assert "--olive-sun: #E5B887" in html
-    assert "--warm-chestnut: #4A2E18" in html
-    assert "--midnight-navy: #1E293B" in html
-    assert "--cloud-foam: #F8FAFC" in html
-    assert "Nunito" in html
-    assert "Quicksand" in html
+    assert "#D97706" in html
+    assert "#F9F7F2" in html
+    assert "Plus Jakarta Sans" in html
+    assert "Nunito" not in html
+    assert "Quicksand" not in html
+    assert 'url("/plus-jakarta-sans.woff2")' in html or "url(/plus-jakarta-sans.woff2)" in html
     assert 'src="/mark.svg"' in html
     assert 'href="/favicon.svg"' in html
     assert "Storybox" in html
+
+
+def test_dashboard_does_not_fetch_fonts_from_the_internet() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert "fonts.googleapis.com" not in html
+    assert "fonts.gstatic.com" not in html
 
 
 def test_dashboard_serves_logo() -> None:
@@ -1590,6 +1609,30 @@ def test_dashboard_saved_stories_empty_when_none_saved(tmp_path: Path) -> None:
 
     assert "<h2>Saved stories</h2>" in html
     assert "No saved stories yet" in html
+
+
+def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
+    primary = client.get("/").text.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
+
+    assert ">Live Player<" in primary
+    assert ">Figures<" in primary
+    assert ">Library<" in primary
+    assert ">Hardware<" in primary
+    assert ">Home<" not in primary
+    assert ">Settings<" not in primary
+    assert ">Stories<" not in primary
+    assert ">Characters<" not in primary
+
+    sub = client.get("/library").text.split('<nav aria-label="Library">', 1)[1].split("</nav>", 1)[0]
+    assert 'href="/library"' in sub
+    assert ">Tracks<" in sub
+    assert 'href="/stories"' in sub
+    assert ">Stories<" in sub
+    assert 'href="/characters"' in sub
+    assert ">Characters<" in sub
 
 
 def test_dashboard_nav_has_stories_without_a_separate_write_page() -> None:
@@ -2622,21 +2665,21 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     settings = client.get("/settings").text
 
     for page in (home, figures, library, characters_page, stories, settings):
-        assert "<nav" in page
-        assert 'href="/"' in page
-        assert ">Home<" in page
-        assert 'href="/figures"' in page
-        assert ">Figures<" in page
-        assert 'href="/library"' in page
-        assert ">Library<" in page
-        assert 'href="/characters"' in page
-        assert ">Characters<" in page
-        assert 'href="/stories"' in page
-        assert ">Stories<" in page
+        primary = page.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
+        assert ">Live Player<" in primary
+        assert ">Home<" not in primary
+        assert ">Figures<" in primary
+        assert ">Library<" in primary
+        assert ">Hardware<" in primary
+        assert ">Settings<" not in primary
         assert 'href="/write"' not in page
         assert ">Write<" not in page
-        assert 'href="/settings"' in page
-        assert ">Settings<" in page
+
+    for page in (library, characters_page, stories):
+        sub = page.split('<nav aria-label="Library">', 1)[1].split("</nav>", 1)[0]
+        assert ">Tracks<" in sub
+        assert ">Stories<" in sub
+        assert ">Characters<" in sub
 
     assert "<h2>Volume</h2>" not in home
     assert "<h2>Keys</h2>" not in home

@@ -1,13 +1,20 @@
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/plus-jakarta-sans.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
-  --story-coral: #FF6B6B;
-  --coral-press: #E85C5C;
-  --magic-ochre: #F7B731;
-  --olive-sun: #E5B887;
-  --warm-chestnut: #4A2E18;
-  --midnight-navy: #1E293B;
-  --cloud-foam: #F8FAFC;
-  --line: #E8EEF4;
-  --muted: #5B6B7C;
+  --story-coral: #D97706;
+  --coral-press: #B15F00;
+  --magic-ochre: #D97706;
+  --olive-sun: #E5DFD5;
+  --warm-chestnut: #2B2825;
+  --midnight-navy: #2B2825;
+  --cloud-foam: #F9F7F2;
+  --line: #E5DFD5;
+  --muted: #78736B;
   --radius: 0.9rem;
   --shadow: 0 1px 2px rgba(30, 41, 59, 0.06), 0 10px 28px rgba(30, 41, 59, 0.06);
   color-scheme: light;
@@ -16,7 +23,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  font: 500 1.0625rem/1.5 Quicksand, system-ui, sans-serif;
+  font: 400 1.0625rem/1.5 "Plus Jakarta Sans", system-ui, sans-serif;
   color: var(--midnight-navy);
   background:
     radial-gradient(1100px 480px at 50% -120px, #FFF4E5 0%, transparent 62%),
@@ -43,6 +50,12 @@ main { margin: 0; padding: 0; }
   flex: 1 1 20rem;
   margin: 0;
   min-width: 0;
+}
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
 }
 .new-pack {
   margin: 0 0 1rem;
@@ -75,7 +88,7 @@ main { margin: 0; padding: 0; }
   flex-shrink: 0;
 }
 h1, h2, caption {
-  font-family: Nunito, Comfortaa, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 h1 {
   font-size: clamp(1.55rem, 4vw, 1.9rem);
@@ -182,11 +195,12 @@ header { margin: 0 0 1rem; }
 }
 .jumps strong {
   display: block;
-  font-family: Nunito, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
   font-weight: 800;
   margin: 0 0 0.15rem;
 }
-nav[aria-label="Dashboard"] ul {
+nav[aria-label="Dashboard"] ul,
+nav[aria-label="Library"] ul {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -194,7 +208,8 @@ nav[aria-label="Dashboard"] ul {
   margin: 0 0 1.25rem;
   padding: 0;
 }
-nav[aria-label="Dashboard"] a {
+nav[aria-label="Dashboard"] a,
+nav[aria-label="Library"] a {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
@@ -209,16 +224,19 @@ nav[aria-label="Dashboard"] a {
   touch-action: manipulation;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-nav[aria-label="Dashboard"] a:hover {
+nav[aria-label="Dashboard"] a:hover,
+nav[aria-label="Library"] a:hover {
   border-color: var(--olive-sun);
   background: #FFF7ED;
 }
-nav[aria-label="Dashboard"] a[aria-current="page"] {
+nav[aria-label="Dashboard"] a[aria-current="page"],
+nav[aria-label="Library"] a[aria-current="page"] {
   background: var(--midnight-navy);
   color: #fff;
   border-color: var(--midnight-navy);
 }
-nav[aria-label="Dashboard"] a[aria-current="page"]:hover {
+nav[aria-label="Dashboard"] a[aria-current="page"]:hover,
+nav[aria-label="Library"] a[aria-current="page"]:hover {
   background: var(--warm-chestnut);
   border-color: var(--warm-chestnut);
   color: #fff;
@@ -419,6 +437,7 @@ td button, td a.button { margin: 0; min-height: 2.25rem; }
   .jumps a,
   .jumps button.jump,
   nav[aria-label="Dashboard"] a,
+  nav[aria-label="Library"] a,
   button,
   a.button {
     transition: none;

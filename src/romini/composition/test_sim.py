@@ -420,9 +420,18 @@ def test_sim_http_page_uses_romini_brand(tmp_path: Path) -> None:
     assert 'lang="en"' in html
     assert "<main" in html
     assert "<h1" in html
-    assert "--story-coral: #FF6B6B" in html
-    assert "Nunito" in html
-    assert "Quicksand" in html
+    assert "#D97706" in html
+    assert "#F9F7F2" in html
+    assert "Plus Jakarta Sans" in html
+    assert "Nunito" not in html
+    assert "Quicksand" not in html
+
+
+def test_sim_http_page_does_not_fetch_fonts_from_the_internet(tmp_path: Path) -> None:
+    html = fetch_sim_root_html(tmp_path)
+
+    assert "fonts.googleapis.com" not in html
+    assert "fonts.gstatic.com" not in html
 
 
 def test_sim_http_page_groups_figure_and_box_buttons(tmp_path: Path) -> None:

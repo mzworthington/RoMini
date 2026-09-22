@@ -13,9 +13,6 @@
 </script>
 <title>{% if page_title %}{{ page_title }} · {% endif %}RoMini</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet">
 <style>{% include "dashboard.css" %}</style>
 </head>
 <body>
@@ -31,14 +28,21 @@
 </div>
 <nav aria-label="Dashboard">
 <ul>
-<li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Home</a></li>
-<li><a href="/library"{% if page == "library" %} aria-current="page"{% endif %}>Library</a></li>
+<li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Live Player</a></li>
 <li><a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}>Figures</a></li>
-<li><a href="/stories"{% if page == "stories" %} aria-current="page"{% endif %}>Stories</a></li>
-<li><a href="/characters"{% if page == "characters" %} aria-current="page"{% endif %}>Characters</a></li>
-<li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>Settings</a></li>
+<li><a href="/library"{% if page == "library" or page == "stories" or page == "characters" %} aria-current="page"{% endif %}>Library</a></li>
+<li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>Hardware</a></li>
 </ul>
 </nav>
+{% if page == "library" or page == "stories" or page == "characters" %}
+<nav aria-label="Library">
+<ul>
+<li><a href="/library"{% if page == "library" %} aria-current="page"{% endif %}>Tracks</a></li>
+<li><a href="/stories"{% if page == "stories" %} aria-current="page"{% endif %}>Stories</a></li>
+<li><a href="/characters"{% if page == "characters" %} aria-current="page"{% endif %}>Characters</a></li>
+</ul>
+</nav>
+{% endif %}
 </header>
 <main>
 {% if notice %}

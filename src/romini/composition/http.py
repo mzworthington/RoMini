@@ -13,6 +13,7 @@ ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 SIM_ASSETS = {
     "/favicon.svg": "image/svg+xml",
     "/mark.svg": "image/svg+xml",
+    "/plus-jakarta-sans.woff2": "font/woff2",
 }
 
 
