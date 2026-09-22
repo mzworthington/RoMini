@@ -25,6 +25,8 @@
 <dt>Time</dt>
 <dd>{{ now_playing.time }}</dd>
 </dl>
+<div class="scrub" aria-hidden="true"><span style="width: {{ now_playing.progress }}%"></span></div>
+<p class="scrub-times"><span>{{ now_playing.place }}</span>{% if now_playing.length %}<span>{{ now_playing.length }}</span>{% endif %}</p>
 <form class="now-playing-transport" action="/play" method="post"><button>{% if now_playing.is_playing %}Pause{% else %}Play{% endif %}</button></form>
 <form class="now-playing-transport" action="/play/restart" method="post"><button>Restart</button></form>
 </section>

@@ -89,6 +89,42 @@ def test_now_playing_states_the_figures_place_in_the_story() -> None:
     assert view.place == "2:05"
 
 
+def test_now_playing_states_how_far_through_the_story() -> None:
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 125.0
+
+    view = describe_now_playing(
+        Playing(),
+        tracks=[
+            {
+                "uid": "04aabbccddeeff",
+                "title": "The Frog Prince",
+                "path": "stories/frog-prince.mp3",
+                "length": "5:00",
+                "duration_sec": "300",
+            }
+        ],
+        tags=[{"uid": "04aabbccddeeff", "name": "Frog"}],
+    )
+
+    assert view is not None
+    assert view.length == "5:00"
+    assert view.progress == 42
+
+
 def test_now_playing_falls_back_to_filename_and_uid() -> None:
     class Playing:
         def is_playing(self) -> bool:

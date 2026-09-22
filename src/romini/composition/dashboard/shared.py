@@ -20,6 +20,7 @@ from romini.features.audit.record import KEEP, AuditLog
 from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
 from romini.features.library.assign import CatalogFile
+from romini.features.library.track_facts import describe_audio
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer, describe_now_playing
 from romini.features.play_by_tag.place_figure import Mixer, PlayMode
 
@@ -522,12 +523,18 @@ def render_page(
             title = str(track.get("title") or "")
             path = str(track.get("path") or "")
             if uid.strip() or title.strip() or path.strip():
+                read = getattr(storage, "get", None)
+                audio = read(path) if callable(read) else None
+                facts = describe_audio(audio) if audio else None
                 tracks.append(
                     {
                         "uid": uid,
                         "title": title,
                         "path": path,
                         "figure": names.get(uid) or uid,
+                        "length": facts.length if facts else "",
+                        "size": facts.size if facts else "",
+                        "duration_sec": str(facts.duration_sec) if facts else "",
                     }
                 )
     play_mode = PlayMode.PRESENCE.value
@@ -586,6 +593,8 @@ def render_page(
             and not elevenlabs_api_key(keys["ELEVENLABS_API_KEY"]),
             "gemini_key_mask": mask_secret(keys["GEMINI_API_KEY"]),
             "elevenlabs_key_mask": mask_secret(elevenlabs_api_key(keys["ELEVENLABS_API_KEY"])),
+            "query": request.query_params.get("q", "").strip(),
+            "unassigned": request.query_params.get("unassigned", "") == "1",
             "tracks": tracks,
             "tags": tags,
             "library_paths": library_paths(storage),

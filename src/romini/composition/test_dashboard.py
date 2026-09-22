@@ -703,6 +703,138 @@ def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> Non
     assert ">Banana<" in row
 
 
+def test_dashboard_library_row_shows_the_file_size_and_length(tmp_path: Path) -> None:
+    import io
+    import wave
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 8000)
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tracks:\n  - path: "stories/romy.wav"\n    title: "Romy"\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"stories/romy.wav": buffer.getvalue()}),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    row = html.split("<tbody>", 1)[1].split("</tr>", 1)[0]
+
+    assert "<th>Length</th>" in html
+    assert "<th>Size</th>" in html
+    assert ">0:01<" in row
+    assert ">15.7 KB<" in row
+
+
+def test_dashboard_library_search_keeps_the_matching_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - path: "stories/banana.mp3"\n'
+        '    title: "Romy and the banana"\n'
+        '  - path: "stories/helmet.mp3"\n'
+        '    title: "The helmet"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library?q=banana")
+        .text
+    )
+    table = html[html.index("<tbody>") : html.index("</tbody>")]
+
+    assert 'name="q"' in html
+    assert 'value="banana"' in html
+    assert "Romy and the banana" in table
+    assert "The helmet" not in table
+
+
+def test_dashboard_library_search_keeps_the_matching_figure(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Frog"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/picnic.mp3"\n'
+        '    title: "A picnic"\n'
+        '  - path: "stories/helmet.mp3"\n'
+        '    title: "The helmet"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library?q=Frog")
+        .text
+    )
+    table = html[html.index("<tbody>") : html.index("</tbody>")]
+
+    assert "A picnic" in table
+    assert "The helmet" not in table
+
+
+def test_dashboard_library_can_show_only_tracks_with_no_figure(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Frog"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/picnic.mp3"\n'
+        '    title: "A picnic"\n'
+        '  - path: "stories/helmet.mp3"\n'
+        '    title: "The helmet"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library?unassigned=1")
+        .text
+    )
+    table = html[html.index("<tbody>") : html.index("</tbody>")]
+
+    assert 'href="/library?unassigned=1"' in html
+    assert "The helmet" in table
+    assert "A picnic" not in table
+
+
 def test_dashboard_library_row_says_when_no_figure_is_linked(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -3611,6 +3743,46 @@ def test_dashboard_figure_card_shows_the_story_bound_to_it(tmp_path: Path) -> No
     assert "Romy and the banana" in card
 
 
+def test_dashboard_figure_card_shows_the_length_of_its_story(tmp_path: Path) -> None:
+    import io
+    import wave
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 8000)
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy.wav"\n'
+        '    title: "Romy"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"stories/romy.wav": buffer.getvalue()}),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert "Romy" in card
+    assert "0:01" in card
+
+
 def test_dashboard_figure_card_says_when_no_story_is_linked(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -3696,7 +3868,7 @@ def test_dashboard_chrome_sits_in_the_same_column_as_the_page() -> None:
     end_shell = html.index("</div>", end_main)
 
     assert shell < header < main < end_main < end_shell
-    assert "max-width: 72rem" in html
+    assert "max-width: 77.5rem" in html
     assert ">RoMini<" in html.replace("<span>", "").replace("</span>", "")
     assert 'href="/figures"' in html
     assert 'class="page-title"' in html
@@ -3945,6 +4117,66 @@ def test_dashboard_live_player_names_the_docked_figure_and_its_place(tmp_path: P
     assert ">Frog<" in html
     assert ">Place<" in html
     assert ">2:05<" in html
+
+
+def test_dashboard_live_player_shows_how_far_through_the_story(tmp_path: Path) -> None:
+    import io
+    import wave
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 8000)
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/romy.wav"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 0.5
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy.wav"\n'
+        '    title: "Romy"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Romy\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"stories/romy.wav": buffer.getvalue()}),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+    deck = html.split('aria-label="Now playing"', 1)[1].split("</section>", 1)[0]
+
+    assert 'class="scrub"' in deck
+    assert 'style="width: 50%"' in deck
+    assert deck.index('class="scrub"') < deck.index(">0:01<")
 
 
 def test_dashboard_home_offers_pause_when_a_story_is_playing(tmp_path: Path) -> None:

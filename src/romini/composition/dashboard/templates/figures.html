@@ -57,7 +57,7 @@
 {% if tag.name %}<h3>{{ tag.name }}</h3>{% endif %}
 <p class="uid">{{ tag.uid }}</p>
 {% for track in tracks if track.uid == tag.uid and track.title %}
-<p class="bound">{{ track.title }}</p>
+<p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}</p>
 {% else %}
 <p class="hint">No story linked</p>
 {% endfor %}

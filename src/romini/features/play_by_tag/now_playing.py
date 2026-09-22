@@ -23,6 +23,8 @@ class NowPlaying:
     time: str
     is_playing: bool
     place: str
+    length: str = ""
+    progress: int = 0
 
 
 def format_place(position_sec: float) -> str:
@@ -56,10 +58,15 @@ def describe_now_playing(
     )
     trigger = next((tag.get("name") or "" for tag in tags if tag.get("uid") == uid), "") or uid
     position = getattr(player, "position_sec", lambda: 0.0)()
+    matched = next((track for track in tracks if track.get("uid") == uid or track.get("path") == path), {})
+    duration = int(matched.get("duration_sec") or 0)
+    progress = round(100 * position / duration) if duration else 0
     return NowPlaying(
         story=story,
         trigger=trigger,
         time=format_clock(player.started_at()),
         is_playing=player.is_playing(),
         place=format_place(position),
+        length=matched.get("length") or "",
+        progress=min(100, max(0, progress)),
     )

@@ -95,17 +95,27 @@
 </div>
 <section class="card">
 <h2>Library</h2>
+<form class="search" action="/library" method="get">
+<label for="q">Search</label>
+<input id="q" name="q" type="search" value="{{ query }}">
+</form>
+<p class="filters">
+<a href="/library"{% if not unassigned %} aria-current="page"{% endif %}>All tracks</a>
+<a href="/library?unassigned=1"{% if unassigned %} aria-current="page"{% endif %}>No figure linked</a>
+</p>
 {% if tracks %}
 <div class="table-wrap">
 <table>
 <caption>Library</caption>
-<thead><tr><th>Title</th><th>Figure</th><th>Path</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
+<thead><tr><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
 <tbody>
-{% for track in tracks %}
+{% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) %}
 <tr>
     <td><span class="track-title">{{ track.title }}</span></td>
     <td>{% if track.figure %}<span class="chip">{{ track.figure }}</span>{% else %}<span class="chip missing">No figure linked</span>{% endif %}</td>
     <td>{{ track.path }}</td>
+    <td>{{ track.length }}</td>
+    <td>{{ track.size }}</td>
     {% if has_player %}
     <td>{% if playing_uid == track.uid %}<form action="/library/stop" method="post"><button>Stop</button></form>{% else %}<form action="/library/play/{{ track.uid }}" method="post"><button>Play</button></form>{% endif %}</td>
     {% elif pad %}
