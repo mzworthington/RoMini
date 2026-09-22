@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="board">
-<section class="card">
+<section class="card drop">
 <h2>Upload a track</h2>
 <form action="/tracks" method="post" enctype="multipart/form-data">
 <label for="file">Audio file</label>
@@ -69,12 +69,12 @@
 <div class="table-wrap">
 <table>
 <caption>Library</caption>
-<thead><tr><th>Figure</th><th>Title</th><th>Path</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
+<thead><tr><th>Title</th><th>Figure</th><th>Path</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
 <tbody>
 {% for track in tracks %}
 <tr>
-    <td>{{ track.figure }}</td>
-    <td>{{ track.title }}</td>
+    <td><span class="track-title">{{ track.title }}</span></td>
+    <td><span class="chip">{{ track.figure }}</span></td>
     <td>{{ track.path }}</td>
     {% if has_player %}
     <td>{% if playing_uid == track.uid %}<form action="/library/stop" method="post"><button>Stop</button></form>{% else %}<form action="/library/play/{{ track.uid }}" method="post"><button>Play</button></form>{% endif %}</td>

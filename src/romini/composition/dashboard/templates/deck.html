@@ -1,0 +1,23 @@
+{% if now_playing %}
+<section class="deck card now-playing" aria-label="Now playing" aria-live="polite">
+<p class="kicker">{% if now_playing.is_playing %}Now playing{% else %}Paused{% endif %}</p>
+<h2 class="deck-title">{{ now_playing.story }}</h2>
+<dl>
+<dt>Story</dt>
+<dd>{{ now_playing.story }}</dd>
+<dt>Figure</dt>
+<dd>{{ now_playing.trigger }}</dd>
+<dt>Place</dt>
+<dd>{{ now_playing.place }}</dd>
+<dt>Time</dt>
+<dd>{{ now_playing.time }}</dd>
+</dl>
+<form class="now-playing-transport" action="/play" method="post"><button>{% if now_playing.is_playing %}Pause{% else %}Play{% endif %}</button></form>
+<form class="now-playing-transport" action="/play/restart" method="post"><button>Restart</button></form>
+</section>
+{% else %}
+<section class="deck card quiet">
+<h2>Nothing is playing</h2>
+<p class="hint">Place a figure on the box, or start a track from the library.</p>
+</section>
+{% endif %}

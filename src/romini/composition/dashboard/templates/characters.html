@@ -5,7 +5,7 @@
 <button>New character</button>
 </form>
 </p>
-<section>
+<section class="card">
 <h2>{% if opened_character_slug %}Edit a character{% else %}Add a character{% endif %}</h2>
 <form action="/characters" method="post">
 <label for="character-name">Name</label>
@@ -16,25 +16,17 @@
 <button>Save character</button>
 </form>
 </section>
-<section>
+<section class="card">
 <h2>Characters</h2>
 {% if saved_characters %}
-<div class="table-wrap">
-<table>
-<caption>Characters</caption>
-<thead><tr><th>Name</th><th>Action</th></tr></thead>
-<tbody>
+<ul class="characters">
 {% for character in saved_characters %}
-<tr>
-    <td>{{ character.name }}</td>
-    <td>
-        <a class="button" href="/characters/{{ character.slug }}">Open</a>
-    </td>
-</tr>
+<li class="character">
+<p>{{ character.name }}</p>
+<a class="button" href="/characters/{{ character.slug }}">Open</a>
+</li>
 {% endfor %}
-</tbody>
-</table>
-</div>
+</ul>
 {% else %}
 <p class="empty">No characters yet</p>
 {% endif %}

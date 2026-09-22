@@ -6,7 +6,7 @@
 </form>
 </p>
 <div class="board">
-<section>
+<section class="card">
 <h2>Write a story</h2>
 <form action="/stories" method="post">
 <label for="story-title">Story title</label>
@@ -57,7 +57,7 @@ function updateStoryLength(value) {
 </div>
 
 {% if story_title and script %}
-<section>
+<section class="card">
 <form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
 <p id="speak-status" class="status" hidden role="status" aria-live="polite"></p>
 <h2>Speak the story</h2>
@@ -96,7 +96,7 @@ function updateStoryLength(value) {
 </section>
 {% endif %}
 
-<section>
+<section class="card">
 <h2>Saved stories</h2>
 {% if saved_stories %}
 <div class="table-wrap">

@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from romini.composition.dashboard.shared import ASSETS_DIR, DashboardCtx, notice
-from romini.features.play_by_tag.place_figure import on_play_pressed
+from romini.features.play_by_tag.place_figure import on_play_long_pressed, on_play_pressed
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
@@ -32,6 +32,10 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     def home(request: Request) -> HTMLResponse:
         return ctx.page(request, "home.html", page="home", page_title="")
 
+    @app.get("/now-playing", response_class=HTMLResponse)
+    def now_playing_deck(request: Request) -> HTMLResponse:
+        return ctx.page(request, "deck.html", page="now-playing", page_title="")
+
     @app.get("/storage")
     def storage_info() -> dict[str, int]:
         return {"free_bytes": ctx.storage.free_bytes}
@@ -46,3 +50,11 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             return notice("/", "playing")
         ctx.note("play", "Paused")
         return notice("/", "paused")
+
+    @app.post("/play/restart")
+    def restart_play() -> RedirectResponse:
+        if ctx.player is None:
+            raise HTTPException(status_code=404)
+        on_play_long_pressed(player=ctx.player)
+        ctx.note("play", f"Restarted {ctx.player.playing_path()}")
+        return notice("/", "playing")

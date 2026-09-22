@@ -28,26 +28,18 @@
 <section class="card">
 <h2>Figures</h2>
 {% if tags %}
-<div class="table-wrap">
-<table>
-<caption>Figures</caption>
-<thead><tr><th>UID</th><th>Name</th><th>Action</th></tr></thead>
-<tbody>
+<ul class="figures">
 {% for tag in tags %}
+<li class="figure">
 <form action="/tags/{{ tag.uid }}/name" method="post">
-<tr>
-    <td>{{ tag.uid }}</td>
-    <td>
-        <label for="tag-name-{{ tag.uid }}">Name</label>
-        <input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
-    </td>
-    <td><button>Save Name</button></td>
-</tr>
+<p class="uid">{{ tag.uid }}</p>
+<label for="tag-name-{{ tag.uid }}">Name</label>
+<input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
+<button>Save Name</button>
 </form>
+</li>
 {% endfor %}
-</tbody>
-</table>
-</div>
+</ul>
 {% else %}
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
 {% endif %}

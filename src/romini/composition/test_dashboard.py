@@ -201,6 +201,45 @@ def test_disk_storage_lists_nested_library_files(tmp_path: Path) -> None:
     assert storage.paths() == ["frog.mp3", "stories/frog-prince.mp3"]
 
 
+def test_dashboard_live_player_is_playback_without_the_old_jump_list() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'class="page-title"' in html
+    assert ">Live Player<" in html.split("<main", 1)[1]
+    assert "Nothing is playing" in html
+    assert 'class="jumps"' not in html
+    assert "Toys" not in html
+    assert ">Settings<" not in html
+
+
+def test_dashboard_header_matches_the_prototype_top_bar() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), battery=FakeBattery(percent=72)))
+        .get("/")
+        .text
+    )
+    header = html.split("<header", 1)[1].split("</header>", 1)[0]
+
+    assert 'class="topbar"' in header
+    assert header.index('class="masthead"') < header.index('aria-label="Dashboard"')
+    assert header.index('aria-label="Dashboard"') < header.index('class="status-pills"')
+    assert "1.0 KB free" in header
+    assert "72% charged" in header
+
+
+def test_dashboard_live_player_is_a_playback_deck() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'class="deck ' in html
+    assert "Nothing is playing" in html
+
+
 def test_dashboard_home_shows_free_space() -> None:
     from fastapi.testclient import TestClient
 
@@ -350,6 +389,16 @@ def test_dashboard_library_tracks_use_nordic_cards_and_an_empty_state() -> None:
     assert 'for="file"' in html
     assert 'for="uid"' in html
     assert 'aria-label="Preview"' not in html
+
+
+def test_dashboard_library_upload_sits_in_a_drop_well() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+
+    assert 'class="card drop"' in html
+    assert 'for="file"' in html
+    assert 'for="folder"' in html
 
 
 def test_dashboard_assign_path_lists_library_files() -> None:
@@ -606,6 +655,41 @@ def test_dashboard_library_table_shows_figure_name_not_uid(tmp_path: Path) -> No
     assert "<th>UID</th>" not in table
     assert "Banana" in table
     assert "04aabbccddeeff" not in table
+
+
+def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy-and-the-banana.mp3"\n'
+        '    title: "Romy and the banana"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    table = html[html.index("<caption>Library</caption>") : html.index("</table>")]
+    head = table.split("</thead>", 1)[0]
+    row = table.split("<tbody>", 1)[1]
+
+    assert head.index("<th>Title</th>") < head.index("<th>Figure</th>")
+    assert row.index('class="track-title"') < row.index('class="chip"')
+    assert ">Romy and the banana<" in row
+    assert ">Banana<" in row
 
 
 def test_dashboard_home_lays_out_actions_in_a_flex_board_below_library() -> None:
@@ -1086,6 +1170,29 @@ def test_dashboard_figures_have_name_form(tmp_path: Path) -> None:
     assert 'for="tag-name-04aabbccddeeff"' in html
 
 
+def test_dashboard_named_figures_are_cards_not_a_table(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: Frog\ntracks: []\n")
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+
+    assert 'class="figure"' in html
+    assert 'for="tag-name-04aabbccddeeff"' in html
+    assert "<table>" not in html
+
+
 def test_dashboard_tables_right_align_last_column_and_stretch_inputs() -> None:
     from fastapi.testclient import TestClient
 
@@ -1415,6 +1522,22 @@ def test_dashboard_hardware_shows_percent_volume_studio_keys_and_box_facts() -> 
     assert html.count('class="card"') >= 4
 
 
+def test_dashboard_hardware_lays_care_out_as_pods() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=FakeMixer(level=10)))
+        .get("/settings")
+        .text
+    )
+
+    assert 'class="pods"' in html
+    pods = html.split('class="pods"', 1)[1]
+    assert pods.index("Studio keys") < pods.index("Play mode")
+    assert pods.index("Volume") < pods.index("Player update")
+    assert pods.index("Audit log") > pods.index("Player update")
+
+
 def test_dashboard_hardware_shows_when_the_update_check_skipped(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1700,6 +1823,15 @@ def test_dashboard_story_bookmarks_keep_library_current_and_the_studio() -> None
     assert "<h2>Add a character</h2>" in client.get("/characters").text
 
 
+def test_dashboard_story_pages_name_themselves_like_the_other_destinations() -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
+
+    assert '<h2 class="page-title">Stories</h2>' in client.get("/stories").text
+    assert '<h2 class="page-title">Characters</h2>' in client.get("/characters").text
+
+
 def test_dashboard_nav_has_stories_without_a_separate_write_page() -> None:
     from fastapi.testclient import TestClient
 
@@ -1746,6 +1878,18 @@ def test_dashboard_lists_a_saved_character_after_save(tmp_path: Path) -> None:
     assert "No characters yet" not in html
     assert "Romy" in html
     assert "Loves trains and bedtime." in html
+
+
+def test_dashboard_saved_characters_are_cards_not_a_table(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), characters=tmp_path))
+    client.post("/characters", data={"name": "Romy", "background": "Loves trains."})
+    html = client.get("/characters").text
+
+    assert 'class="character"' in html
+    assert "<table>" not in html
+    assert 'href="/characters/romy"' in html
 
 
 def test_dashboard_saved_character_has_a_shareable_url(tmp_path: Path) -> None:
@@ -3346,22 +3490,24 @@ def test_dashboard_chrome_sits_in_the_same_column_as_the_page() -> None:
     end_shell = html.index("</div>", end_main)
 
     assert shell < header < main < end_main < end_shell
-    assert "max-width: 52rem" in html
+    assert "max-width: 72rem" in html
     assert ">RoMini<" in html.replace("<span>", "").replace("</span>", "")
     assert 'href="/figures"' in html
-    assert "Toys" in html
+    assert 'class="page-title"' in html
+    assert ">Live Player<" in html
     assert 'href="/library"' in html
-    assert 'href="/stories"' in html
-    assert 'href="/characters"' in html
+    assert 'href="/settings"' in html
     assert 'href="/write"' not in html
+    assert "Toys" not in html
 
 
 def test_dashboard_home_jump_list_includes_characters() -> None:
     from fastapi.testclient import TestClient
 
-    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/characters").text
 
-    assert '<a href="/characters"><strong>Characters</strong>' in html
+    assert 'href="/characters"' in html
+    assert ">Characters<" in html
 
 
 def test_dashboard_home_shows_the_box_picture() -> None:
@@ -3369,8 +3515,8 @@ def test_dashboard_home_shows_the_box_picture() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
-    assert 'src="/logo.svg"' in html
-    assert 'class="welcome"' in html
+    assert 'src="/mark.svg"' in html
+    assert 'class="page-title"' in html
 
 
 def test_dashboard_home_shows_what_is_playing_now(tmp_path: Path) -> None:
@@ -3420,10 +3566,108 @@ def test_dashboard_home_shows_what_is_playing_now(tmp_path: Path) -> None:
     assert "<dl>" in html
     assert ">Story<" in html
     assert "The Frog Prince" in html
-    assert ">Trigger<" in html
+    assert ">Figure<" in html
     assert "Frog" in html
     assert ">Time<" in html
     assert "22:33" in html
+
+
+def test_dashboard_live_player_deck_leads_with_the_story(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert '<h2 class="deck-title">The Frog Prince</h2>' in html
+    assert ">Now playing<" in html
+    assert ">Story<" in html
+
+
+def test_dashboard_live_player_names_the_docked_figure_and_its_place(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 125.0
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert ">Figure<" in html
+    assert ">Frog<" in html
+    assert ">Place<" in html
+    assert ">2:05<" in html
 
 
 def test_dashboard_home_offers_pause_when_a_story_is_playing(tmp_path: Path) -> None:
@@ -3482,6 +3726,61 @@ def test_dashboard_play_pauses_when_a_story_is_playing() -> None:
     assert response.headers["location"] == "/?notice=paused"
     assert player.is_playing() is False
     assert player.pauses == 1
+
+
+def test_dashboard_live_player_restarts_the_story_from_the_laptop() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    player = FakePlayer()
+    player.play("stories/frog-prince.mp3", position_sec=40.0, uid="04aabbccddeeff")
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=player))
+    html = client.get("/").text
+
+    assert 'action="/play/restart"' in html
+    assert ">Restart<" in html
+    response = client.post("/play/restart", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert player.is_playing() is True
+    assert player.plays[-1] == ("stories/frog-prince.mp3", 0.0)
+
+
+def test_dashboard_live_player_follows_the_plate_without_reloading(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    player = FakePlayer()
+    player.play("stories/frog-prince.mp3", position_sec=40.0, uid="04aabbccddeeff")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(catalog_path),
+            player=player,
+        )
+    )
+    page = client.get("/").text
+
+    assert 'fetch("/now-playing")' in page
+    assert "location.reload" not in page
+    assert ">Frog<" in client.get("/now-playing").text
+    player.pause()
+    lifted = client.get("/now-playing").text
+    assert ">Paused<" in lifted
+    assert "location.reload" not in lifted
 
 
 def test_dashboard_home_offers_play_when_the_story_is_paused(tmp_path: Path) -> None:

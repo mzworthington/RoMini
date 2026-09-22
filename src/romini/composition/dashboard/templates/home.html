@@ -1,28 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
-<section class="welcome">
-<img class="welcome-art" src="/logo.svg" width="360" height="360" alt="RoMini storybox">
-{% if now_playing %}
-<section class="now-playing" aria-label="Now playing" aria-live="polite">
-<h2>{% if now_playing.is_playing %}Now playing{% else %}Paused{% endif %}</h2>
-<dl>
-<dt>Story</dt>
-<dd>{{ now_playing.story }}</dd>
-<dt>Trigger</dt>
-<dd>{{ now_playing.trigger }}</dd>
-<dt>Time</dt>
-<dd>{{ now_playing.time }}</dd>
-</dl>
-<form class="now-playing-transport" action="/play" method="post"><button>{% if now_playing.is_playing %}Pause{% else %}Play{% endif %}</button></form>
-</section>
-{% endif %}
-
-<ul class="jumps">
-<li><a href="/figures"><strong>Toys</strong> Register figures and start a story from the pad.</a></li>
-<li><a href="/library"><strong>Library</strong> Upload tracks and assign them to figures.</a></li>
-<li><a href="/characters"><strong>Characters</strong> Names, background, and history to reuse in stories.</a></li>
-<li><a href="/stories"><strong>Stories</strong> Write a script, speak it, and open a saved pack.</a></li>
-<li><a href="/settings"><strong>Settings</strong> Keys, volume, and how figures start play.</a></li>
-</ul>
-</section>
+{% include "deck.html" %}
+<script>
+{% include "live_player.js" %}
+</script>
 {% endblock %}

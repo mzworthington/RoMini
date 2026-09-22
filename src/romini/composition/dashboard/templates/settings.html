@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="pods">
 <section class="card">
 <h2>Studio keys</h2>
 <form action="/keys" method="post">
@@ -50,7 +51,7 @@
 <h2>Player update</h2>
 <p>{{ update_status }}</p>
 </section>
-<section class="card">
+<section class="card span">
 <h2>Audit log</h2>
 <p class="hint">Newest first. The box keeps the last 1000 events.</p>
 {% if audit_entries %}
@@ -63,4 +64,5 @@
 <p class="empty">Nothing has happened yet</p>
 {% endif %}
 </section>
+</div>
 {% endblock %}

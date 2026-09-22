@@ -22,6 +22,13 @@ class NowPlaying:
     trigger: str
     time: str
     is_playing: bool
+    place: str
+
+
+def format_place(position_sec: float) -> str:
+    total = max(0, int(position_sec))
+    minutes, seconds = divmod(total, 60)
+    return f"{minutes}:{seconds:02d}"
 
 
 def format_clock(started_at: datetime | None) -> str:
@@ -48,9 +55,11 @@ def describe_now_playing(
         or Path(path).name
     )
     trigger = next((tag.get("name") or "" for tag in tags if tag.get("uid") == uid), "") or uid
+    position = getattr(player, "position_sec", lambda: 0.0)()
     return NowPlaying(
         story=story,
         trigger=trigger,
         time=format_clock(player.started_at()),
         is_playing=player.is_playing(),
+        place=format_place(position),
     )
