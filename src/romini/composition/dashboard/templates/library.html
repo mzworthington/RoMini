@@ -6,11 +6,18 @@
 <li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
 <li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
 </ul>
+{% if disk_used_pct is not none %}
+<div class="guard" aria-label="Storage">
+<div class="guard-head"><h2>Storage</h2><p>{{ free_space }}</p></div>
+<div class="guard-track" aria-hidden="true"><span style="width: {{ disk_used_pct }}%"></span></div>
+</div>
+{% endif %}
 <div class="board">
 <section class="card drop" id="upload-well">
 <p class="kicker">MicroSD library</p>
 <h2>Upload a track</h2>
-<p class="drop-lead">Drop an audio file here</p>
+<p class="drop-lead">Drag audio files directly onto this panel</p>
+<p class="hint">Drop an audio file here</p>
 <form action="/tracks" method="post" enctype="multipart/form-data">
 <label for="file">Audio file</label>
 <input id="file" type="file" name="file" accept="audio/*">
@@ -42,7 +49,7 @@
 })();
 </script>
 </section>
-<section class="card">
+<section class="card" id="assign">
 <h2>Assign a figure</h2>
 <form action="/assign" method="post">
 <label for="uid">Figure</label>
@@ -92,6 +99,7 @@
 {% else %}
 <p class="hint">Upload a track first</p>
 {% endif %}
+<p class="hint">Preview stays on this laptop. Play in the list sounds the box.</p>
 </section>
 </div>
 <section class="card">
@@ -101,22 +109,27 @@
 <input id="q" name="q" type="search" value="{{ query }}">
 </form>
 <p class="filters">
-<a href="/library"{% if not unassigned %} aria-current="page"{% endif %}>All tracks</a>
+<a href="/library"{% if not unassigned and not shelf %} aria-current="page"{% endif %}>All tracks</a>
+<a href="/library?shelf=bedtime"{% if shelf == "bedtime" %} aria-current="page"{% endif %}>Bedtime</a>
+<a href="/library?shelf=music"{% if shelf == "music" %} aria-current="page"{% endif %}>Music</a>
+<a href="/library?shelf=audiobooks"{% if shelf == "audiobooks" %} aria-current="page"{% endif %}>Audiobooks</a>
+<a href="/library?shelf=ambient"{% if shelf == "ambient" %} aria-current="page"{% endif %}>Ambient</a>
 <a href="/library?unassigned=1"{% if unassigned %} aria-current="page"{% endif %}>No figure linked</a>
 </p>
 {% if tracks %}
 <div class="table-wrap">
 <table>
 <caption>Library</caption>
-<thead><tr><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
+<thead><tr><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th><th>File</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
 <tbody>
-{% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) %}
+{% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) and (not shelf or track.shelf == shelf) %}
 <tr>
     <td><span class="track-title">{{ track.title }}</span></td>
     <td>{% if track.figure %}<span class="chip">{{ track.figure }}</span>{% else %}<span class="chip missing">No figure linked</span>{% endif %}</td>
     <td>{{ track.path }}</td>
     <td>{{ track.length }}</td>
     <td>{{ track.size }}</td>
+    <td>{% if track.spec %}<span class="spec">{{ track.spec }}</span>{% endif %}</td>
     {% if has_player %}
     <td>{% if playing_uid == track.uid %}<form action="/library/stop" method="post"><button>Stop</button></form>{% else %}<form action="/library/play/{{ track.uid }}" method="post"><button>Play</button></form>{% endif %}</td>
     {% elif pad %}
