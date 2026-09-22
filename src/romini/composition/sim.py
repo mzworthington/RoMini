@@ -154,6 +154,7 @@ def load_sim_box(
     )
     SqliteCatalog(conn).replace_tracks(box.library.tracks)
     box.state = conn
+    box.settings = settings
     box.catalog_file = data_dir / "catalog.yaml"
     box.earcon = player if hasattr(player, "play_earcon") else None
     box.audit = SqliteAudit(conn)

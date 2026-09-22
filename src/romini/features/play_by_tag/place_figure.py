@@ -136,6 +136,15 @@ def on_play_pressed(*, player: Player) -> None:
     player.play(path, position_sec=0.0, uid=uid)
 
 
+def on_seek_relative(*, player: Player, delta_sec: float) -> bool:
+    uid = player.playing_uid()
+    path = player.playing_path()
+    if uid is None or path is None:
+        return False
+    player.play(path, position_sec=max(0.0, player.position_sec() + delta_sec), uid=uid)
+    return True
+
+
 def on_play_long_pressed(*, player: Player) -> None:
     uid = player.playing_uid()
     path = player.playing_path()
