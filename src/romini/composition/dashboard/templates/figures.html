@@ -1,8 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="studio">
-<section class="card deck live-deck" aria-label="On the plate">
+<section class="card deck live-deck hero-dock" aria-label="On the plate">
+<div class="dock-ring"{% if now_playing and now_playing.is_playing %} data-live="on"{% endif %}>
 <img class="plate-mark" src="/mark.svg" width="120" height="120" alt="">
+</div>
+<div class="hero-copy">
 {% if now_playing %}
 <p class="kicker">{% if now_playing.is_playing %}On the plate{% else %}Lifted{% endif %}</p>
 <h2 class="deck-title">{{ now_playing.trigger }}</h2>
@@ -13,6 +16,7 @@
 <h2>No figure yet</h2>
 <p class="hint">Place a figure on the box to see it here.</p>
 {% endif %}
+</div>
 </section>
 <div class="board">
 {% if register %}
@@ -53,11 +57,12 @@
 <ul class="figures">
 {% for tag in tags %}
 <li class="figure">
+<img class="figure-mark" src="/mark.svg" width="48" height="48" alt="">
 <form action="/tags/{{ tag.uid }}/name" method="post">
 {% if tag.name %}<h3>{{ tag.name }}</h3>{% endif %}
 <p class="uid">{{ tag.uid }}</p>
 {% for track in tracks if track.uid == tag.uid and track.title %}
-<p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}</p>
+<p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}{% if track.size %} · {{ track.size }}{% endif %}</p>
 {% else %}
 <p class="hint">No story linked</p>
 {% endfor %}

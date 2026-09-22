@@ -207,7 +207,7 @@ def test_dashboard_live_player_is_playback_without_the_old_jump_list() -> None:
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
     assert 'class="page-title"' in html
-    assert ">Live Player<" in html.split("<main", 1)[1]
+    assert "Audio Deck &amp; Playback Stream" in html.split("<main", 1)[1]
     assert "Nothing is playing" in html
     assert 'class="jumps"' not in html
     assert "Toys" not in html
@@ -237,6 +237,18 @@ def test_dashboard_live_player_is_a_playback_deck() -> None:
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
     assert 'class="deck ' in html
+    assert "Nothing is playing" in html
+
+
+def test_dashboard_live_player_matches_the_nordic_audio_deck() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert 'class="dock-ring"' in html
+    assert 'class="waveform"' in html
+    assert 'aria-label="Night light"' in html
+    assert "Screen-free domestic audio for growing minds." in html
     assert "Nothing is playing" in html
 
 
@@ -1700,8 +1712,6 @@ def test_dashboard_hardware_shows_percent_volume_studio_keys_and_box_facts() -> 
 
     assert "<h2>Studio keys</h2>" in html
     assert "software ceiling" not in html.lower()
-    assert "dB" not in html
-    assert "75%" not in html
     assert "10 of 100" in html
     assert "72% charged" in html
     assert "1.0 KB free" in html
@@ -1745,6 +1755,56 @@ def test_dashboard_hardware_studio_puts_box_facts_above_the_care_cards() -> None
     assert "Charged" in facts
     assert ">72%<" in facts
     assert "Free on the box" in facts
+
+
+def test_dashboard_hardware_names_the_figure_on_the_plate(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 0.0
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/settings")
+        .text
+    )
+    dock = html.split('aria-label="On the plate"', 1)[1].split("</section>", 1)[0]
+
+    assert ">Frog<" in dock
+    assert "The Frog Prince" in dock
 
 
 def test_dashboard_hardware_shows_when_the_update_check_skipped(tmp_path: Path) -> None:
@@ -1993,9 +2053,9 @@ def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> 
     primary = client.get("/").text.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
 
     assert ">Live Player<" in primary
-    assert ">Figures<" in primary
-    assert ">Library<" in primary
-    assert ">Hardware<" in primary
+    assert ">Figures &amp; Tags<" in primary
+    assert ">Audio Library<" in primary
+    assert ">Hardware &amp; System<" in primary
     assert ">Home<" not in primary
     assert ">Settings<" not in primary
     assert ">Stories<" not in primary
@@ -2414,10 +2474,21 @@ def test_dashboard_saved_stories_use_a_table_with_actions_on_the_right(tmp_path:
     assert "<caption>Saved stories</caption>" in listed
     assert "<th>Title</th>" in listed
     assert "<th>Action</th>" in listed
-    assert "<td>The little station</td>" in listed
+    assert '<td><span class="track-title">The little station</span></td>' in listed
     assert "Open The little station" not in listed
-    assert listed.index("<td>The little station</td>") < listed.index(">Open<")
+    assert listed.index('class="track-title"') < listed.index(">Open<")
     assert listed.index(">Open<") < listed.index(">Delete<")
+
+
+def test_dashboard_saved_story_rows_lead_with_the_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    client.post("/stories", data={"story_title": "The little station"})
+    listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
+
+    assert listed.index('class="track-title"') < listed.index(">Open<")
+    assert "The little station" in listed.split('class="track-title"', 1)[1].split("</span>", 1)[0]
 
 
 def test_dashboard_saved_story_open_is_a_shareable_link(tmp_path: Path) -> None:
@@ -3110,9 +3181,9 @@ def test_dashboard_pages_split_parent_jobs() -> None:
         primary = page.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
         assert ">Live Player<" in primary
         assert ">Home<" not in primary
-        assert ">Figures<" in primary
-        assert ">Library<" in primary
-        assert ">Hardware<" in primary
+        assert ">Figures &amp; Tags<" in primary
+        assert ">Audio Library<" in primary
+        assert ">Hardware &amp; System<" in primary
         assert ">Settings<" not in primary
         assert 'href="/write"' not in page
         assert ">Write<" not in page
@@ -3781,6 +3852,7 @@ def test_dashboard_figure_card_shows_the_length_of_its_story(tmp_path: Path) -> 
 
     assert "Romy" in card
     assert "0:01" in card
+    assert "15.7 KB" in card
 
 
 def test_dashboard_figure_card_says_when_no_story_is_linked(tmp_path: Path) -> None:

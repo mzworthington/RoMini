@@ -24,21 +24,23 @@
 <div>
 <h1>Ro<span>Mini</span></h1>
 <p class="tag">Storybox</p>
+<p class="online"><span class="dot"></span> romini.local · Companion</p>
 </div>
 </div>
 <nav aria-label="Dashboard">
 <ul>
+<li><a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}>Figures &amp; Tags</a></li>
+<li><a href="/library"{% if page == "library" or page == "stories" or page == "characters" %} aria-current="page"{% endif %}>Audio Library</a></li>
 <li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Live Player</a></li>
-<li><a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}>Figures</a></li>
-<li><a href="/library"{% if page == "library" or page == "stories" or page == "characters" %} aria-current="page"{% endif %}>Library</a></li>
-<li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>Hardware</a></li>
+<li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>Hardware &amp; System</a></li>
 </ul>
 </nav>
 <ul class="status-pills">
-<li>{{ free_space }} on the box</li>
+<li>{{ free_space }}</li>
 {% if charge is not none %}<li>{{ charge }}% charged</li>{% endif %}
-<li>v{{ version }}</li>
 </ul>
+<a class="scan" href="/figures">Scan tag</a>
+<span class="account" aria-hidden="true"></span>
 </div>
 {% if page == "library" or page == "stories" or page == "characters" %}
 <nav aria-label="Library">
@@ -51,24 +53,54 @@
 {% endif %}
 </header>
 <main>
+<div class="page-head">
+<div>
 {% if page == "home" %}
-<h2 class="page-title">Live Player</h2>
+<p class="page-kicker">Live deck console</p>
+<h2 class="page-title">Audio Deck &amp; Playback Stream</h2>
+<p class="lede">Real-time domestic audio telemetry, tactile volume guards, and bedtime sync.</p>
 {% elif page == "figures" %}
-<h2 class="page-title">Figures</h2>
+<p class="page-kicker">Live physical deck</p>
+<h2 class="page-title">Figures &amp; Tags</h2>
+<p class="lede">Register a wooden figure, then link the story it should play.</p>
 {% elif page == "library" %}
-<h2 class="page-title">Library</h2>
+<p class="page-kicker">Storage &amp; audio assets</p>
+<h2 class="page-title">Audio Library &amp; Soundtracks</h2>
+<p class="lede">Upload stories, check what is on the box, and assign a figure.</p>
 {% elif page == "stories" %}
+<p class="page-kicker">Writing</p>
 <h2 class="page-title">Stories</h2>
 {% elif page == "characters" %}
+<p class="page-kicker">Writing</p>
 <h2 class="page-title">Characters</h2>
 {% elif page == "settings" %}
-<h2 class="page-title">Hardware</h2>
+<p class="page-kicker">Hardware telemetry</p>
+<h2 class="page-title">Hardware &amp; System Configuration</h2>
+<p class="lede">Power, volume, keys, and what the box has been doing.</p>
 {% endif %}
+</div>
+{% if page == "home" %}
+<div class="page-actions">
+<span class="soft-pill">Bedtime fade</span>
+<button type="button" class="danger-pill" disabled>Emergency mute</button>
+</div>
+{% elif page == "settings" %}
+<div class="page-actions">
+<button type="button" class="soft-pill" disabled>Restart</button>
+<button type="button" class="soft-pill" disabled>Reboot</button>
+<button type="button" class="danger-pill" disabled>Safe power down</button>
+</div>
+{% endif %}
+</div>
 {% if notice %}
 <p class="status" role="status">{{ notice }}</p>
 {% endif %}
 {% block content %}{% endblock %}
 </main>
+<footer class="site-foot">
+<p>RoMini OS v{{ version }}</p>
+<p>Screen-free domestic audio for growing minds. Local network hosted.</p>
+</footer>
 </div>
 </body>
 </html>

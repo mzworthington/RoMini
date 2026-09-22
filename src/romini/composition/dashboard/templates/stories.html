@@ -111,7 +111,7 @@ function updateStoryLength(value) {
 <tbody>
 {% for story in saved_stories %}
 <tr>
-    <td>{{ story.title }}</td>
+    <td><span class="track-title">{{ story.title }}</span></td>
     <td>
         <a class="button" href="/stories/{{ story.slug }}">Open</a>
         <form action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>

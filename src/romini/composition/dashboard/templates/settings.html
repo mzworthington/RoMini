@@ -6,7 +6,17 @@
 {% if charge is not none %}<li><span>Charged</span><span class="metric">{{ charge }}%</span></li>{% endif %}
 <li><span>Player</span><span class="metric">v{{ version }}</span></li>
 </ul>
+<h2 class="band">Live hardware subsystems</h2>
 <div class="pods">
+<section class="card" aria-label="On the plate">
+<h2>On the plate</h2>
+{% if now_playing %}
+<p class="bound">{{ now_playing.trigger }}</p>
+<p>{{ now_playing.story }}</p>
+{% else %}
+<p class="hint">No figure yet</p>
+{% endif %}
+</section>
 <section class="card">
 <h2>Studio keys</h2>
 <form action="/keys" method="post">
@@ -32,7 +42,7 @@
 </form>
 </section>
 {% if mixer %}
-<section class="card">
+<section class="card volume-guard">
 <h2>Volume</h2>
 <p class="volume-now" aria-live="polite">{{ volume_level }} of {{ volume_ceiling }}</p>
 <p class="hint">The first box has a power button only. Set how loud stories play, from 0 to 100.</p>
