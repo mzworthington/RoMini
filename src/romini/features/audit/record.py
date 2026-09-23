@@ -11,6 +11,7 @@ class AuditEntry:
     happened_at: datetime
     action: str
     summary: str
+    headline: str = ""
 
 
 class AuditLog(Protocol):
@@ -25,5 +26,6 @@ def record_event(
     action: str,
     summary: str,
     clock: Callable[[], datetime],
+    headline: str = "",
 ) -> None:
-    log.record(AuditEntry(happened_at=clock(), action=action, summary=summary))
+    log.record(AuditEntry(happened_at=clock(), action=action, summary=summary, headline=headline))

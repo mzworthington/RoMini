@@ -4,7 +4,13 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
-from romini.composition.dashboard.shared import DashboardCtx, elevenlabs_api_key, notice, write_studio_keys
+from romini.composition.dashboard.shared import (
+    DashboardCtx,
+    dashboard_return,
+    elevenlabs_api_key,
+    notice,
+    write_studio_keys,
+)
 from romini.features.play_by_tag.place_figure import PlayMode, on_volume_down, on_volume_set, on_volume_up
 
 
@@ -21,7 +27,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if ctx.settings is None:
             raise HTTPException(status_code=404)
         ctx.settings.remember_play_mode(body.play_mode)
-        ctx.note("play-mode", f"Play mode set to {body.play_mode.value}")
+        ctx.note("play-mode", f"Play mode set to {body.play_mode.value}", headline="Play mode changed")
 
     @app.post("/play-mode", response_model=None)
     async def switch_play_mode_form(request: Request) -> RedirectResponse:
@@ -30,7 +36,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         form = await request.form()
         body = PlayModeBody.model_validate({"play_mode": str(form["play_mode"])})
         ctx.settings.remember_play_mode(body.play_mode)
-        ctx.note("play-mode", f"Play mode set to {body.play_mode.value}")
+        ctx.note("play-mode", f"Play mode set to {body.play_mode.value}", headline="Play mode changed")
         return notice("/settings", "play-mode")
 
     class VolumeBody(BaseModel):
@@ -42,6 +48,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if ctx.mixer is None:
             raise HTTPException(status_code=404)
         form = await request.form()
+        back = dashboard_return(form.get("return"), "/settings")
         payload: dict[str, object] = {}
         step = str(form.get("step") or "").strip()
         if step:
@@ -57,9 +64,9 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         elif body.level is not None:
             on_volume_set(mixer=ctx.mixer, level=body.level)
         else:
-            return notice("/settings", "needed")
-        ctx.note("volume", f"Volume set to {ctx.mixer.level}")
-        return notice("/settings", "volume")
+            return notice(back, "needed")
+        ctx.note("volume", f"Volume set to {ctx.mixer.level}", headline="Volume changed")
+        return notice(back, "volume")
 
     @app.post("/keys", response_model=None)
     async def save_keys(request: Request) -> RedirectResponse:
@@ -74,9 +81,9 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             elevenlabs_voices=str(form.get("elevenlabs_voices") or ""),
         )
         if elevenlabs_key.strip() and not elevenlabs_api_key(elevenlabs_key):
-            ctx.note("keys", "Studio keys not saved (ElevenLabs key ID)")
+            ctx.note("keys", "Studio keys not saved (ElevenLabs key ID)", headline="Studio keys not saved")
             return notice("/settings", "speak-key-id")
-        ctx.note("keys", "Saved studio keys")
+        ctx.note("keys", "Saved studio keys", headline="Studio keys saved")
         return notice("/settings", "keys")
 
     @app.post("/system/power", response_model=None)
@@ -87,13 +94,21 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         action = str(form.get("action") or "")
         if action == "restart":
             ctx.power.restart()
-            ctx.note("power", "Restart requested")
+            ctx.note("power", "Restart requested", headline="Restart requested")
         elif action == "reboot":
             ctx.power.reboot()
-            ctx.note("power", "Reboot requested")
+            ctx.note("power", "Reboot requested", headline="Reboot requested")
         elif action == "poweroff":
             ctx.power.poweroff()
-            ctx.note("power", "Halt")
+            ctx.note("power", "Halt", headline="Halt requested")
         else:
             return notice("/settings", "needed")
         return notice("/settings", "power")
+
+    @app.post("/system/update", response_model=None)
+    def system_update() -> RedirectResponse:
+        if ctx.updates is None:
+            raise HTTPException(status_code=404)
+        ctx.updates.check()
+        ctx.note("update", "Update check started", headline="Update check started")
+        return notice("/settings", "update")

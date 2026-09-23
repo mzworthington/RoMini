@@ -34,6 +34,11 @@ def test_ups_hat_reads_full_pack_as_100_percent() -> None:
     assert hat.percent == 100
 
 
+def test_ups_hat_reports_pack_voltage() -> None:
+    assert UpsHatBattery(FakeSmbus(bus_raw=1050 << 3)).volts == 4.2
+    assert UpsHatBattery(BrokenSmbus()).volts is None
+
+
 def test_open_ups_hat_skips_when_the_bus_is_missing() -> None:
     from romini.composition.ups_hat import open_ups_hat
 

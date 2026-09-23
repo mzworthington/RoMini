@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.story_audio import Speech, load_voices
 from romini.composition.story_draft import listen_length_label, parse_duration_seconds
-from romini.composition.update import plain_update_status
+from romini.composition.update import describe_update_center
 from romini.features.audit.record import KEEP, AuditLog
 from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
@@ -162,6 +162,7 @@ HOME_NOTICES = {
     "power": "Power request sent",
     "image": "Cover image stored",
     "image-needed": "Choose a PNG, JPEG, GIF, or WebP image",
+    "update": "Update check started",
 }
 
 
@@ -211,6 +212,13 @@ class DiskStorage:
         if not target.is_file():
             return None
         return target.read_bytes()
+
+
+def dashboard_return(raw: object, fallback: str) -> str:
+    text = str(raw or "").strip()
+    if not text.startswith("/") or text.startswith("//") or "\\" in text or ":" in text:
+        return fallback
+    return text.split("?", 1)[0]
 
 
 def notice(path: str, key: str, detail: str = "") -> RedirectResponse:
@@ -710,6 +718,7 @@ def render_page(
     update_status: Path | None = None,
     flash: str = "",
     power: object | None = None,
+    updates: object | None = None,
 ) -> HTMLResponse:
     tracks: list[dict[str, str]] = []
     tags: list[dict[str, str]] = []
@@ -753,11 +762,18 @@ def render_page(
     detail = request.query_params.get("detail", "").strip()
     bound_uids = {track["uid"] for track in tracks if track["uid"].strip()}
     unbound_tags = [tag for tag in tags if tag["uid"] not in bound_uids]
+    active_figures = len(tags) - len(unbound_tags)
+    figure_fill = round(100 * active_figures / len(tags)) if tags else 0
     total_bytes = getattr(storage, "total_bytes", None)
     library_root = getattr(storage, "root", None)
     disk_total = ""
-    if isinstance(total_bytes, int):
+    disk_used = ""
+    disk_fill = 0
+    if isinstance(total_bytes, int) and total_bytes > 0:
         disk_total = format_free_space(total_bytes).removesuffix(" free")
+        used_bytes = max(total_bytes - storage.free_bytes, 0)
+        disk_used = format_free_space(used_bytes).removesuffix(" free")
+        disk_fill = min(100, round(100 * used_bytes / total_bytes))
     notes = load_story_notes(stories)
     opened_story_slug = current_pack(stories).name if stories is not None and current_pack(stories) != stories else ""
     opened_character = load_open_character(characters)
@@ -768,6 +784,7 @@ def render_page(
             {
                 "when": entry.happened_at.strftime("%Y-%m-%d %H:%M"),
                 "when_iso": entry.happened_at.isoformat(),
+                "headline": entry.headline,
                 "summary": entry.summary,
             }
             for entry in audit.recent(limit=KEEP)
@@ -781,6 +798,7 @@ def render_page(
             "free_space": format_free_space(storage.free_bytes),
             "version": installed_version(),
             "charge": battery.percent if battery is not None else None,
+            "pack_volts": getattr(battery, "volts", None) if battery is not None else None,
             "notice": flash or detail or HOME_NOTICES.get(notice_key, ""),
             "characters": notes["characters"],
             "outline": notes["outline"],
@@ -827,14 +845,22 @@ def render_page(
             "now_playing": describe_now_playing(player, tracks=tracks, tags=tags) if player is not None else None,
             "playing_uid": (player.playing_uid() or "") if player is not None and player.is_playing() else "",
             "audit_entries": audit_entries,
-            "update_status": plain_update_status(update_status),
+            "update": describe_update_center(
+                update_status,
+                channel=os.environ.get("GITHUB_REPO", "mzworthington/RoMini"),
+            ),
             "host": read_host_facts(),
             "unbound_tags": unbound_tags,
+            "active_figures": active_figures,
+            "figure_fill": figure_fill,
+            "disk_used": disk_used,
+            "disk_fill": disk_fill,
             "focus_uid": request.query_params.get("uid", "").strip(),
             "bind_prompt": request.query_params.get("bind", "") == "1",
             "disk_total": disk_total,
             "library_root": str(library_root) if library_root else "",
             "can_power": power is not None,
+            "can_update": updates is not None,
         },
     )
 
@@ -861,9 +887,10 @@ class DashboardCtx:
     player: NowPlayingPlayer | None
     audit: AuditLog | None
     update_status: Path | None
-    note: Callable[[str, str], None]
+    note: Callable[..., None]
     note_failed: Callable[[str, str, BaseException], None]
     power: object | None = None
+    updates: object | None = None
 
     def page(self, request: Request, template: str, *, page: str, page_title: str) -> HTMLResponse:
         flash = getattr(self, "flash", "") or ""
@@ -889,4 +916,5 @@ class DashboardCtx:
             update_status=self.update_status,
             flash=flash,
             power=self.power,
+            updates=self.updates,
         )

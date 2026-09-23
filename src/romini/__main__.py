@@ -7,7 +7,7 @@ from pathlib import Path
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
-from romini.composition.dashboard.power import LocalPower
+from romini.composition.dashboard.power import LocalPower, LocalUpdate
 from romini.composition.gpio import GpioLed, RpiGpioLedDriver
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
@@ -162,6 +162,7 @@ def main(
             audit=getattr(box, "audit", None),
             update_status=data / "update-check.json",
             power=LocalPower(halt=box.halt, profile=os.environ.get("ROMINI_PROFILE", "sim")),
+            updates=LocalUpdate(profile=os.environ.get("ROMINI_PROFILE", "sim")),
         )
         box.dashboard = start_dashboard(
             app,

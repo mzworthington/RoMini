@@ -21,12 +21,21 @@ class UpsHatBattery:
         data = self._bus.read_i2c_block_data(self._addr, register, 2)
         return (data[0] << 8) | data[1]
 
-    @property
-    def percent(self) -> int | None:
+    def _pack_volts(self) -> float | None:
         try:
             self._write(REG_CALIBRATION, CALIBRATION_16V_5A)
-            volts = (self._read_u16(REG_BUS_VOLTAGE) >> 3) * 0.004
+            return (self._read_u16(REG_BUS_VOLTAGE) >> 3) * 0.004
         except OSError:
+            return None
+
+    @property
+    def volts(self) -> float | None:
+        return self._pack_volts()
+
+    @property
+    def percent(self) -> int | None:
+        volts = self.volts
+        if volts is None:
             return None
         return percent_from_pack_volts(volts)
 

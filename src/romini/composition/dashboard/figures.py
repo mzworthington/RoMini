@@ -19,7 +19,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if not uid:
             return notice("/figures", "needed")
         ctx.pad.place(uid)
-        ctx.note("present", f"Presented {uid}")
+        ctx.note("present", f"Presented {uid}", headline="Figure presented")
         return notice("/figures", "presented")
 
     @app.post("/register-mode")
@@ -29,7 +29,8 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         form = await request.form()
         ctx.register.assign_mode = str(form.get("register")) == "on"
         key = "register-on" if ctx.register.assign_mode else "register-off"
-        ctx.note("register", "Register on" if ctx.register.assign_mode else "Register off")
+        label = "Register on" if ctx.register.assign_mode else "Register off"
+        ctx.note("register", label, headline=label)
         return notice("/figures", key)
 
     @app.post("/tags/{uid}/name")

@@ -58,9 +58,9 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 catalog=ctx.catalog,
             )
             if stored:
-                ctx.note("upload", f"Stored {filename}")
+                ctx.note("upload", f"Stored {filename}", headline="Track stored")
             else:
-                ctx.note("upload", f"Could not store {filename} (full)")
+                ctx.note("upload", f"Could not store {filename} (full)", headline="Track not stored")
             stored_any = stored_any or stored
         uploaded = "uploaded" if stored_any else "full"
         response = notice("/library", uploaded)
@@ -84,7 +84,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 raise HTTPException(status_code=422)
             confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
             remember_story_cover(ctx.stories, ctx.assign_catalog, body.path)
-            ctx.note("assign", f"Assigned {body.title} to {body.uid}")
+            ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")
             return Response(status_code=204)
         form = await request.form()
         body = AssignBody(uid=str(form["uid"]), path=str(form["path"]), title=str(form["title"]))
@@ -92,7 +92,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             return notice("/library", "needed")
         confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
         remember_story_cover(ctx.stories, ctx.assign_catalog, body.path)
-        ctx.note("assign", f"Assigned {body.title} to {body.uid}")
+        ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")
         return notice("/library", "assigned")
 
     @app.post("/place/{uid}")
@@ -100,7 +100,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if ctx.pad is None:
             raise HTTPException(status_code=404)
         ctx.pad.place(uid)
-        ctx.note("place", f"Placed {uid}")
+        ctx.note("place", f"Placed {uid}", headline="Figure placed")
         return notice("/library", "placed")
 
     @app.post("/library/play/{uid}")
@@ -127,9 +127,9 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             sessions=getattr(ctx.pad, "sessions", None),
         )
         if ctx.player.is_playing():
-            ctx.note("play", f"Played {ctx.player.playing_path()}")
+            ctx.note("play", f"Played {ctx.player.playing_path()}", headline="Story playing")
         else:
-            ctx.note("play", f"Played {uid}")
+            ctx.note("play", f"Played {uid}", headline="Story playing")
         return notice("/library", "playing")
 
     @app.post("/library/stop")
@@ -137,7 +137,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if ctx.player is None:
             raise HTTPException(status_code=404)
         ctx.player.stop()
-        ctx.note("play", "Stopped")
+        ctx.note("play", "Stopped", headline="Playback stopped")
         return notice("/library", "stopped")
 
     @app.get("/library/file/{path:path}")

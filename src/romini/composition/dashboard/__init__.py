@@ -61,13 +61,20 @@ def create_dashboard(
     audit: AuditLog | None = None,
     update_status: Path | None = None,
     power: object | None = None,
+    updates: object | None = None,
 ) -> FastAPI:
     app = FastAPI()
 
-    def note(action: str, summary: str) -> None:
+    def note(action: str, summary: str, *, headline: str = "") -> None:
         if audit is None:
             return
-        record_event(audit, action=action, summary=summary, clock=lambda: datetime.now(UTC))
+        record_event(
+            audit,
+            action=action,
+            summary=summary,
+            headline=headline,
+            clock=lambda: datetime.now(UTC),
+        )
 
     def note_failed(action: str, label: str, err: BaseException) -> None:
         code = getattr(err, "code", None)
@@ -100,6 +107,7 @@ def create_dashboard(
         note=note,
         note_failed=note_failed,
         power=power,
+        updates=updates,
     )
     home.mount(app, ctx)
     figures.mount(app, ctx)

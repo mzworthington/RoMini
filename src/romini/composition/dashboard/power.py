@@ -33,3 +33,13 @@ class LocalPower:
         if self._profile != "pi":
             return
         subprocess.run(["systemctl", *args], check=False)
+
+
+class LocalUpdate:
+    def __init__(self, *, profile: str) -> None:
+        self._profile = profile
+
+    def check(self) -> None:
+        if self._profile != "pi":
+            return
+        subprocess.run(["systemctl", "start", "romini-update.service"], check=False)

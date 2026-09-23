@@ -13,25 +13,34 @@
 <p class="metric-inline">{{ host.cpu_temp }}</p>
 <p class="hint">Load {{ host.load }} · Up {{ host.uptime }}</p>
 <p class="hint">Memory {{ host.memory }}</p>
+{% if disk_total %}<p class="hint">{{ free_space }} of {{ disk_total }}</p>{% endif %}
+{% if library_root %}<p class="hint">Mount {{ library_root }}</p>{% endif %}
 </section>
 <section class="card">
 <h2>Reader</h2>
 <p class="metric-inline">PN532</p>
-<p class="hint">NFC poll 250 ms</p>
+<p class="hint">SPI0 · chip-select BCM 4 · reset BCM 20</p>
+<p class="hint">Poll 250 ms · NTAG203</p>
 <p class="hint">{% if now_playing %}Figure present{% else %}Idle{% endif %}</p>
 </section>
 <section class="card">
-<h2>DAC</h2>
-<p class="metric-inline">HiFiBerry</p>
+<h2>Player</h2>
+<p class="metric-inline">Analogue jack</p>
 <p class="hint">{% if now_playing and now_playing.is_playing %}Playing{% else %}Waiting for the player{% endif %}</p>
-<p class="hint">I2S · socket appears when the player starts</p>
+<p class="hint">ALSA Headphones · mpv.sock</p>
+{% if mixer %}<p class="hint">Cap {{ volume_ceiling }}</p>{% endif %}
 </section>
 <section class="card">
 <h2>Pack</h2>
 {% if charge is not none %}
 <p class="metric-inline">{{ charge }}%</p>
 <div class="meter{% if charge < 10 %} is-critical{% elif charge < 25 %} is-low{% endif %}" aria-hidden="true"><span style="width: {{ charge }}%"></span></div>
+<p class="hint">UPS HAT (D) · two 21700 cells</p>
+{% if pack_volts is not none %}
+<p class="hint">{{ "%0.2f"|format(pack_volts) }} V</p>
+{% else %}
 <p class="hint">Charged. Pack voltage is not reported.</p>
+{% endif %}
 {% else %}
 <p class="hint">No battery reading</p>
 {% endif %}
@@ -104,11 +113,42 @@ sudo nmtui</pre>
 </form>
 </section>
 {% endif %}
-<section class="card">
-<h2>Player update</h2>
-<p class="hint">The box checks GitHub for a newer player wheel and skips the install while a story is playing. Restart and reboot run on the Pi. Safe power down uses the box halt.</p>
-<p>{{ update_status }}</p>
-<p class="hint">Installed player v{{ version }}</p>
+<section class="card span firmware" id="firmware-update" aria-labelledby="firmware-heading">
+<div class="firmware-head">
+<div>
+<h2 id="firmware-heading">Firmware &amp; OTA Update Center</h2>
+<p class="hint">Official GitHub wheel distribution channel</p>
+</div>
+<p class="badge is-{{ update.tone }}">{{ update.label }}</p>
+</div>
+<dl class="firmware-facts">
+<div>
+<dt>Current Build</dt>
+<dd>v{{ version }}</dd>
+</div>
+<div>
+<dt>Update Channel</dt>
+<dd>{{ update.channel }}</dd>
+</div>
+<div>
+<dt>Last check</dt>
+<dd>{{ update.last_check }}</dd>
+</div>
+</dl>
+<div class="firmware-row">
+<p class="hint">Automatic nightly checks scheduled via <code>romini-update.timer</code></p>
+{% if can_update %}
+<form action="/system/update" method="post"><button type="submit">Check for Updates Now</button></form>
+{% else %}
+<button type="button" disabled>Check for Updates Now</button>
+{% endif %}
+</div>
+<details class="ledger" open>
+<summary>Recent Installation Ledger <span>Toggle release log</span></summary>
+<ol>
+<li>{{ update.detail }}</li>
+</ol>
+</details>
 </section>
 <section class="card span">
 <h2>Audit log</h2>
@@ -116,7 +156,7 @@ sudo nmtui</pre>
 {% if audit_entries %}
 <ol class="audit-log">
 {% for entry in audit_entries %}
-<li><time datetime="{{ entry.when_iso }}">{{ entry.when }}</time> {{ entry.summary }}</li>
+<li><time datetime="{{ entry.when_iso }}">{{ entry.when }}</time> <strong>{{ entry.headline }}</strong><p>{{ entry.summary }}</p></li>
 {% endfor %}
 </ol>
 {% else %}

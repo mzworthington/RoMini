@@ -19,6 +19,32 @@ def latest_release(payload: dict) -> tuple[str, str]:
     raise ValueError("no romini wheel in release")
 
 
+def describe_update_center(path: Path | None, *, channel: str = "mzworthington/RoMini") -> dict[str, str]:
+    detail = plain_update_status(path)
+    label = "Not checked yet"
+    tone = "idle"
+    last_check = "Not yet"
+    if path is not None and path.is_file():
+        record = json.loads(path.read_text())
+        when = str(record.get("when") or "").strip()
+        result = str(record.get("result") or "")
+        labels = {
+            "current": ("Up to date", "ok"),
+            "skipped": ("Story was playing", "warn"),
+            "updated": ("Installed", "ok"),
+        }
+        if when and result in labels and detail.startswith("Last checked"):
+            label, tone = labels[result]
+            last_check = when
+    return {
+        "label": label,
+        "tone": tone,
+        "last_check": last_check,
+        "detail": detail,
+        "channel": channel,
+    }
+
+
 def plain_update_status(path: Path | None) -> str:
     if path is None or not path.is_file():
         return "The box has not checked for an update yet."

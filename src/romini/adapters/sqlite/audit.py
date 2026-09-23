@@ -21,8 +21,8 @@ class SqliteAudit:
     def record(self, entry: AuditEntry) -> None:
         conn = self._connect()
         conn.execute(
-            "INSERT INTO audit_log (happened_at, action, summary) VALUES (?, ?, ?)",
-            (entry.happened_at.isoformat(), entry.action, entry.summary),
+            "INSERT INTO audit_log (happened_at, action, summary, headline) VALUES (?, ?, ?, ?)",
+            (entry.happened_at.isoformat(), entry.action, entry.summary, entry.headline),
         )
         conn.execute(
             "DELETE FROM audit_log WHERE id NOT IN (SELECT id FROM audit_log ORDER BY id DESC LIMIT ?)",
@@ -34,17 +34,17 @@ class SqliteAudit:
     def recent(self, *, limit: int = KEEP) -> list[AuditEntry]:
         conn = self._connect()
         rows = conn.execute(
-            "SELECT happened_at, action, summary FROM audit_log ORDER BY id DESC LIMIT ?",
+            "SELECT happened_at, action, summary, headline FROM audit_log ORDER BY id DESC LIMIT ?",
             (limit,),
         ).fetchall()
         self._release(conn)
         entries: list[AuditEntry] = []
-        for when, action, summary in rows:
+        for when, action, summary, headline in rows:
             try:
                 happened_at = datetime.fromisoformat(when)
             except ValueError:
                 continue
-            entries.append(AuditEntry(happened_at=happened_at, action=action, summary=summary))
+            entries.append(AuditEntry(happened_at=happened_at, action=action, summary=summary, headline=headline))
         return entries
 
     def _connect(self) -> sqlite3.Connection:

@@ -1,43 +1,72 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="studio">
-<section class="card deck live-deck hero-dock" aria-label="On the plate">
+<section class="card deck live-deck hero-dock" aria-label="Live physical deck">
+<div class="deck-kicker">
+<p class="kicker">Live Physical Deck</p>
+<p class="hint">{% if now_playing %}ISO 14443-A detected{% else %}Waiting for a figure{% endif %}</p>
+{% if now_playing and now_playing.uid %}<p class="uid">UID {{ now_playing.uid }}</p>{% endif %}
+</div>
+<div class="hero-row">
 <div class="dock-ring"{% if now_playing and now_playing.is_playing %} data-live="on"{% endif %}>
 <img class="plate-mark" src="/mark.svg" width="120" height="120" alt="">
 </div>
 <div class="hero-copy">
-<p class="kicker">Physical NFC deck</p>
 {% if now_playing %}
 <p class="kicker">{% if now_playing.is_playing %}On the plate{% else %}Lifted{% endif %}</p>
 <h2 class="deck-title">{{ now_playing.trigger }}</h2>
-<p>{{ now_playing.story }}</p>
-{% if now_playing.uid %}<p class="uid">UID {{ now_playing.uid }}</p>{% endif %}
-{% if now_playing.place %}<p class="hint">{{ now_playing.place }} into the story</p>{% endif %}
+<p>Now playing {{ now_playing.story }}</p>
+<div class="guard-track" aria-hidden="true"><span style="width: {{ now_playing.progress }}%"></span></div>
+<p class="scrub-times"><span>{{ now_playing.place }}</span>{% if mixer %}<span>{{ volume_level }} of {{ volume_ceiling }}</span>{% endif %}{% if now_playing.length %}<span>{{ now_playing.length }}</span>{% endif %}</p>
 {% else %}
 <p class="kicker">On the plate</p>
 <h2>No figure yet</h2>
 <p class="hint">Place a figure on the box to see it here.</p>
 {% endif %}
-<p class="dock-meta">{% if assign_mode %}Reader is listening{% elif now_playing %}Contact on the plate{% else %}Reader idle · NFC poll 250 ms{% endif %}</p>
+</div>
+</div>
+<div class="deck-controls">
+<div class="transport">
+{% if has_player %}
+<form action="/play/previous" method="post"><input type="hidden" name="return" value="/figures"><button class="seek" type="submit" aria-label="Previous track"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg><span>Previous</span></button></form>
+<form action="/play" method="post"><input type="hidden" name="return" value="/figures"><button class="play-main{% if now_playing and now_playing.is_playing %} is-pause{% endif %}" type="submit"><svg class="play-glyph" viewBox="0 0 24 24" aria-hidden="true">{% if now_playing and now_playing.is_playing %}<path d="M6 5h4v14H6z"/><path d="M14 5h4v14h-4z"/>{% else %}<path d="M8 5v14l11-7z"/>{% endif %}</svg><span>{% if now_playing and now_playing.is_playing %}Pause{% else %}Play{% endif %}</span></button></form>
+<form action="/play/next" method="post"><input type="hidden" name="return" value="/figures"><button class="seek" type="submit" aria-label="Next track"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6v12l8.5-6zm10 0h2v12h-2z"/></svg><span>Next</span></button></form>
+<form action="/play/restart" method="post"><input type="hidden" name="return" value="/figures"><button class="seek" type="submit" aria-label="Play this story again"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>Repeat</span></button></form>
+{% endif %}
+</div>
+<div class="deck-side">
+{% if mixer %}
+<form class="deck-volume" action="/volume" method="post">
+<input type="hidden" name="return" value="/figures">
+<label for="deck-level">Volume</label>
+<input id="deck-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" onchange="this.form.requestSubmit()">
+<span>{{ volume_level }}%</span>
+</form>
+{% endif %}
+<a class="button" href="{% if now_playing and now_playing.uid %}/library?uid={{ now_playing.uid }}{% else %}/library{% endif %}">Edit Mapping</a>
+</div>
 </div>
 </section>
-<div class="board">
+<section class="card scan-dock" aria-label="Quick reader sensor">
+<p class="kicker">Quick Reader Sensor</p>
+<h2>Scan &amp; Map Tag</h2>
+<p class="hint">Touch a figure to the wooden plate.</p>
+<p class="dock-meta">{% if assign_mode %}Reader is Listening{% else %}Place a figure on the box{% endif %}</p>
 {% if register %}
-<section class="card">
-<p class="kicker">Scan and map</p>
-<h2>Register figures</h2>
-<p class="hint">Turn register on, then place a wooden figure on the plate. Playback stays quiet while you name it.</p>
 <form action="/register-mode" method="post">
-<label for="register">NFC register</label>
-<select id="register" name="register">
-<option value="off"{% if not assign_mode %} selected{% endif %}>Off</option>
-<option value="on"{% if assign_mode %} selected{% endif %}>On — place a figure on the box</option>
-</select>
-<button>Save</button>
-</form>
-</section>
+{% if assign_mode %}
+<input type="hidden" name="register" value="off">
+<button>Stop registering</button>
+{% else %}
+<input type="hidden" name="register" value="on">
+<button>Register Detected Token</button>
 {% endif %}
+</form>
+{% endif %}
+<p class="hint">{% if tags %}Last tag read: {{ tags[-1].uid }}{% else %}No tag read yet{% endif %}</p>
+</section>
 {% if pad %}
+<div class="board">
 <section class="card">
 <h2>Present a figure</h2>
 <p class="hint">Sim only. Paste a UID the way the plate would read it.</p>
@@ -47,14 +76,35 @@
 <button>Present</button>
 </form>
 </section>
-{% endif %}
 </div>
-<ul class="metrics">
-<li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
-<li><span>Needs a story</span><span class="metric">{{ unbound_tags|length }}</span></li>
-<li><span>Tracks</span><span class="metric">{{ tracks|length }}</span></li>
-<li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
-{% if charge is not none %}<li><span>Charged</span><span class="metric">{{ charge }}%</span></li>{% endif %}
+{% endif %}
+<ul class="summary-cards">
+<li class="summary-card">
+<div class="summary-head">
+<p class="summary-label">Mapped Figurines</p>
+<span class="summary-icon tone-primary" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 14.5 6.2 10a2 2 0 0 1 1.9-1.4h7.8A2 2 0 0 1 17.8 10L19 14.5V17a1 1 0 0 1-1 1h-1.2a1.8 1.8 0 0 1-3.6 0H10.8a1.8 1.8 0 0 1-3.6 0H6a1 1 0 0 1-1-1v-2.5Zm2.4-1.2h9.2l-.8-2.6H8.2l-.8 2.6ZM7.2 16.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6Zm9.6 0a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6Z"/></svg></span>
+</div>
+<p class="summary-value"><strong>{{ active_figures }}</strong> Active</p>
+{% if unbound_tags|length == 1 %}
+<p class="summary-alert"><span aria-hidden="true">!</span> 1 tag requires audio link</p>
+{% elif unbound_tags %}
+<p class="summary-alert"><span aria-hidden="true">!</span> {{ unbound_tags|length }} tags require audio link</p>
+{% endif %}
+<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ figure_fill }}" aria-label="Figures with a story"><span style="width: {{ figure_fill }}%"></span></div>
+</li>
+<li class="summary-card">
+<div class="summary-head">
+<p class="summary-label">Audio Track Library</p>
+<span class="summary-icon tone-secondary" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 4.2h6.4L18 9v10.3a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19.3V5.7a1.5 1.5 0 0 1 1.5-1.5Zm6 1.6V9h3.2L12.5 5.8ZM13 11.1v4.6a1.7 1.7 0 1 1-1.1-1.6v-2.1l3.2-.8v2.7a1.7 1.7 0 1 1-1.1-1.6V11l-1 .2Z"/></svg></span>
+</div>
+<p class="summary-value"><strong>{{ tracks|length }}</strong> Tracks</p>
+{% if disk_used and disk_total %}
+<p class="summary-note">{{ disk_used }} of {{ disk_total }} MicroSD</p>
+{% else %}
+<p class="summary-note">{{ free_space }}</p>
+{% endif %}
+<div class="meter sage" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ disk_fill }}" aria-label="MicroSD used"><span style="width: {{ disk_fill }}%"></span></div>
+</li>
 </ul>
 <section class="card queue">
 <h2>Needs a story</h2>
@@ -143,7 +193,7 @@
 {% if audit_entries %}
 <ul class="activity">
 {% for entry in audit_entries %}
-<li><span>{{ entry.when }}</span> {{ entry.summary }}</li>
+<li><span>{{ entry.when }}</span> <strong>{{ entry.headline }}</strong><p>{{ entry.summary }}</p></li>
 {% endfor %}
 </ul>
 {% else %}

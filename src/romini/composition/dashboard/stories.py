@@ -116,7 +116,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             duration_seconds=parse_duration_seconds(form.get("duration_seconds")),
         )
         title = str(form.get("story_title") or "").strip() or pack.name
-        ctx.note("story", f"Saved story {title}")
+        ctx.note("story", f"Saved story {title}", headline="Story saved")
         dest = f"/stories/{pack.name}" if pack != ctx.stories else "/stories"
         return notice(dest, "story")
 

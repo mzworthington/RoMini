@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _MIGRATIONS = {
     1: """
@@ -34,6 +34,9 @@ _MIGRATIONS = {
             action TEXT NOT NULL,
             summary TEXT NOT NULL
         );
+        """,
+    3: """
+        ALTER TABLE audit_log ADD COLUMN headline TEXT NOT NULL DEFAULT '';
         """,
 }
 

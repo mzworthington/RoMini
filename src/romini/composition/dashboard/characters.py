@@ -48,7 +48,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if character_name_taken(ctx.characters, name=name, except_slug=slug):
             return notice("/characters", "character-taken")
         pack = write_character(ctx.characters, name=name, background=background, slug=slug)
-        ctx.note("character", f"Saved character {name.strip() or 'untitled'}")
+        ctx.note("character", f"Saved character {name.strip() or 'untitled'}", headline="Character saved")
         dest = f"/characters/{pack.name}" if pack != ctx.characters else "/characters"
         return notice(dest, "character")
 

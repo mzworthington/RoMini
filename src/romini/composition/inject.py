@@ -37,9 +37,9 @@ def apply_sim_line(box: SimBox, line: str) -> None:
     if command == "play":
         on_play_pressed(player=box.player)
         if box.player.is_playing():
-            box.note("play", f"Played {box.player.playing_path()}")
+            box.note("play", f"Played {box.player.playing_path()}", headline="Story playing")
         else:
-            box.note("play", "Paused")
+            box.note("play", "Paused", headline="Playback paused")
         return
     if command == "halt":
         if box.sessions is None:
@@ -51,7 +51,7 @@ def apply_sim_line(box: SimBox, line: str) -> None:
             halt=box.halt,
             position_sec=0.0,
         )
-        box.note("halt", "Halt")
+        box.note("halt", "Halt", headline="Halt requested")
 
 
 def run_sim_lines(box: SimBox, lines: Iterable[str]) -> None:

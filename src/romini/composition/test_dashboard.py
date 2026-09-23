@@ -12,12 +12,15 @@ from romini.features.play_by_tag.place_figure import PlayMode
 @dataclass
 class FakeBattery:
     percent: int | None
+    volts: float | None = None
 
 
 @dataclass
 class FakeStorage:
     free_bytes: int
     files: dict[str, bytes] = field(default_factory=dict)
+    total_bytes: int | None = None
+    root: str = ""
 
     def put(self, filename: str, audio: bytes) -> None:
         self.files[filename] = audio
@@ -1245,6 +1248,24 @@ def test_dashboard_register_mode_enters_assign_mode() -> None:
     assert register.assign_mode is True
 
 
+def test_dashboard_scan_map_turns_nfc_register_off() -> None:
+    from fastapi.testclient import TestClient
+
+    class FakeRegister:
+        assign_mode = True
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=FakeRegister()))
+        .get("/figures")
+        .text
+    )
+    scan = html.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
+
+    assert "<h2>Register figures</h2>" not in html
+    assert 'name="register" value="off"' in scan
+    assert "Stop registering" in scan
+
+
 def test_dashboard_register_mode_off_returns_with_notice() -> None:
     from fastapi.testclient import TestClient
 
@@ -1435,7 +1456,7 @@ def test_dashboard_register_on_refreshes_home() -> None:
     assert 'querySelectorAll("input, textarea, select")' in html
 
 
-def test_dashboard_sim_has_present_uid_form() -> None:
+def test_dashboard_figures_page_leaves_plate_reads_to_the_sim_harness() -> None:
     from fastapi.testclient import TestClient
 
     class FakePad:
@@ -1444,9 +1465,9 @@ def test_dashboard_sim_has_present_uid_form() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), pad=FakePad())).get("/figures").text
 
-    assert 'action="/present"' in html
-    assert 'id="present-uid"' in html
-    assert 'for="present-uid"' in html
+    assert "<h2>Present a figure</h2>" not in html
+    assert 'action="/present"' not in html
+    assert 'id="present-uid"' not in html
 
 
 def test_dashboard_present_uid_is_required() -> None:
@@ -1746,8 +1767,8 @@ def test_dashboard_hardware_lays_care_out_as_pods() -> None:
     assert 'class="pods"' in html
     pods = html.split('class="pods"', 1)[1]
     assert pods.index("Studio keys") < pods.index("Play mode")
-    assert pods.index("Volume") < pods.index("Player update")
-    assert pods.index("Audit log") > pods.index("Player update")
+    assert pods.index("Volume") < pods.index("Firmware")
+    assert pods.index("Audit log") > pods.index("Firmware")
 
 
 def test_dashboard_hardware_studio_puts_box_facts_above_the_care_cards() -> None:
@@ -1768,6 +1789,103 @@ def test_dashboard_hardware_studio_puts_box_facts_above_the_care_cards() -> None
     assert "Charged" in facts
     assert ">72%<" in facts
     assert "Free on the box" in facts
+
+
+def test_dashboard_settings_shows_the_pn532_on_spi() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert "SPI0" in html
+    assert "BCM 4" in html
+    assert "BCM 20" in html
+    assert "250 ms" in html
+    assert "NTAG203" in html
+    assert "0x24" not in html
+    assert "HiFiBerry" not in html
+
+
+def test_dashboard_settings_shows_the_analogue_player() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=FakeMixer(level=10)))
+        .get("/settings")
+        .text
+    )
+
+    assert "ALSA Headphones" in html
+    assert "mpv.sock" in html
+    assert "Cap 100" in html
+
+
+def test_dashboard_settings_shows_host_load_memory_and_disk(monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setattr(
+        "romini.composition.dashboard.shared.read_host_facts",
+        lambda: {
+            "hostname": "romini",
+            "address": "192.168.1.140",
+            "cpu_temp": "42°C",
+            "load": "0.24",
+            "memory": "612 MB / 3891 MB",
+            "uptime": "4d 12h",
+            "wifi": "Not reported",
+        },
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(
+                    free_bytes=4 * 1024 * 1024 * 1024,
+                    total_bytes=28 * 1024 * 1024 * 1024,
+                    root="/var/lib/romini",
+                )
+            )
+        )
+        .get("/settings")
+        .text
+    )
+
+    assert "42°C" in html
+    assert "Load 0.24" in html
+    assert "612 MB / 3891 MB" in html
+    assert "4.0 GB free" in html
+    assert "28.0 GB" in html
+    assert "/var/lib/romini" in html
+
+
+def test_dashboard_settings_names_the_ups_hat() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), battery=FakeBattery(percent=72)))
+        .get("/settings")
+        .text
+    )
+
+    assert "UPS HAT (D)" in html
+    assert "21700" in html
+    assert "18650" not in html
+
+
+def test_dashboard_settings_shows_pack_voltage() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                battery=FakeBattery(percent=72, volts=4.12),
+            )
+        )
+        .get("/settings")
+        .text
+    )
+
+    assert "4.12 V" in html
+    assert "Pack voltage is not reported" not in html
 
 
 def test_dashboard_hardware_names_the_figure_on_the_plate(tmp_path: Path) -> None:
@@ -1831,8 +1949,70 @@ def test_dashboard_hardware_shows_when_the_update_check_skipped(tmp_path: Path) 
 
     assert "Last checked 22 September 2026 at 10:04." in html
     assert "skipped the install because a story was playing" in html
-    assert "romini-update" not in html
+    assert "Story was playing" in html
+    assert "romini-update.timer" in html
+    assert "systemctl" not in html
     assert 'action="/update"' not in html
+
+
+def test_dashboard_settings_shows_the_firmware_update_center(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    status = tmp_path / "update-check.json"
+    status.write_text('{"when": "22 September 2026 at 03:15", "result": "current"}')
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), update_status=status)).get("/settings").text
+    )
+    center = html.split('id="firmware-update"', 1)[1].split("</section>", 1)[0]
+
+    assert "Firmware &amp; OTA Update Center" in center
+    assert "Official GitHub wheel distribution channel" in center
+    assert "Up to date" in center
+    assert "Current Build" in center
+    assert "Update Channel" in center
+    assert "mzworthington/RoMini" in center
+    assert "Last check" in center
+    assert "22 September 2026 at 03:15" in center
+    assert "romini-update.timer" in center
+    assert "Check for Updates Now" in center
+    assert "Recent Installation Ledger" in center
+    assert "The player is already up to date." in center
+
+
+def test_dashboard_check_for_updates_starts_the_updater() -> None:
+    from fastapi.testclient import TestClient
+
+    class Updates:
+        def __init__(self) -> None:
+            self.checked = False
+
+        def check(self) -> None:
+            self.checked = True
+
+    updates = Updates()
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), updates=updates))
+    html = client.get("/settings").text
+
+    assert 'action="/system/update"' in html
+    response = client.post("/system/update", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert updates.checked is True
+    assert "Update check started" in client.get("/settings?notice=update").text
+
+
+def test_pi_update_check_starts_the_nightly_service(monkeypatch) -> None:
+    from romini.composition.dashboard.power import LocalUpdate
+
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], check: bool = False) -> None:
+        calls.append(cmd)
+
+    monkeypatch.setattr("romini.composition.dashboard.power.subprocess.run", run)
+    LocalUpdate(profile="pi").check()
+
+    assert calls == [["systemctl", "start", "romini-update.service"]]
 
 
 def test_dashboard_volume_quieter_steps_the_mixer() -> None:
@@ -2068,7 +2248,7 @@ def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> 
     assert ">Live Player<" in primary
     assert ">Figures &amp; Tags<" in primary
     assert ">Audio Library<" in primary
-    assert ">Hardware &amp; System<" in primary
+    assert ">System<" in primary
     assert ">Home<" not in primary
     assert ">Settings<" not in primary
     assert ">Stories<" not in primary
@@ -3196,7 +3376,7 @@ def test_dashboard_pages_split_parent_jobs() -> None:
         assert ">Home<" not in primary
         assert ">Figures &amp; Tags<" in primary
         assert ">Audio Library<" in primary
-        assert ">Hardware &amp; System<" in primary
+        assert ">System<" in primary
         assert ">Settings<" not in primary
         assert 'href="/write"' not in page
         assert ">Write<" not in page
@@ -3274,6 +3454,33 @@ def test_dashboard_audit_log_lists_every_kept_event() -> None:
     assert "event-149" in html
 
 
+def test_dashboard_activity_stream_shows_a_headline_and_a_description() -> None:
+    from datetime import UTC, datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+    from romini.features.audit.record import record_event
+
+    log = MemoryAuditLog()
+    record_event(
+        log,
+        action="place",
+        headline="The Gruffalo placed",
+        summary="Story started from the saved bookmark.",
+        clock=lambda: datetime(2026, 9, 19, 14, 22, tzinfo=UTC),
+    )
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), audit=log)).get("/figures").text
+    item = html.split('<ul class="activity">', 1)[1].split("</ul>", 1)[0]
+
+    assert "<strong>The Gruffalo placed</strong>" in item
+    assert "<p>Story started from the saved bookmark.</p>" in item
+    assert item.index("<strong>The Gruffalo placed</strong>") < item.index(
+        "<p>Story started from the saved bookmark.</p>"
+    )
+
+
 def test_dashboard_settings_lists_audit_entries_newest_first() -> None:
     from datetime import UTC, datetime
 
@@ -3302,6 +3509,31 @@ def test_dashboard_settings_lists_audit_entries_newest_first() -> None:
     assert 'datetime="2026-09-19T21:01:00+00:00"' in html
 
 
+def test_dashboard_audit_log_shows_a_headline_and_a_description() -> None:
+    from datetime import UTC, datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+    from romini.features.audit.record import record_event
+
+    log = MemoryAuditLog()
+    record_event(
+        log,
+        action="play",
+        headline="Story playing",
+        summary="Played The Frog Prince",
+        clock=lambda: datetime(2026, 9, 19, 21, 1, tzinfo=UTC),
+    )
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), audit=log)).get("/settings").text
+    item = html.split('<ol class="audit-log">', 1)[1].split("</ol>", 1)[0]
+
+    assert "<strong>Story playing</strong>" in item
+    assert "Played The Frog Prince" in item
+    assert item.index("<strong>Story playing</strong>") < item.index("Played The Frog Prince")
+
+
 def test_dashboard_upload_records_the_audit_log() -> None:
     from fastapi.testclient import TestClient
 
@@ -3314,6 +3546,8 @@ def test_dashboard_upload_records_the_audit_log() -> None:
     html = client.get("/settings").text
 
     assert "Stored frog.mp3" in html
+    assert log.recent()[0].headline == "Track stored"
+    assert log.recent()[0].summary == "Stored frog.mp3"
 
 
 def test_dashboard_parent_changes_appear_in_the_audit_log(tmp_path: Path) -> None:
@@ -3378,6 +3612,17 @@ def test_dashboard_parent_changes_appear_in_the_audit_log(tmp_path: Path) -> Non
     assert "Saved studio keys" in html
     assert "gem-secret" not in html
     assert "sk_el-secret" not in html
+    assert [(entry.headline, entry.summary) for entry in log.recent()] == [
+        ("Studio keys saved", "Saved studio keys"),
+        ("Story saved", "Saved story The station"),
+        ("Figure named", "Named 04aabbccddeeff Frog"),
+        ("Register on", "Register on"),
+        ("Figure presented", "Presented 04aabbccddeeff"),
+        ("Figure placed", "Placed 04aabbccddeeff"),
+        ("Volume changed", "Volume set to 11"),
+        ("Play mode changed", "Play mode set to tap"),
+        ("Story assigned", "Assigned The Frog Prince to 04aabbccddeeff"),
+    ]
 
 
 def test_dashboard_draft_failure_shows_the_http_code_in_the_audit_log(tmp_path: Path) -> None:
@@ -3766,6 +4011,88 @@ def test_dashboard_figures_page_puts_actions_above_the_figure_list() -> None:
     assert "<h2>Library</h2>" not in html
 
 
+def test_dashboard_figures_panels_control_playback_and_register(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import DiskStorage, PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    (library / "stories").mkdir(parents=True)
+    (library / "stories" / "frog.mp3").write_bytes(b"id3")
+    (library / "stories" / "bear.mp3").write_bytes(b"id3")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "The Gruffalo"\n'
+        '  - uid: "04bbccddeeff00"\n'
+        '    name: "Bear"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog.mp3"\n'
+        '    title: "Deep Dark Wood"\n'
+        '  - uid: "04bbccddeeff00"\n'
+        '    path: "stories/bear.mp3"\n'
+        '    title: "Bear"\n'
+    )
+    player = FakePlayer()
+    player.play(str(library / "stories" / "frog.mp3"), position_sec=12, uid="04aabbccddeeff")
+
+    @dataclass
+    class Register:
+        assign_mode: bool = False
+
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+            player=player,
+            mixer=FakeMixer(level=65),
+            register=Register(),
+        )
+    )
+    html = client.get("/figures").text
+    deck = html.split('aria-label="Live physical deck"', 1)[1].split("</section>", 1)[0]
+    scan = html.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
+
+    assert "Live Physical Deck" in deck
+    assert "The Gruffalo" in deck
+    assert "Deep Dark Wood" in deck
+    assert 'action="/play"' in deck
+    assert 'action="/play/previous"' in deck
+    assert 'action="/play/next"' in deck
+    assert 'action="/play/restart"' in deck
+    assert 'name="return" value="/figures"' in deck
+    assert 'action="/volume"' in deck
+    assert 'name="level"' in deck
+    assert 'href="/library?uid=04aabbccddeeff"' in deck
+    assert "Edit Mapping" in deck
+    assert "Scan &amp; Map Tag" in scan
+    assert "Register Detected Token" in scan
+    assert 'name="register" value="on"' in scan
+
+    paused = client.post("/play", data={"return": "/figures"}, follow_redirects=False)
+    assert paused.status_code == 303
+    assert paused.headers["location"] == "/figures?notice=paused"
+
+    nxt = client.post("/play/next", data={"return": "/figures"}, follow_redirects=False)
+    assert nxt.status_code == 303
+    assert nxt.headers["location"].startswith("/figures?notice=")
+    assert player.playing_uid() == "04bbccddeeff00"
+
+
+def test_dashboard_figures_volume_stays_on_the_figures_page() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=FakeMixer(level=65))).post(
+        "/volume", data={"level": "40", "return": "/figures"}, follow_redirects=False
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/figures?notice=volume"
+
+
 def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -3776,6 +4103,8 @@ def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
         "tags:\n"
         '  - uid: "04aabbccddeeff"\n'
         '    name: "Banana"\n'
+        '  - uid: "04bbccddeeff00"\n'
+        '    name: "Bear"\n'
         "tracks:\n"
         '  - uid: "04aabbccddeeff"\n'
         '    path: "stories/romy.mp3"\n'
@@ -3784,7 +4113,7 @@ def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
     html = (
         TestClient(
             create_dashboard(
-                storage=FakeStorage(free_bytes=1024),
+                storage=FakeStorage(free_bytes=6 * 1024 * 1024, total_bytes=10 * 1024 * 1024),
                 assign_catalog=PathCatalog(catalog_path),
             )
         )
@@ -3792,9 +4121,18 @@ def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
         .text
     )
     studio = html.split('class="studio"', 1)[1]
-    mapped = studio.split("Mapped figures", 1)[1]
+    cards = studio.split('class="summary-cards"', 1)[1].split('class="studio-main"', 1)[0]
+    mapped = cards.split("Mapped Figurines", 1)[1].split("Audio Track Library", 1)[0]
+    library = cards.split("Audio Track Library", 1)[1]
 
-    assert ">1<" in mapped.split("Tracks", 1)[0]
+    assert ">1<" in mapped
+    assert "Active" in mapped
+    assert "1 tag requires audio link" in mapped
+    assert 'style="width: 50%"' in mapped
+    assert ">1<" in library
+    assert "Tracks" in library
+    assert "4.0 MB of 10.0 MB MicroSD" in library
+    assert 'style="width: 40%"' in library
 
 
 def test_dashboard_figure_card_shows_the_story_bound_to_it(tmp_path: Path) -> None:
@@ -4100,7 +4438,7 @@ def test_dashboard_figures_plate_shows_the_mark() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/figures").text
-    plate = html.split('aria-label="On the plate"', 1)[1].split("</section>", 1)[0]
+    plate = html.split('aria-label="Live physical deck"', 1)[1].split("</section>", 1)[0]
 
     assert 'class="plate-mark"' in plate
     assert 'src="/mark.svg"' in plate

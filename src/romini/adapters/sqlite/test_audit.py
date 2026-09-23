@@ -26,6 +26,24 @@ def test_sqlite_audit_lists_newest_first(tmp_path: Path) -> None:
     assert recent[0].happened_at == datetime(2026, 9, 19, 21, 1, tzinfo=UTC)
 
 
+def test_sqlite_audit_keeps_the_headline_apart_from_the_description(tmp_path: Path) -> None:
+    conn = open_state(tmp_path / "state.sqlite")
+    ensure_schema(conn)
+    log = SqliteAudit(conn)
+
+    record_event(
+        log,
+        action="place",
+        headline="The Gruffalo placed",
+        summary="Story started from the saved bookmark.",
+        clock=lambda: datetime(2026, 9, 19, 14, 22, tzinfo=UTC),
+    )
+
+    entry = log.recent()[0]
+    assert entry.headline == "The Gruffalo placed"
+    assert entry.summary == "Story started from the saved bookmark."
+
+
 def test_sqlite_audit_skips_rows_with_blank_happened_at(tmp_path: Path) -> None:
     conn = open_state(tmp_path / "state.sqlite")
     ensure_schema(conn)

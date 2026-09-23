@@ -1,8 +1,16 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
-from romini.composition.dashboard.shared import ASSETS_DIR, DashboardCtx, notice
-from romini.features.play_by_tag.place_figure import on_play_long_pressed, on_play_pressed, on_volume_set
+from romini.composition.dashboard.library import QuietLed
+from romini.composition.dashboard.shared import ASSETS_DIR, DashboardCtx, dashboard_return, notice
+from romini.features.library.import_catalog import import_catalog
+from romini.features.play_by_tag.place_figure import (
+    PlayMode,
+    on_figure_placed,
+    on_play_long_pressed,
+    on_play_pressed,
+    on_volume_set,
+)
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
@@ -40,24 +48,76 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     def storage_info() -> dict[str, int]:
         return {"free_bytes": ctx.storage.free_bytes}
 
+    def play_catalog_neighbor(step: int) -> None:
+        if ctx.player is None or ctx.assign_catalog is None:
+            raise HTTPException(status_code=404)
+        root = getattr(ctx.storage, "_root", None)
+        if root is None:
+            raise HTTPException(status_code=404)
+        library = import_catalog(
+            ctx.assign_catalog.read_text(),
+            library_root=str(root),
+            audio_exists=lambda rel: (root / rel).is_file(),
+        )
+        uids = list(library.tracks)
+        if not uids:
+            return
+        current = ctx.player.playing_uid()
+        if current not in uids:
+            uid = uids[0] if step > 0 else uids[-1]
+        else:
+            uid = uids[(uids.index(current) + step) % len(uids)]
+        play_mode = PlayMode.PRESENCE
+        if ctx.settings is not None:
+            play_mode = ctx.settings.play_mode() or PlayMode.PRESENCE
+        on_figure_placed(
+            uid,
+            play_mode=play_mode,
+            assign_mode=False,
+            library=library,
+            player=ctx.player,
+            led=getattr(ctx.pad, "led", None) or QuietLed(),
+            sessions=getattr(ctx.pad, "sessions", None),
+        )
+
     @app.post("/play")
-    def toggle_play() -> RedirectResponse:
+    async def toggle_play(request: Request) -> RedirectResponse:
         if ctx.player is None:
             raise HTTPException(status_code=404)
+        form = await request.form()
+        back = dashboard_return(form.get("return"), "/")
         on_play_pressed(player=ctx.player)
         if ctx.player.is_playing():
             ctx.note("play", f"Played {ctx.player.playing_path()}")
-            return notice("/", "playing")
+            return notice(back, "playing")
         ctx.note("play", "Paused")
-        return notice("/", "paused")
+        return notice(back, "paused")
 
     @app.post("/play/restart")
-    def restart_play() -> RedirectResponse:
+    async def restart_play(request: Request) -> RedirectResponse:
         if ctx.player is None:
             raise HTTPException(status_code=404)
+        form = await request.form()
+        back = dashboard_return(form.get("return"), "/")
         on_play_long_pressed(player=ctx.player)
         ctx.note("play", f"Restarted {ctx.player.playing_path()}")
-        return notice("/", "playing")
+        return notice(back, "playing")
+
+    @app.post("/play/previous")
+    async def previous_track(request: Request) -> RedirectResponse:
+        form = await request.form()
+        play_catalog_neighbor(-1)
+        if ctx.player is not None and ctx.player.is_playing():
+            ctx.note("play", f"Played {ctx.player.playing_path()}")
+        return notice(dashboard_return(form.get("return"), "/"), "playing")
+
+    @app.post("/play/next")
+    async def next_track(request: Request) -> RedirectResponse:
+        form = await request.form()
+        play_catalog_neighbor(1)
+        if ctx.player is not None and ctx.player.is_playing():
+            ctx.note("play", f"Played {ctx.player.playing_path()}")
+        return notice(dashboard_return(form.get("return"), "/"), "playing")
 
     @app.post("/mute")
     def mute() -> RedirectResponse:
