@@ -64,7 +64,7 @@ On the box, Avahi is `http://<hostname>.local` (usually [http://romini.local](ht
   <img src="docs/brand/dashboard.png" alt="RoMini parent dashboard" width="720">
 </p> -->
 
-![Home](./docs/images/home.png)
+![Live player](./docs/images/home.png)
 
 
 Tab-by-tab screens: [docs/dashboard.md](docs/dashboard.md).

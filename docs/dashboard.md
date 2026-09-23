@@ -2,31 +2,31 @@
 
 House-LAN UI. Laptop: `./bin/sim` → [http://127.0.0.1:8080](http://127.0.0.1:8080). Pi: `http://<hostname>.local`. Walkthrough: [guide.md](./guide.md) §1.4. Contract: [spec.md](./spec.md).
 
-Screenshots live in [`images/`](./images/).
+Screenshots live in [`images/`](./images/). Refresh them with `make screenshots` (Playwright, not part of `make test`).
 
-## Home
+## Live player
 
-Masthead (free space, version) and a map of the other tabs.
+Now playing, the volume cap, and the figure on the plate.
 
-![Home](./images/home.png)
+![Live player](./images/home.png)
 
 ## Library
 
-Upload a file or folder, assign a figure to a library track, preview audio, then Place on `sim`.
+Upload a file or folder, assign a figure to a library track, then preview the audio.
 
 ![Library](./images/library.png)
 
 ## Figures
 
-Turn NFC register on, then name tags. Paste a UID on the sim harness.
+Name tags and link the story each one should play. Paste a UID on the sim harness.
 
 ![Figures](./images/figures.png)
 
-## Stories
+## Story studio
 
-Title, length, characters, outline, and script. Save / Draft script sit on this page. Filename `image.png`.
+Title, length, characters, outline, and script. Save and Draft script sit on this page.
 
-![Stories](./images/image.png)
+![Story studio](./images/stories.png)
 
 Voice picker and Speak script (ElevenLabs). Needs a key on Settings.
 
@@ -40,7 +40,7 @@ Reusable names and history for drafts. Open a row to edit.
 
 ## Settings
 
-Gemini and ElevenLabs keys (masked once set) and play mode (presence vs tap). Volume lives here too; not in this crop.
+Gemini and ElevenLabs keys (masked once set), play mode (presence vs tap), and volume.
 
 ![Settings](./images/settings.png)
 

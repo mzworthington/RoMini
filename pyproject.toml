@@ -28,6 +28,9 @@ dev = [
     "python-semantic-release>=10.6.2",
     "ruff>=0.16.6",
 ]
+screenshots = [
+    "playwright>=1.49",
+]
 
 [project.scripts]
 romini-core = "romini.__main__:entry"
