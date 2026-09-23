@@ -11,7 +11,7 @@
 <style>{% include "dashboard.css" %}</style>
 </head>
 <body>
-<div class="shell">
+<div class="shell"{% if poll %} data-poll{% endif %}>
 <header>
 <div class="topbar">
 <div class="masthead">

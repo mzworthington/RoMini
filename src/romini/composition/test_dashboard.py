@@ -1,3 +1,4 @@
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -2628,13 +2629,49 @@ def test_dashboard_check_for_updates_keeps_the_card_live_until_the_service_finis
     assert "16:58" not in html.split('id="firmware-update"', 1)[1].split("</section>", 1)[0]
 
 
+def test_pi_update_check_records_a_failure_when_sudo_refuses(tmp_path: Path, monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard.power import LocalUpdate
+
+    status = tmp_path / "update-check.json"
+
+    class Result:
+        returncode = 1
+
+    real_run = subprocess.run
+
+    def run(cmd: list[str], check: bool = False, **kwargs: object) -> object:
+        if cmd[:1] == ["sudo"]:
+            return Result()
+        return real_run(cmd, check=check, **kwargs)
+
+    monkeypatch.setattr("romini.composition.dashboard.power.subprocess.run", run)
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            updates=LocalUpdate(profile="pi"),
+            update_status=status,
+        )
+    )
+    html = client.post("/system/update").text
+
+    assert "Check failed" in html
+    assert "did not finish" in html
+    assert "Checking" not in html.split('id="firmware-update"', 1)[1].split("</section>", 1)[0]
+
+
 def test_pi_update_check_starts_the_nightly_service(monkeypatch) -> None:
     from romini.composition.dashboard.power import LocalUpdate
 
     calls: list[list[str]] = []
 
-    def run(cmd: list[str], check: bool = False) -> None:
+    class Result:
+        returncode = 0
+
+    def run(cmd: list[str], check: bool = False) -> Result:
         calls.append(cmd)
+        return Result()
 
     monkeypatch.setattr("romini.composition.dashboard.power.subprocess.run", run)
     LocalUpdate(profile="pi").check()

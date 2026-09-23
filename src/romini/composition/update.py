@@ -34,6 +34,7 @@ def describe_update_center(path: Path | None, *, channel: str = "mzworthington/R
             "skipped": ("Story was playing", "warn"),
             "updated": ("Installed", "ok"),
             "failed": ("Check failed", "warn"),
+            "checking": ("Checking", "idle"),
         }
         if when and result in labels and detail.startswith("Last checked"):
             label, tone = labels[result]
@@ -57,6 +58,7 @@ def plain_update_status(path: Path | None) -> str:
         "current": "The player is already up to date.",
         "updated": "It installed a newer player.",
         "failed": "The update did not finish.",
+        "checking": "A check is running.",
     }.get(str(record.get("result") or ""))
     if not when or phrase is None:
         return "The box has not checked for an update yet."

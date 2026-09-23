@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
@@ -11,6 +12,7 @@ from romini.composition.dashboard.shared import (
     notice,
     write_studio_keys,
 )
+from romini.composition.update import record_update_check
 from romini.features.play_by_tag.place_figure import PlayMode, on_volume_down, on_volume_set, on_volume_up
 
 
@@ -110,6 +112,14 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     def system_update() -> RedirectResponse:
         if ctx.updates is None:
             raise HTTPException(status_code=404)
-        ctx.updates.check()
+        if ctx.update_status is not None:
+            record_update_check(ctx.update_status, "checking", datetime.now())
+        try:
+            ctx.updates.check()
+        except OSError:
+            if ctx.update_status is not None:
+                record_update_check(ctx.update_status, "failed", datetime.now())
+            ctx.note("update", "The update did not finish", headline="Check failed")
+            return notice("/settings", "update")
         ctx.note("update", "Update check started", headline="Update check started")
         return notice("/settings", "update")
