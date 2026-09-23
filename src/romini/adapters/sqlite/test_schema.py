@@ -46,6 +46,17 @@ def test_sqlite_settings_accept_a_shared_connection(tmp_path: Path) -> None:
     assert SqliteSettings(conn).play_mode() is PlayMode.TAP
 
 
+def test_null_play_mode_reads_as_unset(tmp_path: Path) -> None:
+    conn = open_state(tmp_path / "state.sqlite")
+    ensure_schema(conn)
+    conn.execute("DROP TABLE settings")
+    conn.execute("CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute("INSERT INTO settings (key, value) VALUES ('play_mode', NULL)")
+    conn.commit()
+
+    assert SqliteSettings(conn).play_mode() is None
+
+
 def test_nfc_beep_defaults_on_and_can_be_turned_off(tmp_path: Path) -> None:
     settings = SqliteSettings(tmp_path / "state.sqlite")
 

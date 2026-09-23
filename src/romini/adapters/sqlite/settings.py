@@ -32,7 +32,7 @@ class SqliteSettings:
         conn = self._connect()
         row = conn.execute("SELECT value FROM settings WHERE key = 'play_mode'").fetchone()
         self._release(conn)
-        if row is None:
+        if row is None or row[0] is None:
             return None
         return PlayMode(row[0])
 
