@@ -2607,6 +2607,27 @@ def test_dashboard_check_for_updates_starts_the_updater() -> None:
     assert "Update check started" in client.get("/settings?notice=update").text
 
 
+def test_dashboard_check_for_updates_keeps_the_card_live_until_the_service_finishes(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    status = tmp_path / "update-check.json"
+    status.write_text('{"when": "23 September 2026 at 16:58", "result": "updated"}')
+
+    class Updates:
+        def check(self) -> None:
+            return
+
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), updates=Updates(), update_status=status))
+        .post("/system/update")
+        .text
+    )
+
+    assert "Checking" in html
+    assert "data-poll" in html
+    assert "16:58" not in html.split('id="firmware-update"', 1)[1].split("</section>", 1)[0]
+
+
 def test_pi_update_check_starts_the_nightly_service(monkeypatch) -> None:
     from romini.composition.dashboard.power import LocalUpdate
 
