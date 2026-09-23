@@ -32,6 +32,7 @@ def describe_update_center(path: Path | None, *, channel: str = "mzworthington/R
             "current": ("Up to date", "ok"),
             "skipped": ("Story was playing", "warn"),
             "updated": ("Installed", "ok"),
+            "failed": ("Check failed", "warn"),
         }
         if when and result in labels and detail.startswith("Last checked"):
             label, tone = labels[result]
@@ -54,6 +55,7 @@ def plain_update_status(path: Path | None) -> str:
         "skipped": "It skipped the install because a story was playing.",
         "current": "The player is already up to date.",
         "updated": "It installed a newer player.",
+        "failed": "The update did not finish.",
     }.get(str(record.get("result") or ""))
     if not when or phrase is None:
         return "The box has not checked for an update yet."
@@ -107,47 +109,53 @@ def main() -> int:
     import json
     import os
     import subprocess
+    import traceback
     import urllib.request
 
     from romini.composition.pi import MpvIpcStatus
 
-    repo = os.environ.get("GITHUB_REPO", "mzworthington/RoMini")
-    token = os.environ.get("GITHUB_TOKEN", "")
-    headers = {"Accept": "application/vnd.github+json", "User-Agent": "romini-updater"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(
-        f"https://api.github.com/repos/{repo}/releases/latest",
-        headers=headers,
-    )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        payload = json.loads(response.read().decode())
-
-    pip = os.environ.get("ROMINI_PIP", "/var/lib/romini/install/venv/bin/pip")
-
-    def installed_version() -> str:
-        shown = subprocess.run([pip, "show", "romini"], check=False, capture_output=True, text=True)
-        for line in shown.stdout.splitlines():
-            if line.startswith("Version: "):
-                return line.split()[1]
-        return "0.0.0"
-
-    def install(url: str) -> None:
-        subprocess.run([pip, "install", "--upgrade", url], check=True)
-
-    def restart() -> None:
-        subprocess.run(["systemctl", "restart", "romini-core"], check=False)
-
-    result = run_cli(
-        player=MpvIpcStatus(),
-        fetch_release=lambda: payload,
-        installed_version=installed_version,
-        install=install,
-        restart=restart,
-    )
     root = Path(os.environ.get("ROMINI_DATA", "/var/lib/romini"))
     configured = os.environ.get("ROMINI_UPDATE_STATUS")
     status = Path(configured) if configured else root / "update-check.json"
+    result = "failed"
+    try:
+        repo = os.environ.get("GITHUB_REPO", "mzworthington/RoMini")
+        token = os.environ.get("GITHUB_TOKEN", "")
+        headers = {"Accept": "application/vnd.github+json", "User-Agent": "romini-updater"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/releases/latest",
+            headers=headers,
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode())
+
+        pip = os.environ.get("ROMINI_PIP", "/var/lib/romini/install/venv/bin/pip")
+
+        def installed_version() -> str:
+            shown = subprocess.run([pip, "show", "romini"], check=False, capture_output=True, text=True)
+            for line in shown.stdout.splitlines():
+                if line.startswith("Version: "):
+                    return line.split()[1]
+            return "0.0.0"
+
+        def install(url: str) -> None:
+            subprocess.run([pip, "install", "--upgrade", url], check=True)
+
+        def restart() -> None:
+            subprocess.run(["systemctl", "restart", "romini-core"], check=False)
+
+        result = run_cli(
+            player=MpvIpcStatus(),
+            fetch_release=lambda: payload,
+            installed_version=installed_version,
+            install=install,
+            restart=restart,
+        )
+    except Exception:
+        traceback.print_exc()
+        result = "failed"
     if status.parent.is_dir():
         record_update_check(status, result, datetime.now())
     raise SystemExit(0 if result in {"updated", "current", "skipped"} else 1)

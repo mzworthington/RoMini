@@ -1,5 +1,6 @@
 import os
 import socket
+import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -100,6 +101,24 @@ def _read_text(path: str) -> str:
         return ""
 
 
+def _wifi_name() -> str:
+    try:
+        shown = subprocess.run(
+            ["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    for line in shown.stdout.splitlines():
+        active, _, ssid = line.partition(":")
+        if active == "yes" and ssid.strip():
+            return ssid.strip()
+    return ""
+
+
 def read_host_facts() -> dict[str, str]:
     hostname = socket.gethostname().strip() or "romini"
     address = ""
@@ -154,7 +173,7 @@ def read_host_facts() -> dict[str, str]:
         "load": load or missing,
         "memory": memory or missing,
         "uptime": uptime or missing,
-        "wifi": missing,
+        "wifi": _wifi_name() or missing,
     }
 
 

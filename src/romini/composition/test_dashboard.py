@@ -6118,6 +6118,31 @@ def test_dashboard_emergency_mute_sets_the_mixer_to_zero() -> None:
     assert mixer.level == 0
 
 
+def test_dashboard_shows_the_connected_wifi_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import shared
+
+    def run(args: list[str], **_kwargs: object) -> object:
+        assert args == ["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"]
+
+        class Completed:
+            stdout = "no:Neighbour\nyes:House\n"
+
+        return Completed()
+
+    monkeypatch.setattr(shared, "subprocess", SimpleNamespace(run=run), raising=False)
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    network = html.split("<h2>Network</h2>", 1)[1].split("</section>", 1)[0]
+    pills = html.split('class="status-pills"', 1)[1].split("</ul>", 1)[0]
+
+    assert ">House<" in network
+    assert "Wi-Fi House" in pills
+    assert "sudo nmtui" in network
+
+
 def test_dashboard_hardware_shows_live_host_facts_without_inventing_wifi() -> None:
     import socket
 

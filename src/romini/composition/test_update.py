@@ -189,3 +189,45 @@ def test_update_main_records_a_skip_in_plain_language(monkeypatch, tmp_path) -> 
     assert "skipped the install because a story was playing" in spoken
     assert "romini-update" not in spoken
     assert "systemctl" not in spoken
+
+
+def test_update_main_records_the_check_when_install_fails(monkeypatch, tmp_path) -> None:
+    from romini.composition.update import describe_update_center
+    from romini.composition.update import main as update_main
+
+    status = tmp_path / "update-check.json"
+    status.write_text('{"when": "23 September 2026 at 16:19", "result": "current"}')
+
+    def urlopen(request, timeout: int = 30):
+        class Resp:
+            def read(self) -> bytes:
+                return (
+                    b'{"tag_name":"v0.31.0","assets":[{"name":"romini-0.31.0-py3-none-any.whl",'
+                    b'"browser_download_url":"https://example.test/romini.whl"}]}'
+                )
+
+            def __enter__(self) -> object:
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        return Resp()
+
+    def fail(**kwargs: object) -> str:
+        raise RuntimeError("pip install failed")
+
+    monkeypatch.setenv("ROMINI_UPDATE_STATUS", str(status))
+    monkeypatch.setattr("romini.composition.update.run_cli", fail)
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+
+    try:
+        update_main()
+    except SystemExit as exc:
+        assert exc.code == 1
+
+    center = describe_update_center(status)
+    assert center["last_check"] != "23 September 2026 at 16:19"
+    assert center["last_check"] != "Not yet"
+    assert center["label"] == "Check failed"
+    assert "did not finish" in center["detail"]
