@@ -1,4 +1,5 @@
 import os
+import socket
 from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
@@ -47,6 +48,71 @@ def format_free_space(n: int) -> str:
     return f"{n} bytes free"
 
 
+def _read_text(path: str) -> str:
+    try:
+        return Path(path).read_text()
+    except OSError:
+        return ""
+
+
+def read_host_facts() -> dict[str, str]:
+    hostname = socket.gethostname().strip() or "romini"
+    address = ""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("192.168.1.1", 80))
+            address = sock.getsockname()[0]
+    except OSError:
+        address = ""
+    if address.startswith("127."):
+        address = ""
+    temp_raw = _read_text("/sys/class/thermal/thermal_zone0/temp").strip()
+    cpu_temp = ""
+    if temp_raw.isdigit():
+        cpu_temp = f"{int(temp_raw) / 1000:.0f}°C"
+    load = ""
+    try:
+        one, _, _ = os.getloadavg()
+        load = f"{one:.2f}"
+    except OSError:
+        load = ""
+    memory = ""
+    meminfo = _read_text("/proc/meminfo")
+    total_kb = available_kb = 0
+    for line in meminfo.splitlines():
+        if line.startswith("MemTotal:"):
+            total_kb = int(line.split()[1])
+        elif line.startswith("MemAvailable:"):
+            available_kb = int(line.split()[1])
+    if total_kb:
+        used_mb = max(0, total_kb - available_kb) // 1024
+        total_mb = total_kb // 1024
+        memory = f"{used_mb} MB / {total_mb} MB"
+    uptime = ""
+    uptime_raw = _read_text("/proc/uptime").split()
+    if uptime_raw:
+        seconds = int(float(uptime_raw[0]))
+        days, rest = divmod(seconds, 86400)
+        hours, rest = divmod(rest, 3600)
+        minutes = rest // 60
+        if days:
+            uptime = f"{days}d {hours}h"
+        elif hours:
+            uptime = f"{hours}h {minutes}m"
+        else:
+            uptime = f"{minutes}m"
+    missing = "Not reported"
+    return {
+        "hostname": hostname,
+        "address": address or missing,
+        "cpu_temp": cpu_temp or missing,
+        "load": load or missing,
+        "memory": memory or missing,
+        "uptime": uptime or missing,
+        "wifi": missing,
+    }
+
+
 class FigurePad(Protocol):
     def place(self, uid: str) -> None: ...
 
@@ -91,6 +157,8 @@ HOME_NOTICES = {
     "spoke": "Story spoken",
     "speak-needed": "Could not speak the story",
     "speak-key-id": "ElevenLabs needs the secret that starts with sk_, not the key ID",
+    "muted": "Muted",
+    "power": "Power request sent",
 }
 
 
@@ -107,8 +175,16 @@ class DiskStorage:
         self._root.mkdir(parents=True, exist_ok=True)
 
     @property
+    def root(self) -> Path:
+        return self._root
+
+    @property
     def free_bytes(self) -> int:
         return int(disk_usage(self._root).free)
+
+    @property
+    def total_bytes(self) -> int:
+        return int(disk_usage(self._root).total)
 
     def put(self, filename: str, audio: bytes) -> None:
         target = self._root / filename
@@ -506,6 +582,7 @@ def render_page(
     audit: AuditLog | None,
     update_status: Path | None = None,
     flash: str = "",
+    power: object | None = None,
 ) -> HTMLResponse:
     tracks: list[dict[str, str]] = []
     tags: list[dict[str, str]] = []
@@ -531,6 +608,7 @@ def render_page(
                         "uid": uid,
                         "title": title,
                         "path": path,
+                        "suffix": Path(path).suffix.lower().lstrip(".").upper(),
                         "figure": names.get(uid) or uid,
                         "length": facts.length if facts else "",
                         "size": facts.size if facts else "",
@@ -544,6 +622,13 @@ def render_page(
             play_mode = remembered.value
     notice_key = request.query_params.get("notice", "")
     detail = request.query_params.get("detail", "").strip()
+    bound_uids = {track["uid"] for track in tracks if track["uid"].strip()}
+    unbound_tags = [tag for tag in tags if tag["uid"] not in bound_uids]
+    total_bytes = getattr(storage, "total_bytes", None)
+    library_root = getattr(storage, "root", None)
+    disk_total = ""
+    if isinstance(total_bytes, int):
+        disk_total = format_free_space(total_bytes).removesuffix(" free")
     notes = load_story_notes(stories)
     opened_character = load_open_character(characters)
     keys = studio_keys(secrets, box_secrets)
@@ -614,6 +699,13 @@ def render_page(
             "playing_uid": (player.playing_uid() or "") if player is not None and player.is_playing() else "",
             "audit_entries": audit_entries,
             "update_status": plain_update_status(update_status),
+            "host": read_host_facts(),
+            "unbound_tags": unbound_tags,
+            "focus_uid": request.query_params.get("uid", "").strip(),
+            "bind_prompt": request.query_params.get("bind", "") == "1",
+            "disk_total": disk_total,
+            "library_root": str(library_root) if library_root else "",
+            "can_power": power is not None,
         },
     )
 
@@ -642,6 +734,7 @@ class DashboardCtx:
     update_status: Path | None
     note: Callable[[str, str], None]
     note_failed: Callable[[str, str, BaseException], None]
+    power: object | None = None
 
     def page(self, request: Request, template: str, *, page: str, page_title: str) -> HTMLResponse:
         flash = getattr(self, "flash", "") or ""
@@ -666,4 +759,5 @@ class DashboardCtx:
             audit=self.audit,
             update_status=self.update_status,
             flash=flash,
+            power=self.power,
         )

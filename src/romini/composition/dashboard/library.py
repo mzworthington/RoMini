@@ -56,7 +56,10 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 ctx.note("upload", f"Could not store {filename} (full)")
             stored_any = stored_any or stored
         uploaded = "uploaded" if stored_any else "full"
-        return notice("/library", uploaded)
+        response = notice("/library", uploaded)
+        if stored_any and str(form.get("bind") or "") == "1":
+            response.headers["location"] = f"{response.headers['location']}&bind=1"
+        return response
 
     class AssignBody(BaseModel):
         uid: str

@@ -6,16 +6,19 @@
 <img class="plate-mark" src="/mark.svg" width="120" height="120" alt="">
 </div>
 <div class="hero-copy">
+<p class="kicker">Physical NFC deck</p>
 {% if now_playing %}
 <p class="kicker">{% if now_playing.is_playing %}On the plate{% else %}Lifted{% endif %}</p>
 <h2 class="deck-title">{{ now_playing.trigger }}</h2>
 <p>{{ now_playing.story }}</p>
+{% if now_playing.uid %}<p class="uid">UID {{ now_playing.uid }}</p>{% endif %}
 {% if now_playing.place %}<p class="hint">{{ now_playing.place }} into the story</p>{% endif %}
 {% else %}
 <p class="kicker">On the plate</p>
 <h2>No figure yet</h2>
 <p class="hint">Place a figure on the box to see it here.</p>
 {% endif %}
+<p class="dock-meta">{% if assign_mode %}Reader is listening{% elif now_playing %}Contact on the plate{% else %}Reader idle · NFC poll 250 ms{% endif %}</p>
 </div>
 </section>
 <div class="board">
@@ -23,6 +26,7 @@
 <section class="card">
 <p class="kicker">Scan and map</p>
 <h2>Register figures</h2>
+<p class="hint">Turn register on, then place a wooden figure on the plate. Playback stays quiet while you name it.</p>
 <form action="/register-mode" method="post">
 <label for="register">NFC register</label>
 <select id="register" name="register">
@@ -36,6 +40,7 @@
 {% if pad %}
 <section class="card">
 <h2>Present a figure</h2>
+<p class="hint">Sim only. Paste a UID the way the plate would read it.</p>
 <form action="/present" method="post">
 <label for="present-uid">UID</label>
 <input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>
@@ -46,23 +51,52 @@
 </div>
 <ul class="metrics">
 <li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
+<li><span>Needs a story</span><span class="metric">{{ unbound_tags|length }}</span></li>
 <li><span>Tracks</span><span class="metric">{{ tracks|length }}</span></li>
 <li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
 {% if charge is not none %}<li><span>Charged</span><span class="metric">{{ charge }}%</span></li>{% endif %}
 </ul>
+<section class="card queue">
+<h2>Needs a story</h2>
+{% if unbound_tags %}
+<p class="hint">{{ unbound_tags|length }} figure{% if unbound_tags|length != 1 %}s{% endif %} still need an audio link.</p>
+<ul class="figures">
+{% for tag in unbound_tags %}
+<li class="figure queue-item">
+<img class="figure-mark" src="/mark.svg" width="48" height="48" alt="">
+{% if tag.name %}<h3>{{ tag.name }}</h3>{% endif %}
+<p class="uid">{{ tag.uid }}</p>
+<p class="hint">No story linked</p>
+<a class="button" href="/library?uid={{ tag.uid }}">Assign audio</a>
+</li>
+{% endfor %}
+</ul>
+{% elif tags %}
+<p class="empty">Every figure has a story.</p>
+{% else %}
+<p class="hint">Register a figure before you can link a story.</p>
+{% endif %}
+</section>
 <div class="studio-main">
 <section class="card">
 <h2>Figures</h2>
 {% if tags %}
-<ul class="figures">
+<div class="filters" role="group" aria-label="Figure filters">
+<button type="button" class="chip-btn" data-figure-filter="all" aria-pressed="true">All</button>
+<button type="button" class="chip-btn" data-figure-filter="open" aria-pressed="false">Needs a story</button>
+</div>
+<label for="figure-q">Search</label>
+<input id="figure-q" type="search" placeholder="Name or UID">
+<ul class="figures" id="figure-list">
 {% for tag in tags %}
-<li class="figure">
+<li class="figure" data-bound="{% if tracks|selectattr('uid', 'equalto', tag.uid)|list %}yes{% else %}no{% endif %}">
 <img class="figure-mark" src="/mark.svg" width="48" height="48" alt="">
 <form action="/tags/{{ tag.uid }}/name" method="post">
 {% if tag.name %}<h3>{{ tag.name }}</h3>{% endif %}
 <p class="uid">{{ tag.uid }}</p>
 {% for track in tracks if track.uid == tag.uid and track.title %}
-<p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}{% if track.size %} · {{ track.size }}{% endif %}</p>
+<p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}{% if track.size %} · {{ track.size }}{% endif %}{% if track.suffix %} · {{ track.suffix }}{% endif %}</p>
+{% if now_playing and now_playing.uid == tag.uid %}<p class="dock-meta">On the plate</p>{% endif %}
 {% else %}
 <p class="hint">No story linked</p>
 {% endfor %}
@@ -73,12 +107,39 @@
 </li>
 {% endfor %}
 </ul>
+<script>
+(function () {
+  var list = document.getElementById("figure-list");
+  var search = document.getElementById("figure-q");
+  var buttons = document.querySelectorAll("[data-figure-filter]");
+  var filter = "all";
+  function apply() {
+    var query = (search.value || "").toLowerCase();
+    list.querySelectorAll(".figure").forEach(function (card) {
+      var text = card.textContent.toLowerCase();
+      var open = card.getAttribute("data-bound") !== "yes";
+      var show = text.indexOf(query) !== -1 && (filter === "all" || open);
+      card.hidden = !show;
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      filter = button.getAttribute("data-figure-filter");
+      buttons.forEach(function (other) {
+        other.setAttribute("aria-pressed", other === button ? "true" : "false");
+      });
+      apply();
+    });
+  });
+  search.addEventListener("input", apply);
+})();
+</script>
 {% else %}
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
 {% endif %}
 </section>
 <aside class="card">
-<h2>Activity</h2>
+<h2>Activity stream</h2>
 {% if audit_entries %}
 <ul class="activity">
 {% for entry in audit_entries %}
@@ -88,6 +149,13 @@
 {% else %}
 <p class="empty">No activity yet</p>
 {% endif %}
+<section class="inset">
+<h2>Storybox</h2>
+<p class="hint">{{ host.hostname }}{% if host.address != "Not reported" %} · {{ host.address }}{% endif %}</p>
+<p class="hint">CPU {{ host.cpu_temp }} · Load {{ host.load }}</p>
+<p class="hint">Memory {{ host.memory }} · Up {{ host.uptime }}</p>
+<p class="hint">PN532 on the plate · HiFiBerry DAC · Wi-Fi {{ host.wifi }}</p>
+</section>
 </aside>
 </div>
 </div>

@@ -60,6 +60,7 @@ def create_dashboard(
     player: NowPlayingPlayer | None = None,
     audit: AuditLog | None = None,
     update_status: Path | None = None,
+    power: object | None = None,
 ) -> FastAPI:
     app = FastAPI()
 
@@ -98,6 +99,7 @@ def create_dashboard(
         update_status=update_status,
         note=note,
         note_failed=note_failed,
+        power=power,
     )
     home.mount(app, ctx)
     figures.mount(app, ctx)

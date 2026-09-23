@@ -78,3 +78,22 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             return notice("/settings", "speak-key-id")
         ctx.note("keys", "Saved studio keys")
         return notice("/settings", "keys")
+
+    @app.post("/system/power", response_model=None)
+    async def system_power(request: Request) -> RedirectResponse:
+        if ctx.power is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        action = str(form.get("action") or "")
+        if action == "restart":
+            ctx.power.restart()
+            ctx.note("power", "Restart requested")
+        elif action == "reboot":
+            ctx.power.reboot()
+            ctx.note("power", "Reboot requested")
+        elif action == "poweroff":
+            ctx.power.poweroff()
+            ctx.note("power", "Halt")
+        else:
+            return notice("/settings", "needed")
+        return notice("/settings", "power")
