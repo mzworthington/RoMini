@@ -293,6 +293,21 @@ def test_dashboard_home_renders_when_host_is_missing() -> None:
     assert "Wi-Fi Not reported" in html
 
 
+def test_dashboard_header_keeps_each_cluster_on_one_line() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/figures").text
+    nav = html.split('nav[aria-label="Dashboard"] ul {\n  display: flex;', 1)[1].split("}", 1)[0]
+    pills = html.split(".status-pills {", 1)[1].split("}", 1)[0]
+    narrow = html.split("@media (max-width: 960px) {", 1)[1].split("@media", 1)[0]
+
+    assert "flex-wrap: nowrap" in nav
+    assert "flex-wrap: nowrap" in pills
+    assert 'nav[aria-label="Dashboard"]' in narrow
+    assert "flex: 1 0 100%" in narrow
+    assert "overflow-x: auto" in narrow
+
+
 def test_dashboard_header_pills_are_charge_cap_and_wifi() -> None:
     from fastapi.testclient import TestClient
 
@@ -926,6 +941,16 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     assert "No Figurine Linked" in waiting
     assert 'class="link-tag"' in waiting
     assert "Link Tag" in waiting
+
+
+def test_dashboard_active_preview_badge_stays_on_one_line() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    badge = html.split(".preview-badge {", 1)[1].split("}", 1)[0]
+
+    assert "white-space: nowrap" in badge
+    assert "flex-shrink: 0" in badge
 
 
 def test_dashboard_library_row_shows_the_file_size_and_length(tmp_path: Path) -> None:
@@ -2487,6 +2512,23 @@ def test_dashboard_settings_shows_the_firmware_update_center(tmp_path: Path) -> 
     assert "Check for Updates Now" in center
     assert "Recent Installation Ledger" in center
     assert "The player is already up to date." in center
+
+
+def test_dashboard_update_channel_stays_inside_its_card() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    center = html.split('id="firmware-update"', 1)[1]
+    channel_value = center.split("Update Channel", 1)[1].split("</div>", 1)[0]
+    columns = html.split(".firmware-facts {", 1)[1].split("}", 1)[0]
+    channel = html.split(".firmware-facts dd.channel {", 1)[1].split("}", 1)[0]
+    value = html.split(".firmware-facts dd {", 1)[1].split("}", 1)[0]
+
+    assert 'class="channel"' in channel_value
+
+    assert "minmax(18rem, 1fr)" in columns
+    assert "white-space: nowrap" in channel
+    assert "overflow-wrap: anywhere" not in value
 
 
 def test_dashboard_firmware_center_shows_the_update_and_refresh_icons() -> None:
