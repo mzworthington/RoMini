@@ -285,6 +285,14 @@ def test_dashboard_header_matches_the_prototype_top_bar() -> None:
     assert "72% charged" in header
 
 
+def test_dashboard_home_renders_when_host_is_missing() -> None:
+    from romini.composition.dashboard.shared import templates
+
+    html = templates.get_template("layout.html").render(page="home", version="0")
+
+    assert "Wi-Fi Not reported" in html
+
+
 def test_dashboard_header_pills_are_charge_cap_and_wifi() -> None:
     from fastapi.testclient import TestClient
 
