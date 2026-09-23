@@ -47,7 +47,7 @@
 </div>
 </div>
 </section>
-<section class="card scan-dock" aria-label="Quick reader sensor">
+<section class="card scan-dock" id="scan" aria-label="Quick reader sensor">
 <p class="kicker">Quick Reader Sensor</p>
 <h2>Scan &amp; Map Tag</h2>
 <p class="hint">Touch a figure to the wooden plate.</p>
@@ -100,32 +100,85 @@
 </li>
 </ul>
 <div class="studio-main">
-<section class="card">
-<h2>Figures</h2>
+<section class="card figure-library">
+<header class="figure-library-head">
+<h2>Figurine &amp; Tag Library</h2>
+<p class="hint">Select a physical tag to reassign audio files, modify playlists, or adjust safety decibel volume limits.</p>
+</header>
 {% if tags %}
+<div class="figure-toolbar">
+<label class="search figure-search" for="figure-q"><span class="figure-search-label">Search</span>
+<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+<input id="figure-q" type="search" placeholder="Search figures, stories, tags">
+</label>
 <div class="filters" role="group" aria-label="Figure filters">
-<button type="button" class="chip-btn" data-figure-filter="all" aria-pressed="true">All</button>
-<button type="button" class="chip-btn" data-figure-filter="open" aria-pressed="false">Needs a story</button>
+<button type="button" class="chip-btn" data-figure-filter="all" aria-pressed="true">All ({{ tags|length }})</button>
+<button type="button" class="chip-btn unmapped-filter" data-figure-filter="open" aria-pressed="false">Unmapped ({{ unbound_tags|length }})</button>
 </div>
-<label for="figure-q">Search</label>
-<input id="figure-q" type="search" placeholder="Name or UID">
+</div>
 <ul class="figures" id="figure-list">
 {% for tag in tags %}
-<li class="figure" data-bound="{% if tracks|selectattr('uid', 'equalto', tag.uid)|list %}yes{% else %}no{% endif %}">
-<img class="figure-mark" src="/mark.svg" width="48" height="48" alt="">
-<form action="/tags/{{ tag.uid }}/name" method="post">
-{% if tag.name %}<h3>{{ tag.name }}</h3>{% endif %}
-<p class="uid">{{ tag.uid }}</p>
-{% for track in tracks if track.uid == tag.uid and track.title %}
-<p class="bound">{{ track.title }}{% if track.length %} · {{ track.length }}{% endif %}{% if track.size %} · {{ track.size }}{% endif %}{% if track.suffix %} · {{ track.suffix }}{% endif %}</p>
-{% if now_playing and now_playing.uid == tag.uid %}<p class="dock-meta">On the plate</p>{% endif %}
+{% set bound = tracks|selectattr("uid", "equalto", tag.uid)|list %}
+<li class="figure" data-bound="{% if bound %}yes{% else %}no{% endif %}"{% if now_playing and now_playing.uid == tag.uid %} data-on-deck="yes"{% endif %}>
+<div class="figure-top">
+<div class="figure-avatar">
+{% if tag.image %}
+<img class="figure-mark" src="{{ tag.image }}" alt="">
+{% elif bound and bound[0].image %}
+<img class="figure-mark" src="{{ bound[0].image }}" alt="">
+{% elif bound %}
+<img class="figure-mark" src="/mark.svg" alt="">
 {% else %}
-<p class="hint">No story linked</p>
-{% endfor %}
+<span class="figure-mark figure-blank" aria-hidden="true">
+<svg viewBox="0 0 48 48"><circle class="blank-disc" cx="24" cy="24" r="15"/><circle class="blank-chip" cx="16.5" cy="24" r="1.7"/><path d="M20.4 19.4A6 6 0 0 1 20.4 28.6"/><path d="M22.3 17.1A9 9 0 0 1 22.3 30.9"/><path d="M24.2 14.8A12 12 0 0 1 24.2 33.2"/></svg>
+</span>
+{% endif %}
+<form class="figure-photo" action="/figures/cover" method="post" enctype="multipart/form-data">
+<input type="hidden" name="uid" value="{{ tag.uid }}">
+<label class="icon-btn" aria-label="Upload picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="m13.5 6.5 3 3"/></svg><input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
+<button class="icon-btn" type="submit" aria-label="Save picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
+</form>
+</div>
+<div class="figure-copy">
+{% if bound %}
+<p class="figure-kind">Story</p>
+<h3>{{ tag.name or tag.uid_label or tag.uid }}</h3>
+<p class="figure-sub">{{ bound[0].title }}</p>
+{% else %}
+<p class="figure-kind needs">Needs Audio</p>
+<h3>{{ tag.name or tag.uid_label or tag.uid }}</h3>
+<p class="figure-sub">Unassigned NFC tag</p>
+{% endif %}
+</div>
+</div>
+<dl class="figure-specs">
+<div><dt>Tag UID:</dt><dd class="uid">{{ tag.uid_label or tag.uid }}</dd></div>
+{% if bound %}
+<div><dt>Audio Payload:</dt><dd>{{ bound[0].title }}{% if bound[0].length %} · {{ bound[0].length }}{% endif %}</dd></div>
+{% if now_playing and now_playing.uid == tag.uid %}
+<div class="deck-row"><dt><span class="live-dot" aria-hidden="true"></span>Deck Status:</dt><dd>Currently on Deck</dd></div>
+{% endif %}
+{% else %}
+<div><dt>Audio Payload:</dt><dd>No story linked</dd></div>
+{% endif %}
+</dl>
+<footer class="figure-foot">
+{% if bound %}
+<span class="hint">{% if bound[0].suffix %}{{ bound[0].suffix }}{% endif %}{% if bound[0].size %}{% if bound[0].suffix %} · {% endif %}{{ bound[0].size }}{% endif %}</span>
+<a class="chip-btn" href="/library?uid={{ tag.uid }}">Configure Tag</a>
+{% else %}
+<span class="hint">No tracks linked</span>
+<a class="assign-audio" href="/library?uid={{ tag.uid }}">Assign Audio</a>
+{% endif %}
+</footer>
+<details class="figure-rename">
+<summary>Rename</summary>
+<form action="/tags/{{ tag.uid }}/name" method="post">
 <label for="tag-name-{{ tag.uid }}">Name</label>
 <input id="tag-name-{{ tag.uid }}" name="name" type="text" value="{{ tag.name }}">
 <button>Save Name</button>
 </form>
+</details>
 </li>
 {% endfor %}
 </ul>

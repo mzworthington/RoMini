@@ -22,7 +22,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 if request.url.query:
                     dest = f"{dest}?{request.url.query}"
                 return RedirectResponse(dest, status_code=303)
-        return ctx.page(request, "characters.html", page="characters", page_title="Characters")
+        return ctx.page(request, "stories.html", page="characters", page_title="Story Studio")
 
     @app.get("/characters/{slug}", response_class=HTMLResponse)
     def character_page(request: Request, slug: str) -> HTMLResponse:
@@ -31,7 +31,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         open_character_pack(ctx.characters, slug)
         if current_pack(ctx.characters) != ctx.characters / slug:
             raise HTTPException(status_code=404)
-        return ctx.page(request, "characters.html", page="characters", page_title="Characters")
+        return ctx.page(request, "stories.html", page="characters", page_title="Story Studio")
 
     @app.post("/characters", response_model=None)
     async def save_character(request: Request) -> RedirectResponse:
@@ -68,4 +68,4 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if ctx.characters is None:
             raise HTTPException(status_code=404)
         clear_current(ctx.characters)
-        return RedirectResponse("/characters", status_code=303)
+        return RedirectResponse("/characters?compose=1", status_code=303)

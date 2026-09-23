@@ -14,8 +14,13 @@ def register_tag(
     data = yaml.safe_load(catalog.read_text()) or {}
     tags = [row for row in (data.get("tags") or []) if row.get("uid") != uid]
     existing = next((row for row in (data.get("tags") or []) if row.get("uid") == uid), None)
-    name = "" if existing is None else str(existing.get("name") or "")
-    tags.append({"uid": uid, "name": name})
+    if existing is None:
+        tags.append({"uid": uid, "name": ""})
+    else:
+        kept = dict(existing)
+        kept["uid"] = uid
+        kept["name"] = str(existing.get("name") or "")
+        tags.append(kept)
     data["tags"] = tags
     catalog.write_text(yaml.safe_dump(data, sort_keys=False))
     if led is not None:
@@ -29,7 +34,10 @@ def name_tag(*, uid: str, name: str, catalog: CatalogFile) -> None:
     tags = []
     for row in data.get("tags") or []:
         if row.get("uid") == uid:
-            tags.append({"uid": uid, "name": name})
+            kept = dict(row)
+            kept["uid"] = uid
+            kept["name"] = name
+            tags.append(kept)
         else:
             tags.append(row)
     data["tags"] = tags

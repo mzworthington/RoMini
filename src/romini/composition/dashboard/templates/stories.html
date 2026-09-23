@@ -1,18 +1,17 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="studio">
+<div class="story-studio">
 <ul class="metrics">
 <li><span>Stories saved</span><span class="metric">{{ saved_stories|length }}</span></li>
-<li><span>Characters</span><span class="metric">{{ saved_characters|length }}</span></li>
+<li><span>Characters saved</span><span class="metric">{{ saved_characters|length }}</span></li>
+<li><span>Spoken track</span><span class="metric">{% if spoken_file %}Ready{% else %}None yet{% endif %}</span></li>
+<li><span>Playback</span><span class="metric">On this box</span></li>
 </ul>
-<p class="new-pack">
-<form action="/stories/new" method="post">
-<button>New story</button>
-</form>
-</p>
-<div class="board">
+<div class="studio-main">
+<div class="studio-compose">
 <section class="card">
-<h2>Write a story</h2>
+<div class="step-head"><span class="step">1</span><h2>Write a story</h2></div>
 <form action="/stories" method="post">
 <label for="story-title">Story title</label>
 <input id="story-title" name="story_title" type="text" required value="{{ story_title }}">
@@ -35,50 +34,56 @@ function updateStoryLength(value) {
   label.textContent = seconds === 0 ? minutes + " " + unit : minutes + " " + unit + " " + seconds + " seconds";
 }
 </script>
-<fieldset>
+<fieldset class="cast">
 <legend>Characters</legend>
 {% if saved_characters %}
 {% for character in saved_characters %}
-<label><input type="checkbox" name="character" value="{{ character.slug }}"{% if character.slug in selected_character_slugs %} checked{% endif %}>{{ character.name }}</label>
+<label><input type="checkbox" name="character" value="{{ character.slug }}"{% if character.slug in selected_character_slugs %} checked{% endif %}><span class="avatar" aria-hidden="true">{{ character.name[:1] }}</span><span>{{ character.name }}</span></label>
 {% endfor %}
 {% else %}
-<p class="hint"><a href="/characters">Add a character</a> first, then pick who is in this story.</p>
+<p class="hint">Add a character first, then pick who is in this story.</p>
 {% endif %}
 </fieldset>
 <label for="outline">Story outline</label>
 <textarea id="outline" name="outline">{{ outline }}</textarea>
+<div class="step-head"><span class="step">2</span><h2>Script</h2></div>
+<div class="cadence">
+<span>Cadence</span>
+<button type="button" class="stage-tag" data-tag="[softly]">[softly]</button>
+<button type="button" class="stage-tag" data-tag="[pause]">[pause]</button>
+<button type="button" class="stage-tag" data-tag="[whisper]">[whisper]</button>
+<button type="button" class="stage-tag" data-tag="[yawn]">[yawn]</button>
+</div>
 <label for="script">Script</label>
 <textarea id="script" name="script">{{ script }}</textarea>
-<button>Save story</button>
+<p class="hint" id="script-count"></p>
+<button>Save Blueprint</button>
 </form>
 {% if story_title %}
 <form action="/stories/draft" method="post" class="form-busy" data-busy="Writing the script…">
 <p id="draft-status" class="status" hidden role="status" aria-live="polite"></p>
-<button>Draft script</button>
+<button><svg class="spark-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>Draft Script with Gemini</button>
 </form>
 {% endif %}
 </section>
-
-</div>
-
 {% if story_title and script %}
 <section class="card">
 <form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
 <p id="speak-status" class="status" hidden role="status" aria-live="polite"></p>
-<h2>Speak the story</h2>
-<label for="voice">Voice</label>
-<select id="voice" name="voice_id">
+<div class="step-head"><span class="step">3</span><h2>Speak the story</h2></div>
+<fieldset class="voices">
+<legend>Voice</legend>
 {% for voice in voices %}
-<option value="{{ voice.id }}">{{ voice.name }}</option>
+<label class="voice-card"><input type="radio" name="voice_id" value="{{ voice.id }}"{% if loop.first %} checked{% endif %}>{{ voice.name }}</label>
 {% endfor %}
-</select>
-<button>Speak script</button>
+</fieldset>
+<button><svg class="voice-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M8 8v6M16 8v6M5 11v2M19 11v2"/></svg>Speak Script with ElevenLabs</button>
 {% if spoken_file %}
 <p class="hint">Speaking again replaces {{ spoken_file }}.</p>
 {% endif %}
 </form>
 {% if spoken_file %}
-<div>
+<div class="preview">
 <label for="preview">Preview</label>
 <select id="preview" hidden>
 <option value="/library/file/{{ spoken_file }}">{{ spoken_file }}</option>
@@ -96,34 +101,98 @@ function updateStoryLength(value) {
 })();
 </script>
 <p class="hint">Spoken file: {{ spoken_file }}</p>
+<p class="hint"><a href="/figures">Bind this track on Figures &amp; Tags</a></p>
 </div>
 {% endif %}
 </section>
 {% endif %}
-
+</div>
+<aside class="studio-side">
+<section class="card" id="characters">
+<div class="roster-head">
+<div class="roster-title">
+<span class="roster-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="2.2"/><circle cx="16" cy="9.2" r="1.7"/><path d="M3.8 17.8a5.2 5.2 0 0 1 10.4 0"/><path d="M14.2 17.8a4 4 0 0 1 6-3.2"/></svg></span>
+<h2>Family Characters ({{ saved_characters|length }})</h2>
+</div>
+<form class="roster-add" action="/characters/new" method="post"><button type="submit" aria-label="Add a character"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg></button></form>
+</div>
+<p class="hint">Characters are automatically fed to Gemini for narrative consistency across all bedtime stories.</p>
+<p class="kicker"><a href="/characters">Characters</a></p>
+{% if saved_characters %}
+<ul class="characters">
+{% for character in saved_characters %}
+<li class="character">
+<span class="avatar avatar-{{ loop.index0 % 4 }}" aria-hidden="true">{{ character.name[:1] }}</span>
+<div class="character-copy">
+<p class="character-name">{{ character.name }}<a href="/characters/{{ character.slug }}">Edit</a></p>
+<p>{{ character.background }}</p>
+</div>
+</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="empty">No characters yet</p>
+{% endif %}
+<div id="character-form"{% if page != "characters" %} hidden{% endif %}>
+<div class="step-head"><h2>{% if opened_character_slug %}Edit a character{% else %}Add a character{% endif %}</h2></div>
+<form action="/characters" method="post">
+<label for="character-name">Name</label>
+<input id="character-name" name="name" type="text" value="{{ character_name }}" required>
+{% if opened_character_slug %}<input type="hidden" name="slug" value="{{ opened_character_slug }}">{% endif %}
+<label for="character-background">Background and history</label>
+<textarea id="character-background" name="background">{{ character_background }}</textarea>
+<div class="editor-actions">
+<button>Save character</button>
+<a href="{% if opened_story_slug %}/stories/{{ opened_story_slug }}{% else %}/stories{% endif %}">Cancel</a>
+</div>
+</form>
+</div>
+</section>
 <section class="card">
 <h2>Saved stories</h2>
 {% if saved_stories %}
-<div class="table-wrap">
-<table>
-<caption>Saved stories</caption>
-<thead><tr><th>Title</th><th>Action</th></tr></thead>
-<tbody>
+<ul class="story-stack">
 {% for story in saved_stories %}
-<tr>
-    <td><span class="track-title">{{ story.title }}</span></td>
-    <td>
-        <a class="button" href="/stories/{{ story.slug }}">Open</a>
-        <form action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>
-    </td>
-</tr>
+<li{% if story.slug == opened_story_slug %} class="is-open"{% endif %}>
+<span class="track-title">{{ story.title }}</span>
+<a class="button" href="/stories/{{ story.slug }}">Open</a>
+<form action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>
+</li>
 {% endfor %}
-</tbody>
-</table>
-</div>
+</ul>
 {% else %}
 <p class="empty">No saved stories yet</p>
 {% endif %}
 </section>
+</aside>
 </div>
+</div>
+</div>
+<script>
+(function () {
+  var script = document.getElementById("script");
+  var count = document.getElementById("script-count");
+  function words() {
+    if (!script || !count) return;
+    var n = script.value.trim() ? script.value.trim().split(/\s+/).length : 0;
+    count.textContent = n + (n === 1 ? " word" : " words");
+  }
+  if (script) {
+    script.addEventListener("input", words);
+    words();
+  }
+  document.querySelectorAll(".stage-tag").forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (!script) return;
+      var tag = button.getAttribute("data-tag") || "";
+      var start = script.selectionStart;
+      var end = script.selectionEnd;
+      var text = script.value;
+      script.value = text.slice(0, start) + "\n" + tag + "\n" + text.slice(end);
+      script.focus();
+      words();
+    });
+  });
+})();
+</script>
 {% endblock %}

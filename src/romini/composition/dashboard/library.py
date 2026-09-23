@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
+from starlette.requests import ClientDisconnect
 
 from romini.composition.dashboard.shared import (
     DashboardCtx,
@@ -41,7 +42,10 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             def tell(self, message: str) -> None:
                 return
 
-        form = await request.form()
+        try:
+            form = await request.form()
+        except ClientDisconnect:
+            return RedirectResponse("/library", status_code=303)
         uploads = [
             item for item in form.getlist("file") if getattr(item, "filename", None) and str(item.filename).strip()
         ]

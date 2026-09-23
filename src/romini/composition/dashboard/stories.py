@@ -37,7 +37,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 if request.url.query:
                     dest = f"{dest}?{request.url.query}"
                 return RedirectResponse(dest, status_code=303)
-        return ctx.page(request, "stories.html", page="stories", page_title="Stories")
+        return ctx.page(request, "stories.html", page="stories", page_title="Story Studio")
 
     @app.get("/stories/{slug}", response_class=HTMLResponse)
     def story_page(request: Request, slug: str) -> HTMLResponse:
@@ -46,7 +46,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         open_story_pack(ctx.stories, slug)
         if current_pack(ctx.stories) != ctx.stories / slug:
             raise HTTPException(status_code=404)
-        return ctx.page(request, "stories.html", page="stories", page_title="Stories")
+        return ctx.page(request, "stories.html", page="stories", page_title="Story Studio")
 
     @app.get("/stories/{slug}/spoken")
     def preview_spoken(slug: str) -> FileResponse:

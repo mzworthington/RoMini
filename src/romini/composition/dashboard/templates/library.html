@@ -1,46 +1,69 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="studio">
-<section class="card deck live-deck hero-dock" aria-label="Live physical deck">
-<div class="deck-kicker">
-<p class="kicker">Live Physical Deck</p>
-<p class="hint">{% if now_playing %}ISO 14443-A detected{% else %}Waiting for a figure{% endif %}</p>
+<ul class="quota-cards" id="storage">
+<li class="quota-card">
+<div class="quota-head">
+<p class="quota-label">MicroSD Capacity</p>
 </div>
-</section>
-<section class="card scan-dock" aria-label="Quick reader sensor">
-<p class="kicker">Quick Reader Sensor</p>
-<h2>Scan &amp; Map Tag</h2>
-</section>
-<ul class="metrics">
-<li><span>Tracks in the library</span><span class="metric">{{ tracks|length }}</span></li>
-<li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
-<li><span>Needs a story</span><span class="metric">{{ unbound_tags|length }}</span></li>
-<li><span>Free on the box</span><span class="metric">{{ free_space }}</span>{% if disk_total %}<span class="hint">of {{ disk_total }}</span>{% endif %}</li>
-<li><span>Files on disk</span><span class="metric">{{ library_paths|length }}</span></li>
-</ul>
-{% if library_root %}<p class="hint mount">Library folder {{ library_root }}</p>{% endif %}
-<ul class="metrics hw-mini">
-<li><span>Reader</span><strong>PN532</strong><span class="hint">NFC poll 250 ms</span></li>
-<li><span>DAC</span><strong>HiFiBerry</strong><span class="hint">{% if now_playing and now_playing.is_playing %}Playing{% else %}Waiting for the player{% endif %}</span></li>
-<li><span>Wi-Fi</span><strong>{{ host.wifi }}</strong><span class="hint">{{ host.hostname }}</span></li>
+{% if disk_total %}
+<p class="quota-value">{{ disk_used or "0 B" }} <span>/ {{ disk_total }} ({{ disk_fill }}%)</span></p>
+{% else %}
+<p class="quota-value">{{ free_space }}</p>
+{% endif %}
+<p class="quota-note">{{ free_space }} on the box</p>
+<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ disk_fill }}" aria-label="MicroSD used"><span style="width: {{ disk_fill }}%"></span></div>
+</li>
+<li class="quota-card">
+<div class="quota-head">
+<p class="quota-label">Total Audio Assets</p>
+</div>
+<p class="quota-value"><strong>{{ tracks|length }}</strong> <span>Master Tracks</span></p>
+<p class="quota-note">{{ library_paths|length }} files on disk</p>
+</li>
+<li class="quota-card">
+<div class="quota-head">
+<p class="quota-label">NFC Pairing</p>
+</div>
+<p class="quota-value">{{ tags|length }} <span class="quota-warn">({{ unbound_tags|length }} unbound)</span></p>
+<p class="quota-note">Physical NFC tags bound</p>
+{% set awaiting = tracks|rejectattr("uid")|list|length %}
+{% if awaiting %}
+<p class="quota-warn">{% if awaiting == 1 %}1 story awaiting an NFC token{% else %}{{ awaiting }} stories awaiting an NFC token{% endif %}</p>
+{% endif %}
+</li>
+<li class="quota-card">
+<div class="quota-head">
+<p class="quota-label">DAC Configuration</p>
+</div>
+<p class="quota-value quota-name">HiFiBerry Mini <span>I2S DAC</span></p>
+<p class="quota-note">{% if now_playing and now_playing.is_playing %}Playing{% else %}Waiting for the player{% endif %}</p>
+<p class="quota-pills"><span>48 kHz</span><span>24-Bit</span><span>Stereo</span></p>
+</li>
 </ul>
 <div class="board">
 <section class="card drop" id="upload-well">
-<p class="kicker">MicroSD library</p>
-<h2>Upload a track</h2>
-<p class="drop-lead">Drop an audio file here</p>
+<div class="drop-mark" aria-hidden="true">
+<svg viewBox="0 0 24 24"><path d="M12 16V5m0 0 4 4M12 5 8 9"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
+</div>
+<div class="drop-copy">
+<h2>Drag audio files directly onto this panel</h2>
+<p>Supports MP3, M4A, AAC, and uncompressed audio. Files land in the library on this box.</p>
 <form action="/tracks" method="post" enctype="multipart/form-data">
+<label class="browse" for="file">Browse Laptop Disk</label>
+<span class="or">or</span>
+<label class="checkline" for="bind-after"><input id="bind-after" type="checkbox" name="bind" value="1"> Prompt physical tag binding immediately after transfer</label>
 <label for="file">Audio file</label>
-<input id="file" type="file" name="file" accept="audio/*">
+<input id="file" type="file" name="file" accept="audio/*" multiple>
 <label for="folder">Folder of tracks</label>
-<input id="folder" type="file" name="file" accept="audio/*" webkitdirectory multiple>
-<label class="checkline" for="bind-after"><input id="bind-after" type="checkbox" name="bind" value="1"> Prompt a figure link after the upload</label>
-<button>Upload</button>
+<input id="folder" type="file" name="file" webkitdirectory multiple>
 </form>
+</div>
 <script>
 (function () {
   var well = document.getElementById("upload-well");
   var input = document.getElementById("file");
+  var folder = document.getElementById("folder");
   ["dragenter", "dragover"].forEach(function (name) {
     well.addEventListener(name, function (event) {
       event.preventDefault();
@@ -57,11 +80,108 @@
       return;
     }
     input.files = event.dataTransfer.files;
+    input.form.submit();
+  });
+  input.addEventListener("change", function () {
+    if (input.files.length) input.form.submit();
+  });
+  folder.addEventListener("change", function () {
+    if (folder.files.length) folder.form.submit();
   });
 })();
 </script>
 </section>
-<section class="card">
+<section class="card sync-queue" aria-label="Active sync queue">
+<div class="quota-head">
+<p class="quota-label sync-label">Active Sync Queue</p>
+</div>
+<p class="quota-note">Nothing transferring</p>
+<p class="quota-note">Local Wi-Fi</p>
+<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Transfer progress"><span style="width: 0%"></span></div>
+</section>
+</div>
+<section class="card library-catalog">
+<h2 class="catalog-title">Library</h2>
+<div class="library-toolbar">
+<div class="library-search-row">
+<form class="search" action="/library" method="get">
+<label for="q">Search</label>
+<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+<input id="q" name="q" type="search" value="{{ query }}" placeholder="Search audio titles, authors, narrators, or figure links">
+</form>
+<div class="display-mode">
+<span>Display Mode</span>
+<div class="view-switch" role="group" aria-label="Display mode">
+<button type="button" class="chip-btn" id="view-list" aria-pressed="true" aria-label="List view">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>
+</button>
+<button type="button" class="chip-btn" id="view-grid" aria-pressed="false" aria-label="Grid view">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z"/></svg>
+</button>
+</div>
+</div>
+</div>
+<p class="filters">
+<a href="/library"{% if not unassigned %} aria-current="page"{% endif %}>All Tracks ({{ tracks|length }})</a>
+<a href="/library?unassigned=1"{% if unassigned %} aria-current="page"{% endif %}><span class="filter-dot" aria-hidden="true"></span>Unassigned to Figures ({{ tracks|rejectattr("uid")|list|length }})</a>
+</p>
+</div>
+<div class="catalog-sheet">
+<div class="table-wrap" id="library-table">
+<table>
+<caption>Library</caption>
+<thead><tr><th>#</th><th>Story Title</th><th>Author / Narrator</th><th>Duration</th><th>File Spec</th><th>Physical Figurine Link</th><th>Actions</th></tr></thead>
+<tbody>
+{% if tracks %}
+{% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower or query|lower in track.artist|lower) and (not unassigned or not track.figure) %}
+{% set preview = track.uid and playing_uid == track.uid %}
+<tr class="{{ 'is-preview' if preview else '' }} {{ 'unlinked' if not track.figure else '' }}">
+<td>
+{% if has_player %}
+{% if preview %}
+<form action="/library/stop" method="post"><button class="play-dot is-playing" type="submit" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Stop</span></button></form>
+{% else %}
+<form action="/library/play/{{ track.uid }}" method="post"><button class="play-dot" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Play</span></button></form>
+{% endif %}
+{% elif pad %}
+<form action="/place/{{ track.uid }}" method="post"><button class="play-dot" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Place</span></button></form>
+{% endif %}
+</td>
+<td>
+<div class="story-cell">
+<img class="cover" src="{{ track.image or '/logo.svg' }}" alt="">
+<span class="track-title">{{ track.title }}</span>
+{% if preview %}<span class="preview-badge">Active Preview</span>{% endif %}
+</div>
+</td>
+<td>
+<p class="credit-name">{{ track.artist }}</p>
+<p class="credit-note">{{ track.path }}</p>
+</td>
+<td>{{ track.length }}</td>
+<td><span class="spec">{{ track.size }}</span>{% if track.suffix %}<span class="spec-kind">{{ track.suffix }}</span>{% endif %}</td>
+<td>{% if track.figure %}<span class="chip linked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M12 12.5v.01"/><circle cx="12" cy="16.5" r="1.2"/></svg>{{ track.figure }}</span>{% else %}<span class="chip missing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>No Figurine Linked</span> <a class="link-tag" href="#assign">Link Tag</a>{% endif %}</td>
+<td>
+<div class="row-actions">
+<form action="/library/cover" method="post" enctype="multipart/form-data">
+<input type="hidden" name="path" value="{{ track.path }}">
+<label class="icon-btn" aria-label="Upload cover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="m13.5 6.5 3 3"/></svg><input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
+<button class="icon-btn" type="submit" aria-label="Save cover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
+</form>
+<a class="icon-btn" href="#assign" aria-label="Reassign figurine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7H9m8 0v8M7 17h8m-8 0V9"/></svg></a>
+</div>
+</td>
+</tr>
+{% endfor %}
+{% else %}
+<tr><td colspan="7"><p class="empty">No stories yet. Upload a track, then assign a figure.</p></td></tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+</div>
+<p class="hint catalog-count">Showing {{ tracks|length }} registered audio files</p>
+<section class="inset" id="assign">
 <h2>Assign a figure</h2>
 {% if bind_prompt %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
 <form action="/assign" method="post">
@@ -87,9 +207,6 @@
 {% endif %}
 <button>Assign</button>
 </form>
-</section>
-<section class="card">
-<h2>Cover image</h2>
 {% if library_files %}
 <form action="/library/cover" method="post" enctype="multipart/form-data">
 <label for="cover-path">Track</label>
@@ -102,86 +219,8 @@
 <input id="cover" name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required>
 <button>Upload image</button>
 </form>
-<p class="hint">Stored with this track. The library and the player show it, or the RoMini logo when none is set.</p>
-{% else %}
-<p class="hint">Upload a track first</p>
 {% endif %}
 </section>
-<section class="card" id="audition" aria-label="In-browser audition">
-<h2>Listen</h2>
-{% if library_paths %}
-<label for="preview">Track</label>
-<select id="preview">
-{% for file in library_files %}
-<option value="/library/file/{{ file.path }}">{{ file.label }}</option>
-{% endfor %}
-</select>
-<audio id="player" controls preload="metadata" aria-label="Preview"></audio>
-<script>
-(function () {
-  var select = document.getElementById("preview");
-  var player = document.getElementById("player");
-  function load() {
-    player.src = select.value;
-  }
-  select.addEventListener("change", load);
-  load();
-})();
-</script>
-{% else %}
-<p class="hint">Upload a track first</p>
-{% endif %}
-</section>
-</div>
-<section class="card">
-<h2>Library</h2>
-<form class="search" action="/library" method="get">
-<label for="q">Search</label>
-<input id="q" name="q" type="search" value="{{ query }}">
-</form>
-<p class="filters">
-<a href="/library"{% if not unassigned %} aria-current="page"{% endif %}>All tracks</a>
-<a href="/library?unassigned=1"{% if unassigned %} aria-current="page"{% endif %}>No figure linked</a>
-</p>
-<div class="view-switch" role="group" aria-label="Display mode">
-<button type="button" class="chip-btn" id="view-list" aria-pressed="true">List</button>
-<button type="button" class="chip-btn" id="view-grid" aria-pressed="false">Grid</button>
-</div>
-{% if tracks %}
-<div class="table-wrap" id="library-table">
-<table>
-<caption>Library</caption>
-<thead><tr><th>Cover</th><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th><th>File</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
-<tbody>
-{% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) %}
-<tr>
-    <td>
-        <img class="cover" src="{{ track.image or '/logo.svg' }}" alt="">
-        <form action="/library/cover" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="path" value="{{ track.path }}">
-        <label>Cover image<input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
-        <button>Upload image</button>
-        </form>
-    </td>
-    <td><span class="track-title">{{ track.title }}</span></td>
-    <td>{% if track.figure %}<span class="chip">{{ track.figure }}</span>{% else %}<span class="chip missing">No figure linked</span>{% endif %}</td>
-    <td>{{ track.path }}</td>
-    <td>{{ track.length }}</td>
-    <td>{{ track.size }}</td>
-    <td>{% if track.suffix %}<span class="badge">{{ track.suffix }}</span>{% endif %}</td>
-    {% if has_player %}
-    <td>{% if playing_uid == track.uid %}<form action="/library/stop" method="post"><button>Stop</button></form>{% else %}<form action="/library/play/{{ track.uid }}" method="post"><button>Play</button></form>{% endif %}</td>
-    {% elif pad %}
-    <td><form action="/place/{{ track.uid }}" method="post"><button>Place</button></form></td>
-    {% endif %}
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-{% else %}
-<p class="empty">No stories yet. Upload a track, then assign a figure.</p>
-{% endif %}
 <script>
 (function () {
   var table = document.querySelector("#library-table table");
@@ -198,5 +237,42 @@
 })();
 </script>
 </section>
+{% if library_paths %}
+<section class="audition-bar" id="audition" aria-label="In-browser audition">
+<img class="cover" src="/logo.svg" alt="">
+<div class="audition-copy">
+<p class="kicker">Local Audition</p>
+</div>
+<label for="preview">Track</label>
+<select id="preview">
+{% for file in library_files %}
+<option value="/library/file/{{ file.path }}"{% for track in tracks if track.path == file.path and track.uid %} data-play="/library/play/{{ track.uid }}"{% endfor %}>{{ file.label }}</option>
+{% endfor %}
+</select>
+<audio id="player" controls preload="metadata" aria-label="Preview"></audio>
+{% if has_player %}
+<form id="test-box-form" method="post" action="">
+<button id="test-box" class="primary-pill" type="submit" disabled>Test on RoMini Box</button>
+</form>
+{% endif %}
+<script>
+(function () {
+  var select = document.getElementById("preview");
+  var player = document.getElementById("player");
+  var box = document.getElementById("test-box");
+  function load() {
+    player.src = select.value;
+    if (!box) return;
+    var option = select.options[select.selectedIndex];
+    var play = option ? option.getAttribute("data-play") : "";
+    box.disabled = !play;
+    box.form.action = play || "";
+  }
+  select.addEventListener("change", load);
+  load();
+})();
+</script>
+</section>
+{% endif %}
 </div>
 {% endblock %}

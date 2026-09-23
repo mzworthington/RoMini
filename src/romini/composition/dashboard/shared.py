@@ -7,7 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from shutil import disk_usage
 from typing import Protocol
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, unquote, urlencode
 
 import yaml
 from fastapi import Request
@@ -51,6 +51,25 @@ def format_free_space(n: int) -> str:
         if size < 1024 or unit == "TB":
             return f"{size:.1f} {unit} free"
     return f"{n} bytes free"
+
+
+def format_tag_uid(uid: str) -> str:
+    text = unquote(uid.strip())
+    compact = "".join(character for character in text if character not in ": -").upper()
+    if len(compact) < 2 or len(compact) % 2 or any(character not in "0123456789ABCDEF" for character in compact):
+        return text
+    return ":".join(compact[index : index + 2] for index in range(0, len(compact), 2))
+
+
+def figure_cover_key(uid: str) -> str | None:
+    name = uid.replace("\\", "/").strip()
+    if not name or name.startswith("/") or any(part in {"", ".", ".."} for part in name.split("/")):
+        return None
+    return "figures/" + name
+
+
+def figure_cover_url(uid: str) -> str:
+    return "/figures/cover/" + quote(uid, safe="")
 
 
 def memory_fill(memory: str) -> int | None:
@@ -684,17 +703,28 @@ def render_page(
     tags: list[dict[str, str]] = []
     if assign_catalog is not None:
         data = yaml.safe_load(assign_catalog.read_text()) or {}
-        tags = [
-            {"uid": str(tag.get("uid") or ""), "name": str(tag.get("name") or "")}
-            for tag in data.get("tags") or []
-            if str(tag.get("uid") or "").strip()
-        ]
+        tags = []
+        for tag in data.get("tags") or []:
+            uid = str(tag.get("uid") or "")
+            if not uid.strip():
+                continue
+            key = figure_cover_key(uid)
+            tags.append(
+                {
+                    "uid": uid,
+                    "name": str(tag.get("name") or ""),
+                    "uid_label": format_tag_uid(uid),
+                    "image": figure_cover_url(uid) if key and locate_track_cover(covers, key) else "",
+                }
+            )
         names = {tag["uid"]: tag["name"] for tag in tags}
         tracks = []
         for track in data.get("tracks") or []:
             uid = str(track.get("uid") or "")
             title = str(track.get("title") or "")
             path = str(track.get("path") or "")
+            artist = track.get("artist")
+            artist_name = "" if artist is None else str(artist).strip()
             if uid.strip() or title.strip() or path.strip():
                 read = getattr(storage, "get", None)
                 audio = read(path) if callable(read) else None
@@ -703,6 +733,7 @@ def render_page(
                     {
                         "uid": uid,
                         "title": title,
+                        "artist": artist_name,
                         "path": path,
                         "suffix": Path(path).suffix.lower().lstrip(".").upper(),
                         "figure": names.get(uid) or uid,
@@ -774,6 +805,7 @@ def render_page(
             ),
             "spoken_file": spoken_file_name(stories),
             "opened_story_slug": opened_story_slug,
+            "stories_root": str(stories) if stories else "",
             "saved_stories": list_saved_stories(stories),
             "saved_characters": list_saved_characters(characters),
             "selected_character_slugs": character_slug_list(notes),

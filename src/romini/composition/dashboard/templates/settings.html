@@ -98,9 +98,12 @@
 </section>
 <section class="card span firmware" id="firmware-update" aria-labelledby="firmware-heading">
 <div class="firmware-head">
+<div class="firmware-title">
+<svg class="firmware-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v9m0 0 3.5-3.5M12 13 8.5 9.5"/><path d="M5 15v2.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
 <div>
 <h2 id="firmware-heading">Firmware &amp; OTA Update Center</h2>
 <p class="hint">Official GitHub wheel distribution channel</p>
+</div>
 </div>
 <p class="badge is-{{ update.tone }}">{{ update.label }}</p>
 </div>
@@ -114,20 +117,20 @@
 <dd>{{ update.channel }}</dd>
 </div>
 <div>
-<dt>Last check</dt>
+<dt>Last Check Timer</dt>
 <dd>{{ update.last_check }}</dd>
 </div>
 </dl>
 <div class="firmware-row">
 <p class="hint">Automatic nightly checks scheduled via <code>romini-update.timer</code></p>
 {% if can_update %}
-<form action="/system/update" method="post"><button type="submit">Check for Updates Now</button></form>
+<form action="/system/update" method="post"><button type="submit"><svg class="refresh-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.2-5.5M20 4v5h-5"/></svg>Check for Updates Now</button></form>
 {% else %}
-<button type="button" disabled>Check for Updates Now</button>
+<button type="button" disabled><svg class="refresh-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.2-5.5M20 4v5h-5"/></svg>Check for Updates Now</button>
 {% endif %}
 </div>
 <details class="ledger" open>
-<summary>Recent Installation Ledger <span>Toggle release log</span></summary>
+<summary><span class="ledger-title"><svg class="ledger-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h8"/></svg>Recent Installation Ledger</span> <span>Toggle release log</span></summary>
 <ol>
 <li>{{ update.detail }}</li>
 </ol>
@@ -162,7 +165,7 @@ sudo nmtui</pre>
 </div>
 <div class="hw-care">
 <div class="hw-pair">
-<section class="card">
+<section class="card" id="studio-keys">
 <h2>Studio keys</h2>
 <form action="/keys" method="post">
 <label for="gemini-key">Gemini key</label>

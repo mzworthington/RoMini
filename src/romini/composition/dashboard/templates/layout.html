@@ -3,11 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-{% if poll %}
-<script>
-{% include "register_poll.js" %}
-</script>
-{% endif %}
 <script>
 {% include "form_busy.js" %}
 </script>
@@ -30,8 +25,9 @@
 <nav aria-label="Dashboard">
 <ul>
 <li><a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}>Figures &amp; Tags</a></li>
-<li><a href="/library"{% if page == "library" or page == "stories" or page == "characters" %} aria-current="page"{% endif %}>Audio Library</a></li>
+<li><a href="/library"{% if page == "library" %} aria-current="page"{% endif %}>Audio Library</a></li>
 <li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Live Player</a></li>
+<li><a href="/stories"{% if page == "stories" or page == "characters" %} aria-current="page"{% endif %}>Story Studio</a></li>
 <li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>System</a></li>
 </ul>
 </nav>
@@ -42,15 +38,6 @@
 </ul>
 <a class="scan" href="/figures">Scan tag</a>
 </div>
-{% if page == "library" or page == "stories" or page == "characters" %}
-<nav aria-label="Library">
-<ul>
-<li><a href="/library"{% if page == "library" %} aria-current="page"{% endif %}>Tracks</a></li>
-<li><a href="/stories"{% if page == "stories" %} aria-current="page"{% endif %}>Stories</a></li>
-<li><a href="/characters"{% if page == "characters" %} aria-current="page"{% endif %}>Characters</a></li>
-</ul>
-</nav>
-{% endif %}
 </header>
 <main>
 <div class="page-head">
@@ -62,17 +49,15 @@
 {% elif page == "figures" %}
 <p class="page-kicker">Live physical deck</p>
 <h2 class="page-title">Figures &amp; Tags</h2>
-<p class="lede">Register a wooden figure, then link the story it should play.</p>
+<p class="lede">Register a NFC tag figure, then link the story it should play.</p>
 {% elif page == "library" %}
-<p class="page-kicker">Storage &amp; audio assets</p>
+<p class="page-kicker">Storage &amp; audio assets{% if library_root %} <span class="path-note">{{ library_root }}</span>{% endif %}</p>
 <h2 class="page-title">Audio Library &amp; Soundtracks</h2>
-<p class="lede">Upload stories, check what is on the box, and assign a figure.</p>
-{% elif page == "stories" %}
-<p class="page-kicker">Writing</p>
-<h2 class="page-title">Stories</h2>
-{% elif page == "characters" %}
-<p class="page-kicker">Writing</p>
-<h2 class="page-title">Characters</h2>
+<p class="lede">Upload lossless audio stories, verify MicroSD domestic quotas, and assign stories directly to NFC tags.</p>
+{% elif page == "stories" or page == "characters" %}
+<p class="page-kicker">Story studio{% if stories_root %} <span class="path-note">{{ stories_root }}</span>{% endif %}</p>
+<h2 class="page-title">Bedtime Story Studio &amp; Characters</h2>
+<p class="lede">Craft a bedtime tale with the family, draft the script, and speak it for the storybox.</p>
 {% elif page == "settings" %}
 <p class="page-kicker">Hardware telemetry</p>
 <h2 class="page-title">Hardware &amp; System Configuration</h2>
@@ -88,6 +73,23 @@
 <button type="button" class="danger-pill" disabled>Emergency mute</button>
 {% endif %}
 </div>
+{% elif page == "stories" or page == "characters" %}
+<div class="page-actions studio-toolbar">
+<div class="model-row">
+<p class="model-pill"><span class="status-dot" aria-hidden="true"></span>Gemini 3.6 Flash<span class="model-sep" aria-hidden="true">·</span>ElevenLabs v3</p>
+<a class="soft-pill" href="/settings#studio-keys"><svg class="key-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="3.2"/><path d="m10.2 12.8 8.3-8.3M15.2 7.8l2 2M13.2 9.8l2 2"/></svg>API Keys</a>
+</div>
+<div class="create-row">
+<form action="/characters/new" method="post"><button class="soft-pill" type="submit"><svg class="person-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.8 19a5.2 5.2 0 0 1 10.4 0"/><path d="M17 8v6M14 11h6"/></svg>New Character</button></form>
+<form action="/stories/new" method="post"><button class="primary-pill" type="submit"><svg class="plus-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create New Story</button></form>
+</div>
+</div>
+{% elif page == "library" %}
+<div class="page-actions">
+<a class="soft-pill" href="#storage">Storage Analysis</a>
+<a class="soft-pill" href="/stories">Upload New Story</a>
+<label class="primary-pill" for="file">Upload Audio Files</label>
+</div>
 {% elif page == "settings" %}
 <div class="page-actions">
 {% if can_power %}
@@ -102,15 +104,34 @@
 </div>
 {% endif %}
 </div>
-{% if notice %}
-<p class="status" role="status">{{ notice }}</p>
-{% endif %}
 {% block content %}{% endblock %}
 </main>
 <footer class="site-foot">
 <p>RoMini OS v{{ version }}</p>
+<p>Made for Romy, with ❤️ by <a href="https://mzworthington.co.uk/" target="_blank">Matthew Z Worthington</a> </p>
 <p>Screen-free domestic audio for growing minds. Local network hosted.</p>
 </footer>
 </div>
+<div class="toast-stack" data-toast-stack>
+{% if notice %}
+<div class="toast" data-toast role="status">
+<p class="toast-text">{{ notice }}</p>
+<button type="button" class="toast-close" data-toast-close aria-label="Dismiss">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>
+</button>
+</div>
+{% endif %}
+<template data-toast-template>
+<div class="toast" data-toast role="status">
+<p class="toast-text"></p>
+<button type="button" class="toast-close" data-toast-close aria-label="Dismiss">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>
+</button>
+</div>
+</template>
+</div>
+<script>
+{% include "page.js" %}
+</script>
 </body>
 </html>
