@@ -46,3 +46,55 @@ def test_assign_confirm_preserves_registered_tags() -> None:
 
     data = yaml.safe_load(catalog.text) or {}
     assert data["tags"] == [{"uid": "04aabbccddeeff", "name": "Frog Prince"}]
+
+
+def test_assign_confirm_keeps_the_cover_when_the_path_stays() -> None:
+    catalog = FakeCatalogFile()
+    catalog.text = (
+        "tracks:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    path: stories/frog-prince.mp3\n"
+        "    title: The Frog Prince\n"
+        "    artist:\n"
+        "    image:\n"
+        "      file: cover.png\n"
+        "      size: 12\n"
+        "      media_type: image/png\n"
+        "      story: frog-prince\n"
+    )
+
+    confirm_assign(
+        uid="04aabbccddeeff",
+        path="stories/frog-prince.mp3",
+        title="The Frog Prince",
+        catalog=catalog,
+    )
+
+    image = (yaml.safe_load(catalog.text) or {})["tracks"][0]["image"]
+    assert image["file"] == "cover.png"
+    assert image["story"] == "frog-prince"
+    assert image["media_type"] == "image/png"
+
+
+def test_assign_confirm_drops_the_cover_when_the_audio_changes() -> None:
+    catalog = FakeCatalogFile()
+    catalog.text = (
+        "tracks:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    path: stories/frog-prince.mp3\n"
+        "    title: The Frog Prince\n"
+        "    image:\n"
+        "      file: cover.png\n"
+        "      size: 12\n"
+        "      media_type: image/png\n"
+        "      story: frog-prince\n"
+    )
+
+    confirm_assign(
+        uid="04aabbccddeeff",
+        path="stories/other.mp3",
+        title="Other",
+        catalog=catalog,
+    )
+
+    assert "image" not in (yaml.safe_load(catalog.text) or {})["tracks"][0]

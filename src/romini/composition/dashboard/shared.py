@@ -24,6 +24,7 @@ from romini.features.library.assign import CatalogFile
 from romini.features.library.track_facts import describe_audio
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer, describe_now_playing
 from romini.features.play_by_tag.place_figure import Mixer, PlayMode
+from romini.features.stories.cover import cover_media_type, image_file_info, is_story_slug, with_track_image
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -159,6 +160,8 @@ HOME_NOTICES = {
     "speak-key-id": "ElevenLabs needs the secret that starts with sk_, not the key ID",
     "muted": "Muted",
     "power": "Power request sent",
+    "image": "Cover image stored",
+    "image-needed": "Choose a PNG, JPEG, GIF, or WebP image",
 }
 
 
@@ -346,7 +349,7 @@ def write_story_notes(
             duration_seconds if duration_seconds is not None else existing.get("duration_seconds")
         ),
     }
-    for key in ("spoken_file", "library_path"):
+    for key in ("spoken_file", "library_path", "image"):
         value = existing.get(key)
         if value:
             payload[key] = value
@@ -389,8 +392,132 @@ def list_saved_stories(root: Path | None) -> list[dict[str, str]]:
         title = str(data.get("title") or "").strip()
         if not title:
             continue
-        found.append({"title": title, "slug": path.name})
+        found.append({"title": title, "slug": path.name, "image": story_cover_url(root, path.name)})
     return found
+
+
+def story_cover_url(root: Path | None, slug: str) -> str:
+    located = locate_cover(root, slug)
+    if located is None:
+        return ""
+    return f"/stories/{slug}/image"
+
+
+def locate_cover(root: Path | None, slug: str) -> tuple[Path, str] | None:
+    if root is None or not is_story_slug(slug):
+        return None
+    yaml_path = root / slug / "story.yaml"
+    if not yaml_path.is_file():
+        return None
+    data = yaml.safe_load(yaml_path.read_text()) or {}
+    image = data.get("image") if isinstance(data.get("image"), dict) else {}
+    filename = str(image.get("file") or "")
+    media = cover_media_type(filename)
+    if not media:
+        return None
+    path = (root / slug / filename).resolve()
+    try:
+        path.relative_to((root / slug).resolve())
+    except ValueError:
+        return None
+    if not path.is_file():
+        return None
+    return path, media
+
+
+def covers_by_audio_path(root: Path | None) -> dict[str, str]:
+    found: dict[str, str] = {}
+    if root is None or not root.is_dir():
+        return found
+    for pack in sorted(root.iterdir()):
+        if locate_cover(root, pack.name) is None:
+            continue
+        data = yaml.safe_load((pack / "story.yaml").read_text()) or {}
+        url = f"/stories/{pack.name}/image"
+        for key in ("library_path", "spoken_file"):
+            audio = str(data.get(key) or "").strip()
+            if audio:
+                found[audio] = url
+    return found
+
+
+def resolve_track_image(track: dict[str, object], *, stories: Path | None, covers: dict[str, str]) -> str:
+    path = str(track.get("path") or "")
+    if path and path in covers:
+        return covers[path]
+    image = track.get("image")
+    if isinstance(image, dict) and stories is not None:
+        slug = str(image.get("story") or "")
+        if locate_cover(stories, slug) is not None:
+            return story_cover_url(stories, slug)
+    return ""
+
+
+def save_story_cover(pack: Path, data: bytes) -> dict[str, object] | None:
+    info = image_file_info(data)
+    yaml_path = pack / "story.yaml"
+    if info is None or not yaml_path.is_file():
+        return None
+    for old in pack.glob("cover.*"):
+        if old.is_file():
+            old.unlink()
+    filename = str(info["file"])
+    (pack / filename).write_bytes(data)
+    notes = yaml.safe_load(yaml_path.read_text()) or {}
+    stored = {"file": filename, "size": info["size"], "media_type": info["media_type"]}
+    notes["image"] = stored
+    yaml_path.write_text(yaml.safe_dump(notes, sort_keys=True))
+    return stored
+
+
+def publish_story_cover(stories: Path, catalog: CatalogFile | None, pack: Path) -> None:
+    yaml_path = pack / "story.yaml"
+    if not yaml_path.is_file():
+        return
+    data = yaml.safe_load(yaml_path.read_text()) or {}
+    for key in ("library_path", "spoken_file"):
+        audio = str(data.get(key) or "").strip()
+        if audio:
+            remember_story_cover(stories, catalog, audio)
+
+
+def remember_story_cover(stories: Path | None, catalog: CatalogFile | None, audio_path: str) -> None:
+    if stories is None or catalog is None or not audio_path.strip():
+        return
+    match = _cover_info_for_audio(stories, audio_path)
+    if match is None:
+        return
+    slug, info = match
+    original = catalog.read_text()
+    updated = with_track_image(original, paths={audio_path}, story=slug, info=info)
+    if updated != original:
+        catalog.write_text(updated)
+
+
+def _cover_info_for_audio(root: Path, audio_path: str) -> tuple[str, dict[str, object]] | None:
+    if not root.is_dir():
+        return None
+    for pack in sorted(root.iterdir()):
+        yaml_path = pack / "story.yaml"
+        if not pack.is_dir() or not yaml_path.is_file():
+            continue
+        data = yaml.safe_load(yaml_path.read_text()) or {}
+        paths = {str(data.get(key) or "").strip() for key in ("library_path", "spoken_file")}
+        if audio_path not in paths:
+            continue
+        image = data.get("image")
+        if not isinstance(image, dict):
+            continue
+        filename = str(image.get("file") or "")
+        media = cover_media_type(filename)
+        file_path = pack / filename
+        if not media or not file_path.is_file():
+            continue
+        size = image.get("size")
+        if isinstance(size, bool) or not isinstance(size, int):
+            size = file_path.stat().st_size
+        return pack.name, {"file": filename, "size": size, "media_type": media}
+    return None
 
 
 def write_character(root: Path, *, name: str, background: str, slug: str = "") -> Path:
@@ -594,6 +721,7 @@ def render_page(
             if str(tag.get("uid") or "").strip()
         ]
         names = {tag["uid"]: tag["name"] for tag in tags}
+        covers = covers_by_audio_path(stories)
         tracks = []
         for track in data.get("tracks") or []:
             uid = str(track.get("uid") or "")
@@ -613,6 +741,7 @@ def render_page(
                         "length": facts.length if facts else "",
                         "size": facts.size if facts else "",
                         "duration_sec": str(facts.duration_sec) if facts else "",
+                        "image": resolve_track_image(track, stories=stories, covers=covers),
                     }
                 )
     play_mode = PlayMode.PRESENCE.value
@@ -630,6 +759,7 @@ def render_page(
     if isinstance(total_bytes, int):
         disk_total = format_free_space(total_bytes).removesuffix(" free")
     notes = load_story_notes(stories)
+    opened_story_slug = current_pack(stories).name if stories is not None and current_pack(stories) != stories else ""
     opened_character = load_open_character(characters)
     keys = studio_keys(secrets, box_secrets)
     audit_entries = []
@@ -661,9 +791,8 @@ def render_page(
                 duration_seconds=parse_duration_seconds(notes.get("duration_seconds"))
             ),
             "spoken_file": spoken_file_name(stories),
-            "opened_story_slug": (
-                current_pack(stories).name if stories is not None and current_pack(stories) != stories else ""
-            ),
+            "opened_story_slug": opened_story_slug,
+            "story_image": story_cover_url(stories, opened_story_slug) if opened_story_slug else "",
             "saved_stories": list_saved_stories(stories),
             "saved_characters": list_saved_characters(characters),
             "selected_character_slugs": character_slug_list(notes),

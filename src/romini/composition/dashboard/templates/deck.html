@@ -25,6 +25,7 @@
 {% if now_playing %}
 <section class="deck card now-playing" aria-label="Now playing" aria-live="polite">
 <p class="kicker">{% if now_playing.is_playing %}Now playing{% else %}Paused{% endif %}</p>
+<img class="cover" src="{{ now_playing.image or '/logo.svg' }}" alt="">
 <h2 class="deck-title">{{ now_playing.story }}</h2>
 <p class="hint">{{ now_playing.trigger }}{% if now_playing.length %} · {{ now_playing.length }}{% endif %}</p>
 <div class="waveform" style="--play: {{ now_playing.progress }}%" aria-hidden="true"><div class="scrub"><span style="width: {{ now_playing.progress }}%"></span></div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
@@ -48,6 +49,7 @@
 {% else %}
 <section class="deck card quiet">
 <p class="kicker">Active playback</p>
+<img class="cover" src="/logo.svg" alt="">
 <h2>Nothing is playing</h2>
 <p class="hint">Place a figure on the box, or start a track from the library.</p>
 <div class="waveform" style="--play: 0%" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>

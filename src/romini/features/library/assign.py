@@ -11,7 +11,12 @@ class CatalogFile(Protocol):
 
 def confirm_assign(*, uid: str, path: str, title: str, catalog: CatalogFile) -> None:
     data = yaml.safe_load(catalog.read_text()) or {}
-    tracks = [row for row in (data.get("tracks") or []) if row.get("uid") != uid]
-    tracks.append({"uid": uid, "path": path, "title": title, "artist": None})
+    rows = list(data.get("tracks") or [])
+    previous = next((row for row in rows if row.get("uid") == uid), None)
+    tracks = [row for row in rows if row.get("uid") != uid]
+    stored: dict[str, object] = {"uid": uid, "path": path, "title": title, "artist": None}
+    if isinstance(previous, dict) and previous.get("path") == path and isinstance(previous.get("image"), dict):
+        stored["image"] = previous["image"]
+    tracks.append(stored)
     data["tracks"] = tracks
     catalog.write_text(yaml.safe_dump(data, sort_keys=False))

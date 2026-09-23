@@ -5,7 +5,14 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
-from romini.composition.dashboard.shared import DashboardCtx, has_required, is_audio_track, library_paths, notice
+from romini.composition.dashboard.shared import (
+    DashboardCtx,
+    has_required,
+    is_audio_track,
+    library_paths,
+    notice,
+    remember_story_cover,
+)
 from romini.features.library.add_track import add_track
 from romini.features.library.assign import confirm_assign
 from romini.features.library.import_catalog import import_catalog
@@ -76,6 +83,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             if not has_required(body.uid, body.path, body.title):
                 raise HTTPException(status_code=422)
             confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
+            remember_story_cover(ctx.stories, ctx.assign_catalog, body.path)
             ctx.note("assign", f"Assigned {body.title} to {body.uid}")
             return Response(status_code=204)
         form = await request.form()
@@ -83,6 +91,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if not has_required(body.uid, body.path, body.title):
             return notice("/library", "needed")
         confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
+        remember_story_cover(ctx.stories, ctx.assign_catalog, body.path)
         ctx.note("assign", f"Assigned {body.title} to {body.uid}")
         return notice("/library", "assigned")
 
