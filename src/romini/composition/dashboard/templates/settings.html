@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="studio">
-<h2 class="band">Live hardware subsystems</h2>
 <div class="telemetry">
 <section class="card subsystem">
 <p class="kicker">Host node <span class="badge">{{ host.cpu_temp }}</span></p>
@@ -79,6 +78,7 @@
 </form>
 </div>
 {% endif %}
+<div class="safety-tools">
 <form class="safety-row" action="/safety/beep" method="post">
 <span>NFC tag chime</span>
 <input type="hidden" name="nfc_beep" value="{{ 'off' if nfc_beep else 'on' }}">
@@ -95,7 +95,24 @@
 <button type="button" disabled>Sleep in 30m</button>
 {% endif %}
 </div>
+</div>
 </section>
+</div>
+<div class="hw-side">
+<section class="card subsystem">
+<p class="kicker">Remote access <span class="badge">Wi-Fi {{ host.wifi }}</span></p>
+<h2>Network</h2>
+<p class="hint">Read only. Change Wi-Fi over SSH so this page cannot strand the box.</p>
+<dl class="facts">
+<dt>Hostname</dt><dd>{{ host.hostname }}</dd>
+<dt>Address</dt><dd>{{ host.address }}</dd>
+<dt>Wi-Fi</dt><dd>{{ host.wifi }}</dd>
+</dl>
+<pre class="cli">ssh {% if host.hostname.endswith('.local') %}{{ host.hostname }}{% else %}{{ host.hostname }}.local{% endif %}
+sudo nmtui</pre>
+</section>
+</div>
+</div>
 <section class="card span firmware" id="firmware-update" aria-labelledby="firmware-heading">
 <div class="firmware-head">
 <div class="firmware-title">
@@ -136,33 +153,6 @@
 </ol>
 </details>
 </section>
-</div>
-<div class="hw-side">
-<section class="card subsystem">
-<p class="kicker">Remote access <span class="badge">Wi-Fi {{ host.wifi }}</span></p>
-<h2>Network</h2>
-<p class="hint">Read only. Change Wi-Fi over SSH so this page cannot strand the box.</p>
-<dl class="facts">
-<dt>Hostname</dt><dd>{{ host.hostname }}</dd>
-<dt>Address</dt><dd>{{ host.address }}</dd>
-<dt>Wi-Fi</dt><dd>{{ host.wifi }}</dd>
-</dl>
-<pre class="cli">ssh {% if host.hostname.endswith('.local') %}{{ host.hostname }}{% else %}{{ host.hostname }}.local{% endif %}
-sudo nmtui</pre>
-</section>
-<section class="card" aria-label="On the plate">
-<p class="kicker">{% if now_playing %}Figure present{% else %}Idle{% endif %}</p>
-<h2>On the plate</h2>
-{% if now_playing %}
-<p class="bound">{{ now_playing.trigger }}</p>
-<p>{{ now_playing.story }}</p>
-{% if now_playing.uid %}<p class="hint">UID {{ now_playing.uid }}</p>{% endif %}
-{% else %}
-<p class="hint">No figure yet</p>
-{% endif %}
-</section>
-</div>
-</div>
 <div class="hw-care">
 <div class="hw-pair">
 <section class="card" id="studio-keys">
@@ -188,6 +178,17 @@ sudo nmtui</pre>
 <p class="hint">Presence is the default. Tap plays the story to the end unless you tap that figure again.</p>
 <button>Save play mode</button>
 </form>
+</section>
+<section class="card" aria-label="On the plate">
+<p class="kicker">{% if now_playing %}Figure present{% else %}Idle{% endif %}</p>
+<h2>On the plate</h2>
+{% if now_playing %}
+<p class="bound">{{ now_playing.trigger }}</p>
+<p>{{ now_playing.story }}</p>
+{% if now_playing.uid %}<p class="hint">UID {{ now_playing.uid }}</p>{% endif %}
+{% else %}
+<p class="hint">No figure yet</p>
+{% endif %}
 </section>
 </div>
 <section class="card span" id="audit">

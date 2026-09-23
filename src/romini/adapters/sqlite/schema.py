@@ -1,4 +1,5 @@
 import sqlite3
+import threading
 from pathlib import Path
 
 SCHEMA_VERSION = 4
@@ -48,8 +49,127 @@ _MIGRATIONS = {
 }
 
 
+class _SnapshotCursor:
+    def __init__(self, description: object, rows: list[tuple]) -> None:
+        self.description = description
+        self._rows = rows
+        self._index = 0
+
+    def fetchone(self) -> tuple | None:
+        if self._index >= len(self._rows):
+            return None
+        row = self._rows[self._index]
+        self._index += 1
+        return row
+
+    def fetchall(self) -> list[tuple]:
+        rows = self._rows[self._index :]
+        self._index = len(self._rows)
+        return rows
+
+    def __iter__(self) -> "_SnapshotCursor":
+        return self
+
+    def __next__(self) -> tuple:
+        row = self.fetchone()
+        if row is None:
+            raise StopIteration
+        return row
+
+
+class _SerializedConnection(sqlite3.Connection):
+    """One shared connection is used from the player thread and the dashboard pool.
+
+    sqlite3 cursors are not safe to share. Overlapping execute/fetch on this
+    connection raises InterfaceError and can yield empty rows.
+    """
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self._gate = threading.RLock()
+        self._depth = 0
+
+    def execute(self, sql: str, parameters: object = (), /) -> sqlite3.Cursor | _SnapshotCursor:
+        self._gate.acquire()
+        self._depth += 1
+        try:
+            cursor = sqlite3.Connection.execute(self, sql, parameters)
+            if cursor.description is not None:
+                snapshot = _SnapshotCursor(cursor.description, cursor.fetchall())
+                self._drop()
+                return snapshot
+            return cursor
+        except BaseException:
+            self._abort()
+            raise
+
+    def executemany(self, sql: str, seq: object, /) -> sqlite3.Cursor:
+        self._gate.acquire()
+        self._depth += 1
+        try:
+            return sqlite3.Connection.executemany(self, sql, seq)
+        except BaseException:
+            self._abort()
+            raise
+
+    def executescript(self, sql: str, /) -> sqlite3.Cursor:
+        self._gate.acquire()
+        self._depth += 1
+        try:
+            return sqlite3.Connection.executescript(self, sql)
+        finally:
+            self._drop()
+
+    def commit(self) -> None:
+        if self._depth == 0:
+            with self._gate:
+                sqlite3.Connection.commit(self)
+            return
+        try:
+            sqlite3.Connection.commit(self)
+        except BaseException:
+            self._rollback_quietly()
+            raise
+        finally:
+            while self._depth:
+                self._drop()
+
+    def rollback(self) -> None:
+        if self._depth == 0:
+            with self._gate:
+                sqlite3.Connection.rollback(self)
+            return
+        try:
+            sqlite3.Connection.rollback(self)
+        finally:
+            while self._depth:
+                self._drop()
+
+    def close(self) -> None:
+        try:
+            sqlite3.Connection.close(self)
+        finally:
+            while self._depth:
+                self._drop()
+
+    def _drop(self) -> None:
+        self._depth -= 1
+        self._gate.release()
+
+    def _abort(self) -> None:
+        self._rollback_quietly()
+        while self._depth:
+            self._drop()
+
+    def _rollback_quietly(self) -> None:
+        try:
+            sqlite3.Connection.rollback(self)
+        except sqlite3.Error:
+            pass
+
+
 def open_state(path: Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(path, check_same_thread=False)
+    conn = sqlite3.connect(path, check_same_thread=False, factory=_SerializedConnection)
     conn.execute("PRAGMA journal_mode=WAL")
     return conn
 

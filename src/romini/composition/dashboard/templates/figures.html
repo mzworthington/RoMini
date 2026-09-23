@@ -2,27 +2,39 @@
 {% block content %}
 <div class="studio">
 <section class="card deck live-deck hero-dock" aria-label="Live physical deck">
+{% set sheet = namespace(artist='', uid_label='', image='') %}
+{% if now_playing %}
+{% for track in tracks if track.uid == now_playing.uid %}
+{% set sheet.artist = track.artist %}
+{% set sheet.image = track.image %}
+{% endfor %}
+{% for tag in tags if tag.uid == now_playing.uid %}
+{% set sheet.uid_label = tag.uid_label %}
+{% if tag.image %}{% set sheet.image = tag.image %}{% endif %}
+{% endfor %}
+{% endif %}
+<div class="player-sheet">
 <div class="deck-kicker">
-<p class="kicker">Live Physical Deck</p>
-<p class="hint">{% if now_playing %}ISO 14443-A detected{% else %}Waiting for a figure{% endif %}</p>
-{% if now_playing and now_playing.uid %}<p class="uid">UID {{ now_playing.uid }}</p>{% endif %}
+<p class="kicker"><span class="deck-live" aria-hidden="true"></span>Live Physical Deck{% if now_playing %} <span class="deck-detected">• ISO 14443-A Detected</span>{% endif %}</p>
+{% if sheet.uid_label %}<p class="uid-pill">UID: {{ sheet.uid_label }}</p>{% else %}<p class="hint">Waiting for a figure</p>{% endif %}
 </div>
 <div class="hero-row">
 <div class="dock-ring"{% if now_playing and now_playing.is_playing %} data-live="on"{% endif %}>
-<img class="plate-mark" src="/mark.svg" width="120" height="120" alt="">
+<img class="plate-mark" src="{{ sheet.image or '/mark.svg' }}" width="120" height="120" alt="">
 </div>
 <div class="hero-copy">
 {% if now_playing %}
-<p class="kicker">{% if now_playing.is_playing %}On the plate{% else %}Lifted{% endif %}</p>
+<p class="sheet-meta"><span class="story-chip">Bedtime Story</span>{% if sheet.artist %} {{ sheet.artist }} Collection{% endif %}</p>
 <h2 class="deck-title">{{ now_playing.trigger }}</h2>
-<p>Now playing {{ now_playing.story }}</p>
-<div class="guard-track" aria-hidden="true"><span style="width: {{ now_playing.progress }}%"></span></div>
-<p class="scrub-times"><span>{{ now_playing.place }}</span>{% if mixer %}<span>{{ volume_level }} of {{ volume_ceiling }}</span>{% endif %}{% if now_playing.length %}<span>{{ now_playing.length }}</span>{% endif %}</p>
+<p class="now-line">Now Playing: “{{ now_playing.story }}”</p>
+<div class="story-progress" style="--play: {{ now_playing.progress }}%" aria-hidden="true"><span></span></div>
+<p class="scrub-times"><span>{{ now_playing.place }}</span>{% if mixer %}<span>{{ volume_level }}% Safe Max</span>{% endif %}{% if now_playing.length %}<span>{{ now_playing.length }} (Full Story)</span>{% endif %}</p>
 {% else %}
 <p class="kicker">On the plate</p>
 <h2>No figure yet</h2>
 <p class="hint">Place a figure on the box to see it here.</p>
 {% endif %}
+</div>
 </div>
 </div>
 <div class="deck-controls">
@@ -38,32 +50,41 @@
 {% if mixer %}
 <form class="deck-volume" action="/volume" method="post">
 <input type="hidden" name="return" value="/figures">
-<label for="deck-level">Volume</label>
-<input id="deck-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" onchange="this.form.requestSubmit()">
+<label class="visually-hidden" for="deck-level">Volume</label>
+<input id="deck-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="this.form.requestSubmit()">
 <span>{{ volume_level }}%</span>
 </form>
 {% endif %}
-<a class="button" href="{% if now_playing and now_playing.uid %}/library?uid={{ now_playing.uid }}{% else %}/library{% endif %}">Edit Mapping</a>
+<a class="edit-mapping" href="{% if now_playing and now_playing.uid %}/library?uid={{ now_playing.uid }}{% else %}/library{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>Edit Mapping</a>
 </div>
 </div>
 </section>
 <section class="card scan-dock" id="scan" aria-label="Quick reader sensor">
+<div class="scan-head">
 <p class="kicker">Quick Reader Sensor</p>
-<h2>Scan &amp; Map Tag</h2>
-<p class="hint">Touch a figure to the wooden plate.</p>
-<p class="dock-meta">{% if assign_mode %}Reader is Listening{% else %}Place a figure on the box{% endif %}</p>
+<span class="scan-live" aria-hidden="true"></span>
+</div>
+
+<div class="scan-target{% if assign_mode %} is-registering{% endif %}">
+<div class="scan-mark" aria-hidden="true">
+<span class="scan-ping"></span>
+<svg viewBox="0 0 24 24"><path d="M8.2 8.4a5.2 5.2 0 0 1 0 7.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11.1 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 3.8a11.6 11.6 0 0 1 0 16.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+</div>
+<p class="scan-status">Reader is Listening</p>
+<p class="hint">Place figurine on RoMini box</p>
+</div>
 {% if register %}
 <form action="/register-mode" method="post">
 {% if assign_mode %}
 <input type="hidden" name="register" value="off">
-<button>Stop registering</button>
+<button type="submit">Stop registering</button>
 {% else %}
 <input type="hidden" name="register" value="on">
-<button>Register Detected Token</button>
+<button type="submit"><svg class="scan-plus" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Register Detected Token</button>
 {% endif %}
 </form>
 {% endif %}
-<p class="hint">{% if tags %}Last tag read: {{ tags[-1].uid }}{% else %}No tag read yet{% endif %}</p>
+<p class="scan-last">{% if tags %}Last Tag Read: {{ tags[-1].uid_label }}{% else %}No tag read yet{% endif %}</p>
 </section>
 <ul class="summary-cards">
 <li class="summary-card">
@@ -107,10 +128,23 @@
 </header>
 {% if tags %}
 <div class="figure-toolbar">
+<div class="figure-search-row">
 <label class="search figure-search" for="figure-q"><span class="figure-search-label">Search</span>
 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
 <input id="figure-q" type="search" placeholder="Search figures, stories, tags">
 </label>
+<div class="display-mode">
+<span>Display Mode</span>
+<div class="view-switch" role="group" aria-label="Display mode">
+<button type="button" class="chip-btn" id="figure-view-list" aria-pressed="false" aria-label="List view">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>
+</button>
+<button type="button" class="chip-btn" id="figure-view-grid" aria-pressed="true" aria-label="Grid view">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z"/></svg>
+</button>
+</div>
+</div>
+</div>
 <div class="filters" role="group" aria-label="Figure filters">
 <button type="button" class="chip-btn" data-figure-filter="all" aria-pressed="true">All ({{ tags|length }})</button>
 <button type="button" class="chip-btn unmapped-filter" data-figure-filter="open" aria-pressed="false">Unmapped ({{ unbound_tags|length }})</button>
@@ -122,10 +156,11 @@
 <li class="figure" data-bound="{% if bound %}yes{% else %}no{% endif %}"{% if now_playing and now_playing.uid == tag.uid %} data-on-deck="yes"{% endif %}>
 <div class="figure-top">
 <div class="figure-avatar">
+<form class="figure-photo" action="/figures/cover" method="post" enctype="multipart/form-data">
+<input type="hidden" name="uid" value="{{ tag.uid }}">
+<label class="cover-pick">
 {% if tag.image %}
 <img class="figure-mark" src="{{ tag.image }}" alt="">
-{% elif bound and bound[0].image %}
-<img class="figure-mark" src="{{ bound[0].image }}" alt="">
 {% elif bound %}
 <img class="figure-mark" src="/mark.svg" alt="">
 {% else %}
@@ -133,10 +168,8 @@
 <svg viewBox="0 0 48 48"><circle class="blank-disc" cx="24" cy="24" r="15"/><circle class="blank-chip" cx="16.5" cy="24" r="1.7"/><path d="M20.4 19.4A6 6 0 0 1 20.4 28.6"/><path d="M22.3 17.1A9 9 0 0 1 22.3 30.9"/><path d="M24.2 14.8A12 12 0 0 1 24.2 33.2"/></svg>
 </span>
 {% endif %}
-<form class="figure-photo" action="/figures/cover" method="post" enctype="multipart/form-data">
-<input type="hidden" name="uid" value="{{ tag.uid }}">
-<label class="icon-btn" aria-label="Upload picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="m13.5 6.5 3 3"/></svg><input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
-<button class="icon-btn" type="submit" aria-label="Save picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
+<input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Change picture" onchange="this.form.submit()">
+</label>
 </form>
 </div>
 <div class="figure-copy">
@@ -207,6 +240,15 @@
     });
   });
   search.addEventListener("input", apply);
+  var listView = document.getElementById("figure-view-list");
+  var gridView = document.getElementById("figure-view-grid");
+  function show(mode) {
+    list.classList.toggle("is-list", mode === "list");
+    listView.setAttribute("aria-pressed", mode === "list" ? "true" : "false");
+    gridView.setAttribute("aria-pressed", mode === "grid" ? "true" : "false");
+  }
+  listView.addEventListener("click", function () { show("list"); });
+  gridView.addEventListener("click", function () { show("grid"); });
 })();
 </script>
 {% else %}
@@ -220,7 +262,7 @@
 </header>
 {% if audit_entries %}
 <ul class="activity">
-{% for entry in audit_entries[:4] %}
+{% for entry in audit_entries[:10] %}
 <li><span class="activity-mark tone-{{ ['primary', 'secondary', 'quiet', 'secondary'][loop.index0 % 4] }}" aria-hidden="true"></span><strong>{{ entry.headline }}</strong><time datetime="{{ entry.when_iso }}">{{ entry.clock }}</time>{% if entry.summary and entry.summary != entry.headline %}<p>{{ entry.summary }}</p>{% endif %}</li>
 {% endfor %}
 </ul>

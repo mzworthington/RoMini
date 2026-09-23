@@ -28,7 +28,6 @@
 {% if now_playing %}
 <section class="deck card now-playing" aria-label="Now playing" aria-live="polite">
 <p class="kicker">{% if now_playing.is_playing %}Now playing{% else %}Paused{% endif %}</p>
-<img class="cover" src="{{ now_playing.image or '/logo.svg' }}" alt="">
 <h2 class="deck-title">{{ now_playing.story }}</h2>
 <p class="hint">{{ now_playing.trigger }}{% if now_playing.length %} · {{ now_playing.length }}{% endif %}</p>
 <form class="scrub-form" action="/play/seek" method="post"><div class="waveform" style="--play: {{ now_playing.progress }}%"><div class="scrub"><span style="width: {{ now_playing.progress }}%"></span></div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><input type="range" name="progress" min="0" max="100" value="{{ now_playing.progress }}" aria-label="Track progress" oninput="this.closest('.waveform').style.setProperty('--play', this.value + '%')"></div></form>
@@ -44,15 +43,22 @@
 <h3>Volume cap</h3>
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
 </div>
-<div class="guard-track" aria-hidden="true"><span style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
+{% if mixer %}
+<form class="guard-volume" action="/volume" method="post">
+<input type="hidden" name="return" value="/">
+<input name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" aria-label="Volume" oninput="var pct=this.max>0?Math.round(this.value*100/this.max):0; var fill=this.form.querySelector('[data-fill]'); if(fill) fill.style.width=pct+'%'; var thumb=this.form.querySelector('.guard-thumb'); if(thumb) thumb.style.setProperty('--cap', pct+'%'); var now=this.closest('.guard').querySelector('.guard-head p'); if(now) now.textContent=this.value+' of '+this.max" onchange="this.form.requestSubmit()">
+<div class="guard-track" aria-hidden="true"><span data-fill style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
+<span class="guard-thumb" style="--cap: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span>
+</form>
+{% else %}
+<div class="guard-track" aria-hidden="true"><span style="width: 0%"></span></div>
+{% endif %}
 <p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Cap {{ volume_ceiling }}</span></p>
-<p class="hint">Loudness in the room is not measured yet, so the cap stays a percent.</p>
 </div>
 </section>
 {% else %}
 <section class="deck card quiet">
 <p class="kicker">Active playback</p>
-<img class="cover" src="/logo.svg" alt="">
 <h2>Nothing is playing</h2>
 <p class="hint">Place a figure on the box, or start a track from the library.</p>
 <div class="waveform" style="--play: 0%" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
@@ -67,9 +73,17 @@
 <h3>Volume cap</h3>
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
 </div>
-<div class="guard-track" aria-hidden="true"><span style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
+{% if mixer %}
+<form class="guard-volume" action="/volume" method="post">
+<input type="hidden" name="return" value="/">
+<input name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" aria-label="Volume" oninput="var pct=this.max>0?Math.round(this.value*100/this.max):0; var fill=this.form.querySelector('[data-fill]'); if(fill) fill.style.width=pct+'%'; var thumb=this.form.querySelector('.guard-thumb'); if(thumb) thumb.style.setProperty('--cap', pct+'%'); var now=this.closest('.guard').querySelector('.guard-head p'); if(now) now.textContent=this.value+' of '+this.max" onchange="this.form.requestSubmit()">
+<div class="guard-track" aria-hidden="true"><span data-fill style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
+<span class="guard-thumb" style="--cap: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span>
+</form>
+{% else %}
+<div class="guard-track" aria-hidden="true"><span style="width: 0%"></span></div>
+{% endif %}
 <p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Cap {{ volume_ceiling }}</span></p>
-<p class="hint">Loudness in the room is not measured yet, so the cap stays a percent.</p>
 </div>
 </section>
 {% endif %}
@@ -111,11 +125,6 @@
 <p class="empty">No story on the plate.</p>
 {% endif %}
 </section>
-{% if has_player %}
-<form action="/safety/eject" method="post"><button type="submit">Stop &amp; Eject</button></form>
-{% else %}
-<button type="button" disabled>Stop &amp; Eject</button>
-{% endif %}
 <p class="hw-strip"><span>HiFiBerry DAC</span><span>Waiting for the player</span><span>PN532</span><span>{% if now_playing %}Figure present{% else %}Idle{% endif %}</span><span>{{ free_space }}</span></p>
 </div>
 </div>

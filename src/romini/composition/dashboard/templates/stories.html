@@ -148,8 +148,11 @@ function updateStoryLength(value) {
 </form>
 </div>
 </section>
-<section class="card">
+<section class="card saved-stories">
+<div class="saved-head">
 <h2>Saved stories</h2>
+<form action="/stories/new" method="post"><button class="primary-pill" type="submit"><svg class="plus-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create New Story</button></form>
+</div>
 {% if saved_stories %}
 <ul class="story-stack">
 {% for story in saved_stories %}

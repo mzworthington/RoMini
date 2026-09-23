@@ -149,7 +149,13 @@
 </td>
 <td>
 <div class="story-cell">
+<form action="/library/cover" method="post" enctype="multipart/form-data">
+<input type="hidden" name="path" value="{{ track.path }}">
+<label class="cover-pick">
 <img class="cover" src="{{ track.image or '/logo.svg' }}" alt="">
+<input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Change picture" onchange="this.form.submit()">
+</label>
+</form>
 <span class="track-title">{{ track.title }}</span>
 {% if preview %}<span class="preview-badge">Active Preview</span>{% endif %}
 </div>
@@ -163,12 +169,7 @@
 <td>{% if track.figure %}<span class="chip linked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M12 12.5v.01"/><circle cx="12" cy="16.5" r="1.2"/></svg>{{ track.figure }}</span>{% else %}<span class="chip missing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>No Figurine Linked</span> <a class="link-tag" href="#assign">Link Tag</a>{% endif %}</td>
 <td>
 <div class="row-actions">
-<form action="/library/cover" method="post" enctype="multipart/form-data">
-<input type="hidden" name="path" value="{{ track.path }}">
-<label class="icon-btn" aria-label="Upload cover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="m13.5 6.5 3 3"/></svg><input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
-<button class="icon-btn" type="submit" aria-label="Save cover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
-</form>
-<a class="icon-btn" href="#assign" aria-label="Reassign figurine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7H9m8 0v8M7 17h8m-8 0V9"/></svg></a>
+<button type="button" data-path="{{ track.path }}" data-title="{{ track.title }}" onclick="fillAssign(this)">Edit</button>
 </div>
 </td>
 </tr>
@@ -185,12 +186,16 @@
 <h2>Assign a figure</h2>
 {% if bind_prompt %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
 <form action="/assign" method="post">
-<label for="uid">Figure</label>
-<select id="uid" name="uid" required>
+<fieldset class="figure-tiles">
+<legend>Figure</legend>
 {% for tag in tags %}
-<option value="{{ tag.uid }}"{% if tag.uid == focus_uid %} selected{% endif %}>{{ tag.name or tag.uid }}</option>
+<label class="figure-tile">
+<input type="radio" name="uid" value="{{ tag.uid }}"{% if tag.uid == focus_uid %} checked{% endif %} required>
+{% if tag.image %}<img src="{{ tag.image }}" alt="">{% else %}<img src="/mark.svg" alt="">{% endif %}
+<span>{{ tag.name or tag.uid }}</span>
+</label>
 {% endfor %}
-</select>
+</fieldset>
 {% if not tags %}
 <p class="hint">Register a figure first</p>
 {% endif %}
@@ -207,21 +212,25 @@
 {% endif %}
 <button>Assign</button>
 </form>
-{% if library_files %}
-<form action="/library/cover" method="post" enctype="multipart/form-data">
-<label for="cover-path">Track</label>
-<select id="cover-path" name="path" required>
-{% for file in library_files %}
-<option value="{{ file.path }}">{{ file.label }}</option>
-{% endfor %}
-</select>
-<label for="cover">Image</label>
-<input id="cover" name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required>
-<button>Upload image</button>
-</form>
-{% endif %}
 </section>
 <script>
+var figureForPath = {
+{% for track in tracks %}
+  {{ track.path|tojson }}: {{ track.uid|tojson }}{% if not loop.last %},{% endif %}
+{% endfor %}
+};
+function fillAssign(button) {
+  var title = document.getElementById("title");
+  var path = document.getElementById("path");
+  if (title) title.value = button.getAttribute("data-title") || "";
+  if (path) path.value = button.getAttribute("data-path") || "";
+  var uid = figureForPath[button.getAttribute("data-path") || ""] || "";
+  document.querySelectorAll('.figure-tiles input[name="uid"]').forEach(function (radio) {
+    radio.checked = radio.value === uid;
+  });
+  var assign = document.getElementById("assign");
+  if (assign && assign.scrollIntoView) assign.scrollIntoView();
+}
 (function () {
   var table = document.querySelector("#library-table table");
   var list = document.getElementById("view-list");

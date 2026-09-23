@@ -1,3 +1,4 @@
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -63,3 +64,32 @@ def test_sqlite_audit_skips_rows_with_blank_happened_at(tmp_path: Path) -> None:
     recent = log.recent()
 
     assert [entry.summary for entry in recent] == ["Played The Frog Prince"]
+
+
+def test_shared_audit_connection_survives_concurrent_reads_and_writes(tmp_path: Path) -> None:
+    conn = open_state(tmp_path / "state.sqlite")
+    ensure_schema(conn)
+    log = SqliteAudit(conn)
+    errors: list[BaseException] = []
+
+    def worker(worker_id: int) -> None:
+        try:
+            for n in range(30):
+                record_event(
+                    log,
+                    action="play",
+                    summary=f"{worker_id}-{n}",
+                    clock=lambda: datetime.now(UTC),
+                )
+                log.recent()
+        except BaseException as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(6)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert log.recent()

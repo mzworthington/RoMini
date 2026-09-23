@@ -37,7 +37,6 @@
 {% if mixer %}<li>Cap {{ volume_ceiling }}</li>{% endif %}
 <li>Wi-Fi {{ host.wifi }}</li>
 </ul>
-<a class="scan" href="/figures">Scan tag</a>
 </div>
 </div>
 </header>
@@ -47,7 +46,7 @@
 {% if page == "home" %}
 <p class="page-kicker">Live deck console</p>
 <h2 class="page-title">Audio Deck &amp; Playback Stream</h2>
-<p class="lede">Real-time domestic audio telemetry, tactile volume guards, and bedtime sync.</p>
+<p class="lede">Real-time RoMini Box insight.</p>
 {% elif page == "figures" %}
 <p class="page-kicker">Live physical deck</p>
 <h2 class="page-title">Figures &amp; Tags</h2>
@@ -55,42 +54,23 @@
 {% elif page == "library" %}
 <p class="page-kicker">Storage &amp; audio assets{% if library_root %} <span class="path-note">{{ library_root }}</span>{% endif %}</p>
 <h2 class="page-title">Audio Library &amp; Soundtracks</h2>
-<p class="lede">Upload lossless audio stories, verify MicroSD domestic quotas, and assign stories directly to NFC tags.</p>
+<p class="lede">Upload audio stories and assign stories directly to NFC tags.</p>
 {% elif page == "stories" or page == "characters" %}
 <p class="page-kicker">Story studio{% if stories_root %} <span class="path-note">{{ stories_root }}</span>{% endif %}</p>
 <h2 class="page-title">Bedtime Story Studio &amp; Characters</h2>
-<p class="lede">Craft a bedtime tale with the family, draft the script, and speak it for the storybox.</p>
+<p class="lede">Craft a bedtime tale with the family, draft and narrate the script.</p>
 {% elif page == "settings" %}
 <p class="page-kicker">Hardware telemetry</p>
 <h2 class="page-title">Hardware &amp; System Configuration</h2>
 <p class="lede">{% set mdns = host.hostname if host.hostname.endswith('.local') else host.hostname ~ '.local' %}{{ mdns }} ({{ host.address }}) · Uptime {{ host.uptime }} · Raspberry Pi 4 Model B (4GB RAM)</p>
 {% endif %}
 </div>
-{% if page == "home" %}
-<div class="page-actions">
-<span class="soft-pill">Bedtime fade</span>
-{% if mixer %}
-<form action="/mute" method="post"><button class="danger-pill" type="submit">Emergency mute</button></form>
-{% else %}
-<button type="button" class="danger-pill" disabled>Emergency mute</button>
-{% endif %}
-</div>
-{% elif page == "stories" or page == "characters" %}
+{% if page == "stories" or page == "characters" %}
 <div class="page-actions studio-toolbar">
 <div class="model-row">
 <p class="model-pill"><span class="status-dot" aria-hidden="true"></span>Gemini 3.6 Flash<span class="model-sep" aria-hidden="true">·</span>ElevenLabs v3</p>
 <a class="soft-pill" href="/settings#studio-keys"><svg class="key-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="3.2"/><path d="m10.2 12.8 8.3-8.3M15.2 7.8l2 2M13.2 9.8l2 2"/></svg>API Keys</a>
 </div>
-<div class="create-row">
-<form action="/characters/new" method="post"><button class="soft-pill" type="submit"><svg class="person-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.8 19a5.2 5.2 0 0 1 10.4 0"/><path d="M17 8v6M14 11h6"/></svg>New Character</button></form>
-<form action="/stories/new" method="post"><button class="primary-pill" type="submit"><svg class="plus-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create New Story</button></form>
-</div>
-</div>
-{% elif page == "library" %}
-<div class="page-actions">
-<a class="soft-pill" href="#storage">Storage Analysis</a>
-<a class="soft-pill" href="/stories">Upload New Story</a>
-<label class="primary-pill" for="file">Upload Audio Files</label>
 </div>
 {% elif page == "settings" %}
 <div class="page-actions">
