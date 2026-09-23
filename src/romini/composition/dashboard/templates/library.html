@@ -4,7 +4,15 @@
 <ul class="metrics">
 <li><span>Tracks in the library</span><span class="metric">{{ tracks|length }}</span></li>
 <li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
-<li><span>Free on the box</span><span class="metric">{{ free_space }}</span></li>
+<li><span>Needs a story</span><span class="metric">{{ unbound_tags|length }}</span></li>
+<li><span>Free on the box</span><span class="metric">{{ free_space }}</span>{% if disk_total %}<span class="hint">of {{ disk_total }}</span>{% endif %}</li>
+<li><span>Files on disk</span><span class="metric">{{ library_paths|length }}</span></li>
+</ul>
+{% if library_root %}<p class="hint mount">Library folder {{ library_root }}</p>{% endif %}
+<ul class="metrics hw-mini">
+<li><span>Reader</span><strong>PN532</strong><span class="hint">NFC poll 250 ms</span></li>
+<li><span>DAC</span><strong>HiFiBerry</strong><span class="hint">{% if now_playing and now_playing.is_playing %}Playing{% else %}Waiting for the player{% endif %}</span></li>
+<li><span>Wi-Fi</span><strong>{{ host.wifi }}</strong><span class="hint">{{ host.hostname }}</span></li>
 </ul>
 <div class="board">
 <section class="card drop" id="upload-well">
@@ -16,6 +24,7 @@
 <input id="file" type="file" name="file" accept="audio/*">
 <label for="folder">Folder of tracks</label>
 <input id="folder" type="file" name="file" accept="audio/*" webkitdirectory multiple>
+<label class="checkline" for="bind-after"><input id="bind-after" type="checkbox" name="bind" value="1"> Prompt a figure link after the upload</label>
 <button>Upload</button>
 </form>
 <script>
@@ -44,11 +53,12 @@
 </section>
 <section class="card">
 <h2>Assign a figure</h2>
+{% if bind_prompt %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
 <form action="/assign" method="post">
 <label for="uid">Figure</label>
 <select id="uid" name="uid" required>
 {% for tag in tags %}
-<option value="{{ tag.uid }}">{{ tag.name or tag.uid }}</option>
+<option value="{{ tag.uid }}"{% if tag.uid == focus_uid %} selected{% endif %}>{{ tag.name or tag.uid }}</option>
 {% endfor %}
 </select>
 {% if not tags %}
@@ -68,7 +78,7 @@
 <button>Assign</button>
 </form>
 </section>
-<section class="card">
+<section class="card" id="audition" aria-label="In-browser audition">
 <h2>Listen</h2>
 {% if library_paths %}
 <label for="preview">Track</label>
@@ -104,11 +114,15 @@
 <a href="/library"{% if not unassigned %} aria-current="page"{% endif %}>All tracks</a>
 <a href="/library?unassigned=1"{% if unassigned %} aria-current="page"{% endif %}>No figure linked</a>
 </p>
+<div class="view-switch" role="group" aria-label="Display mode">
+<button type="button" class="chip-btn" id="view-list" aria-pressed="true">List</button>
+<button type="button" class="chip-btn" id="view-grid" aria-pressed="false">Grid</button>
+</div>
 {% if tracks %}
-<div class="table-wrap">
+<div class="table-wrap" id="library-table">
 <table>
 <caption>Library</caption>
-<thead><tr><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
+<thead><tr><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th><th>File</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
 <tbody>
 {% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) %}
 <tr>
@@ -117,6 +131,7 @@
     <td>{{ track.path }}</td>
     <td>{{ track.length }}</td>
     <td>{{ track.size }}</td>
+    <td>{% if track.suffix %}<span class="badge">{{ track.suffix }}</span>{% endif %}</td>
     {% if has_player %}
     <td>{% if playing_uid == track.uid %}<form action="/library/stop" method="post"><button>Stop</button></form>{% else %}<form action="/library/play/{{ track.uid }}" method="post"><button>Play</button></form>{% endif %}</td>
     {% elif pad %}
@@ -130,6 +145,21 @@
 {% else %}
 <p class="empty">No stories yet. Upload a track, then assign a figure.</p>
 {% endif %}
+<script>
+(function () {
+  var table = document.querySelector("#library-table table");
+  var list = document.getElementById("view-list");
+  var grid = document.getElementById("view-grid");
+  if (!table || !list || !grid) return;
+  function show(mode) {
+    table.classList.toggle("is-grid", mode === "grid");
+    list.setAttribute("aria-pressed", mode === "list" ? "true" : "false");
+    grid.setAttribute("aria-pressed", mode === "grid" ? "true" : "false");
+  }
+  list.addEventListener("click", function () { show("list"); });
+  grid.addEventListener("click", function () { show("grid"); });
+})();
+</script>
 </section>
 </div>
 {% endblock %}

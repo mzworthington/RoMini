@@ -7,6 +7,36 @@
 <li><span>Player</span><span class="metric">v{{ version }}</span></li>
 </ul>
 <h2 class="band">Live hardware subsystems</h2>
+<div class="telemetry">
+<section class="card">
+<h2>Host</h2>
+<p class="metric-inline">{{ host.cpu_temp }}</p>
+<p class="hint">Load {{ host.load }} · Up {{ host.uptime }}</p>
+<p class="hint">Memory {{ host.memory }}</p>
+</section>
+<section class="card">
+<h2>Reader</h2>
+<p class="metric-inline">PN532</p>
+<p class="hint">NFC poll 250 ms</p>
+<p class="hint">{% if now_playing %}Figure present{% else %}Idle{% endif %}</p>
+</section>
+<section class="card">
+<h2>DAC</h2>
+<p class="metric-inline">HiFiBerry</p>
+<p class="hint">{% if now_playing and now_playing.is_playing %}Playing{% else %}Waiting for the player{% endif %}</p>
+<p class="hint">I2S · socket appears when the player starts</p>
+</section>
+<section class="card">
+<h2>Pack</h2>
+{% if charge is not none %}
+<p class="metric-inline">{{ charge }}%</p>
+<div class="meter{% if charge < 10 %} is-critical{% elif charge < 25 %} is-low{% endif %}" aria-hidden="true"><span style="width: {{ charge }}%"></span></div>
+<p class="hint">Charged. Pack voltage is not reported.</p>
+{% else %}
+<p class="hint">No battery reading</p>
+{% endif %}
+</section>
+</div>
 <div class="pods">
 <section class="card" aria-label="On the plate">
 <h2>On the plate</h2>
@@ -16,6 +46,17 @@
 {% else %}
 <p class="hint">No figure yet</p>
 {% endif %}
+</section>
+<section class="card">
+<h2>Network</h2>
+<p class="hint">Read only. Change Wi-Fi over SSH so this page cannot strand the box.</p>
+<dl class="facts">
+<dt>Hostname</dt><dd>{{ host.hostname }}</dd>
+<dt>Address</dt><dd>{{ host.address }}</dd>
+<dt>Wi-Fi</dt><dd>{{ host.wifi }}</dd>
+</dl>
+<pre class="cli">ssh {{ host.hostname }}.local
+sudo nmtui</pre>
 </section>
 <section class="card">
 <h2>Studio keys</h2>
@@ -65,7 +106,9 @@
 {% endif %}
 <section class="card">
 <h2>Player update</h2>
+<p class="hint">The box checks GitHub for a newer player wheel and skips the install while a story is playing. Restart and reboot run on the Pi. Safe power down uses the box halt.</p>
 <p>{{ update_status }}</p>
+<p class="hint">Installed player v{{ version }}</p>
 </section>
 <section class="card span">
 <h2>Audit log</h2>

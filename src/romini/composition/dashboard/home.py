@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from romini.composition.dashboard.shared import ASSETS_DIR, DashboardCtx, notice
-from romini.features.play_by_tag.place_figure import on_play_long_pressed, on_play_pressed
+from romini.features.play_by_tag.place_figure import on_play_long_pressed, on_play_pressed, on_volume_set
 
 
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
@@ -58,3 +58,11 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         on_play_long_pressed(player=ctx.player)
         ctx.note("play", f"Restarted {ctx.player.playing_path()}")
         return notice("/", "playing")
+
+    @app.post("/mute")
+    def mute() -> RedirectResponse:
+        if ctx.mixer is None:
+            raise HTTPException(status_code=404)
+        on_volume_set(mixer=ctx.mixer, level=0)
+        ctx.note("volume", "Muted")
+        return notice("/", "muted")

@@ -38,6 +38,8 @@
 <ul class="status-pills">
 <li>{{ free_space }}</li>
 {% if charge is not none %}<li>{{ charge }}% charged</li>{% endif %}
+{% if mixer %}<li>Cap {{ volume_ceiling }}</li>{% endif %}
+<li>Wi-Fi {{ host.wifi }}</li>
 </ul>
 <a class="scan" href="/figures">Scan tag</a>
 </div>
@@ -81,13 +83,23 @@
 {% if page == "home" %}
 <div class="page-actions">
 <span class="soft-pill">Bedtime fade</span>
+{% if mixer %}
+<form action="/mute" method="post"><button class="danger-pill" type="submit">Emergency mute</button></form>
+{% else %}
 <button type="button" class="danger-pill" disabled>Emergency mute</button>
+{% endif %}
 </div>
 {% elif page == "settings" %}
 <div class="page-actions">
-<button type="button" class="soft-pill" disabled>Restart</button>
+{% if can_power %}
+<form action="/system/power" method="post"><input type="hidden" name="action" value="restart"><button class="soft-pill" type="submit">Restart daemon</button></form>
+<form action="/system/power" method="post"><input type="hidden" name="action" value="reboot"><button class="soft-pill" type="submit">Reboot</button></form>
+<form action="/system/power" method="post" onsubmit="return confirm('Power the Storybox down?')"><input type="hidden" name="action" value="poweroff"><button class="danger-pill" type="submit">Safe power down</button></form>
+{% else %}
+<button type="button" class="soft-pill" disabled>Restart daemon</button>
 <button type="button" class="soft-pill" disabled>Reboot</button>
 <button type="button" class="danger-pill" disabled>Safe power down</button>
+{% endif %}
 </div>
 {% endif %}
 </div>

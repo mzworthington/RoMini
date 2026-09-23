@@ -4689,3 +4689,149 @@ def test_dashboard_story_listen_loads_the_library_preview_url(tmp_path: Path) ->
     assert "player.src = select.value" in listen
     assert 'value="/library/file/spoken.mp3"' in listen
     assert 'src="/stories/' not in listen
+
+
+def test_dashboard_figures_queue_links_a_figure_that_needs_a_story(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tags:\n  - uid: "04aabbccddeeff"\n    name: "Banana"\ntracks: []\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+
+    assert "Needs a story" in html
+    assert 'href="/library?uid=04aabbccddeeff"' in html
+    assert "Assign audio" in html
+    assert 'action="/assign"' not in html
+
+
+def test_dashboard_library_selects_the_figure_from_the_queue(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        '  - uid: "04ffeeddccbbaa"\n'
+        '    name: "Frog"\n'
+        "tracks: []\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library?uid=04ffeeddccbbaa")
+        .text
+    )
+    option = html.split('value="04ffeeddccbbaa"', 1)[1].split("</option>", 1)[0]
+
+    assert "selected" in option
+    assert 'name="bind"' in html
+    assert "Prompt a figure link after the upload" in html
+
+
+def test_dashboard_upload_can_ask_for_a_figure_link_next() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024)
+    response = TestClient(create_dashboard(storage=storage, catalog=FakeCatalog())).post(
+        "/tracks",
+        files={"file": ("frog.mp3", b"id3", "audio/mpeg")},
+        data={"bind": "1"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/library?notice=uploaded&bind=1"
+    html = TestClient(create_dashboard(storage=storage)).get("/library?bind=1").text
+    assert "Link the new track to a figure." in html
+
+
+def test_dashboard_emergency_mute_sets_the_mixer_to_zero() -> None:
+    from fastapi.testclient import TestClient
+
+    mixer = FakeMixer(level=40)
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=mixer))
+    home = client.get("/").text
+
+    assert 'action="/mute"' in home
+    assert 'action="/volume"' not in home
+    response = client.post("/mute", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert mixer.level == 0
+
+
+def test_dashboard_hardware_shows_live_host_facts_without_inventing_wifi() -> None:
+    import socket
+
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert "<h2>Host</h2>" in html
+    assert "<h2>Network</h2>" in html
+    assert socket.gethostname() in html
+    assert ">Wi-Fi<" in html
+    assert "Not reported" in html
+    assert "sudo nmtui" in html
+    assert "software ceiling" not in html.lower()
+
+
+def test_dashboard_power_controls_stay_off_until_a_box_is_wired() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert "Safe power down" in html
+    assert 'action="/system/power"' not in html
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).post(
+        "/system/power",
+        data={"action": "poweroff"},
+    )
+    assert response.status_code == 404
+
+
+def test_dashboard_safe_power_down_calls_the_box_halt() -> None:
+    from fastapi.testclient import TestClient
+
+    class Power:
+        def __init__(self) -> None:
+            self.actions: list[str] = []
+
+        def restart(self) -> None:
+            self.actions.append("restart")
+
+        def reboot(self) -> None:
+            self.actions.append("reboot")
+
+        def poweroff(self) -> None:
+            self.actions.append("poweroff")
+
+    power = Power()
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), power=power))
+    html = client.get("/settings").text
+
+    assert 'action="/system/power"' in html
+    assert "Restart daemon" in html
+    response = client.post("/system/power", data={"action": "poweroff"}, follow_redirects=False)
+
+    assert response.status_code == 303
+    assert power.actions == ["poweroff"]
+    assert "Power request sent" in client.get("/settings?notice=power").text

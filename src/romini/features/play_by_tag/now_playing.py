@@ -25,6 +25,7 @@ class NowPlaying:
     place: str
     length: str = ""
     progress: int = 0
+    uid: str = ""
 
 
 def format_place(position_sec: float) -> str:
@@ -69,4 +70,5 @@ def describe_now_playing(
         place=format_place(position),
         length=matched.get("length") or "",
         progress=min(100, max(0, progress)),
+        uid=uid,
     )

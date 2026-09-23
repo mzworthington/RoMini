@@ -8,6 +8,7 @@
 {% if now_playing %}
 <p class="kicker">{% if now_playing.is_playing %}On the plate{% else %}Lifted{% endif %}</p>
 <h2>{{ now_playing.trigger }}</h2>
+{% if now_playing.uid %}<p class="uid">UID {{ now_playing.uid }}</p>{% endif %}
 <p class="hint">{{ now_playing.place }} into the story</p>
 <p class="dock-meta">{% if now_playing.is_playing %}Contact verified{% else %}Waiting for the figure{% endif %}</p>
 {% else %}
@@ -40,7 +41,8 @@
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
 </div>
 <div class="guard-track" aria-hidden="true"><span style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
-<p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Ceiling {{ volume_ceiling }}</span></p>
+<p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Cap {{ volume_ceiling }}</span></p>
+<p class="hint">Loudness in the room is not measured yet, so the cap stays a percent.</p>
 </div>
 </section>
 {% else %}
@@ -61,7 +63,8 @@
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
 </div>
 <div class="guard-track" aria-hidden="true"><span style="width: {% if volume_ceiling %}{{ (volume_level * 100 / volume_ceiling)|round|int }}{% else %}0{% endif %}%"></span></div>
-<p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Ceiling {{ volume_ceiling }}</span></p>
+<p class="guard-scale"><span>Quiet</span><span>Safe zone</span><span>Cap {{ volume_ceiling }}</span></p>
+<p class="hint">Loudness in the room is not measured yet, so the cap stays a percent.</p>
 </div>
 </section>
 {% endif %}
@@ -90,6 +93,14 @@
 <dt>Figure</dt><dd>{{ now_playing.trigger }}</dd>
 <dt>Place</dt><dd>{{ now_playing.place }}</dd>
 <dt>Time</dt><dd>{{ now_playing.time or "—" }}</dd>
+{% if now_playing.uid %}<dt>UID</dt><dd>{{ now_playing.uid }}</dd>{% endif %}
+{% for track in tracks if track.title == now_playing.story %}
+{% if loop.first %}
+{% if track.path %}<dt>File</dt><dd>{{ track.path }}</dd>{% endif %}
+{% if track.size %}<dt>Size</dt><dd>{{ track.size }}</dd>{% endif %}
+{% if track.suffix %}<dt>File spec</dt><dd>{{ track.suffix }}</dd>{% endif %}
+{% endif %}
+{% endfor %}
 </dl>
 {% else %}
 <p class="empty">No story on the plate.</p>
