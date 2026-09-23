@@ -1,4 +1,5 @@
 import json
+import subprocess
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -105,10 +106,13 @@ def run_cli(
     )
 
 
+def restart_player() -> None:
+    subprocess.run(["sudo", "-n", "systemctl", "restart", "romini-core"], check=False)
+
+
 def main() -> int:
     import json
     import os
-    import subprocess
     import traceback
     import urllib.request
 
@@ -144,7 +148,7 @@ def main() -> int:
             subprocess.run([pip, "install", "--upgrade", url], check=True)
 
         def restart() -> None:
-            subprocess.run(["systemctl", "restart", "romini-core"], check=False)
+            restart_player()
 
         result = run_cli(
             player=MpvIpcStatus(),

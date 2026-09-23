@@ -42,4 +42,7 @@ class LocalUpdate:
     def check(self) -> None:
         if self._profile != "pi":
             return
-        subprocess.run(["systemctl", "start", "romini-update.service"], check=False)
+        subprocess.run(
+            ["sudo", "-n", "systemctl", "start", "--no-block", "romini-update.service"],
+            check=False,
+        )

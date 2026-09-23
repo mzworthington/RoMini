@@ -31,12 +31,14 @@
 <li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>System &amp; Hardware</a></li>
 </ul>
 </nav>
+<div class="top-actions">
 <ul class="status-pills">
 {% if charge is not none %}<li>{{ charge }}% charged</li>{% endif %}
 {% if mixer %}<li>Cap {{ volume_ceiling }}</li>{% endif %}
 <li>Wi-Fi {{ host.wifi }}</li>
 </ul>
 <a class="scan" href="/figures">Scan tag</a>
+</div>
 </div>
 </header>
 <main>

@@ -293,6 +293,48 @@ def test_dashboard_home_renders_when_host_is_missing() -> None:
     assert "Wi-Fi Not reported" in html
 
 
+def test_dashboard_mobile_nav_scrolls_inside_the_card() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    narrow = html.split("@media (max-width: 960px) {", 1)[1].split("@media", 1)[0]
+    nav = narrow.split('.topbar nav[aria-label="Dashboard"] {', 1)[1].split("}", 1)[0]
+    track = narrow.split('.topbar nav[aria-label="Dashboard"] ul {', 1)[1].split("}", 1)[0]
+
+    assert "min-width: 0" in nav
+    assert "max-width: 100%" in nav
+    assert "width: 100%" in track
+
+
+def test_dashboard_mobile_nav_labels_stay_on_one_line() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    link = html.split('nav[aria-label="Dashboard"] a {', 1)[1].split("}", 1)[0]
+    narrow = html.split("@media (max-width: 960px) {", 1)[1].split("@media", 1)[0]
+
+    assert "white-space: nowrap" in link
+    assert "flex: none" in link
+    assert "overflow-x: auto" in narrow
+
+
+def test_dashboard_status_and_scan_share_one_line_at_the_same_height() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    header = html.split("<header", 1)[1].split("</header>", 1)[0]
+    cluster = header.split('class="top-actions"', 1)[1].split("</div>", 1)[0]
+    pills = html.split(".status-pills li {", 1)[1].split("}", 1)[0]
+    scan = html.split(".scan {", 1)[1].split("}", 1)[0]
+    row = html.split(".top-actions {", 1)[1].split("}", 1)[0]
+
+    assert cluster.index("status-pills") < cluster.index('class="scan"')
+    assert "flex-wrap: nowrap" in row
+    assert "min-height: 2.5rem" in pills
+    assert "min-height: 2.5rem" in scan
+    assert "white-space: nowrap" in pills
+
+
 def test_dashboard_header_keeps_each_cluster_on_one_line() -> None:
     from fastapi.testclient import TestClient
 
@@ -2576,7 +2618,7 @@ def test_pi_update_check_starts_the_nightly_service(monkeypatch) -> None:
     monkeypatch.setattr("romini.composition.dashboard.power.subprocess.run", run)
     LocalUpdate(profile="pi").check()
 
-    assert calls == [["systemctl", "start", "romini-update.service"]]
+    assert calls == [["sudo", "-n", "systemctl", "start", "--no-block", "romini-update.service"]]
 
 
 def test_dashboard_volume_quieter_steps_the_mixer() -> None:

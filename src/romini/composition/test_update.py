@@ -191,6 +191,20 @@ def test_update_main_records_a_skip_in_plain_language(monkeypatch, tmp_path) -> 
     assert "systemctl" not in spoken
 
 
+def test_update_restart_uses_passwordless_sudo(monkeypatch) -> None:
+    from romini.composition.update import restart_player
+
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], check: bool = False) -> None:
+        calls.append(cmd)
+
+    monkeypatch.setattr("romini.composition.update.subprocess.run", run)
+    restart_player()
+
+    assert calls == [["sudo", "-n", "systemctl", "restart", "romini-core"]]
+
+
 def test_update_main_records_the_check_when_install_fails(monkeypatch, tmp_path) -> None:
     from romini.composition.update import describe_update_center
     from romini.composition.update import main as update_main
