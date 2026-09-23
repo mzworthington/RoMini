@@ -122,10 +122,11 @@
 <div class="table-wrap" id="library-table">
 <table>
 <caption>Library</caption>
-<thead><tr><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th><th>File</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
+<thead><tr><th>Cover</th><th>Title</th><th>Figure</th><th>Path</th><th>Length</th><th>Size</th><th>File</th>{% if has_player %}<th>Play</th>{% elif pad %}<th>Place</th>{% endif %}</tr></thead>
 <tbody>
 {% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) %}
 <tr>
+    <td><img class="cover" src="{{ track.image or '/logo.svg' }}" alt=""></td>
     <td><span class="track-title">{{ track.title }}</span></td>
     <td>{% if track.figure %}<span class="chip">{{ track.figure }}</span>{% else %}<span class="chip missing">No figure linked</span>{% endif %}</td>
     <td>{{ track.path }}</td>

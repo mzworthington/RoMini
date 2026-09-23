@@ -1236,3 +1236,20 @@ table.is-grid tr {
   border-radius: 1rem;
 }
 table.is-grid td { padding: 0.2rem 0; border: 0; }
+img.cover {
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: cover;
+  border-radius: 0.65rem;
+  background: #fff;
+  display: block;
+}
+.now-playing img.cover,
+.quiet img.cover,
+.cover-card img.cover {
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 1.15rem;
+  margin: 0.35rem 0 0.85rem;
+}
+.cover-card { margin-top: 1.25rem; }

@@ -145,3 +145,38 @@ def test_now_playing_falls_back_to_filename_and_uid() -> None:
     assert view.story == "frog-prince.mp3"
     assert view.trigger == "04aabbccddeeff"
     assert view.time == "07:05"
+    assert view.image == ""
+
+
+def test_now_playing_carries_the_story_image() -> None:
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 0.0
+
+    view = describe_now_playing(
+        Playing(),
+        tracks=[
+            {
+                "uid": "04aabbccddeeff",
+                "title": "The Frog Prince",
+                "path": "stories/frog-prince.mp3",
+                "image": "/stories/frog-prince/image",
+            }
+        ],
+        tags=[{"uid": "04aabbccddeeff", "name": "Frog"}],
+    )
+
+    assert view is not None
+    assert view.image == "/stories/frog-prince/image"

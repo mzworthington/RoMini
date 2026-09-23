@@ -26,6 +26,7 @@ class NowPlaying:
     length: str = ""
     progress: int = 0
     uid: str = ""
+    image: str = ""
 
 
 def format_place(position_sec: float) -> str:
@@ -62,6 +63,7 @@ def describe_now_playing(
     matched = next((track for track in tracks if track.get("uid") == uid or track.get("path") == path), {})
     duration = int(matched.get("duration_sec") or 0)
     progress = round(100 * position / duration) if duration else 0
+    raw_image = matched.get("image") or ""
     return NowPlaying(
         story=story,
         trigger=trigger,
@@ -71,4 +73,5 @@ def describe_now_playing(
         length=matched.get("length") or "",
         progress=min(100, max(0, progress)),
         uid=uid,
+        image=raw_image if isinstance(raw_image, str) else "",
     )

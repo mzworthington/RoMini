@@ -27,7 +27,14 @@ tracks:
     path: "stories/frog-prince.mp3"
     title: "The Frog Prince"
     artist: null              # optional
+    image:                    # optional cover, file lives in the story pack
+      file: cover.png
+      size: 120
+      media_type: image/png
+      story: frog-prince      # slug under stories/
 ```
+
+A cover is a PNG, JPEG, GIF, or WebP stored beside `story.yaml` as `cover.png` (or `.jpg`, `.gif`, `.webp`). The dashboard serves it at `/stories/<slug>/image`. Lists and the live player use that URL, and `/logo.svg` when `image` is absent. The bytes stay out of `library/` so they are not treated as audio.
 
 `tags` is the inventory of Figures the box has seen. `tracks[].uid` is still the play mapping. Register writes `tags` on tap (name may be blank). Assign copies a registered UID onto a Track row. UID must be unique in each array. A second `tracks` row with the same `uid` is rejected.
 

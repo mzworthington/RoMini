@@ -4835,3 +4835,209 @@ def test_dashboard_safe_power_down_calls_the_box_halt() -> None:
     assert response.status_code == 303
     assert power.actions == ["poweroff"]
     assert "Power request sent" in client.get("/settings?notice=power").text
+
+
+PNG = b"\x89PNG\r\n\x1a\n" + b"IHDR" + b"\x00" * 8
+
+
+def test_dashboard_story_cover_is_stored_on_the_box_and_listed(tmp_path: Path) -> None:
+    import yaml
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "station.mp3"\n    title: "The little station"\n'
+    )
+    stories = tmp_path / "stories"
+    storage = FakeStorage(free_bytes=1024)
+    client = TestClient(
+        create_dashboard(storage=storage, stories=stories, assign_catalog=PathCatalog(catalog_path))
+    )
+    client.post("/stories", data={"story_title": "The little station", "script": "Hello."})
+    pack = stories / "the-little-station"
+    notes = yaml.safe_load((pack / "story.yaml").read_text())
+    notes["library_path"] = "station.mp3"
+    (pack / "story.yaml").write_text(yaml.safe_dump(notes, sort_keys=True))
+
+    stored = client.post(
+        "/stories/image",
+        files={"image": ("photo.png", PNG, "image/png")},
+        follow_redirects=False,
+    )
+
+    assert stored.status_code == 303
+    assert stored.headers["location"].startswith("/stories/the-little-station")
+    assert (pack / "cover.png").read_bytes() == PNG
+    assert "cover.png" not in storage.files
+    image = yaml.safe_load((pack / "story.yaml").read_text())["image"]
+    assert image == {"file": "cover.png", "size": len(PNG), "media_type": "image/png"}
+    track = yaml.safe_load(catalog_path.read_text())["tracks"][0]["image"]
+    assert track["file"] == "cover.png"
+    assert track["size"] == len(PNG)
+    assert track["media_type"] == "image/png"
+    assert track["story"] == "the-little-station"
+    listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
+    assert '<img class="cover" src="/stories/the-little-station/image" alt="">' in listed
+    assert '<td><span class="track-title">The little station</span></td>' in listed
+    library = client.get("/library").text
+    assert 'src="/stories/the-little-station/image"' in library
+    served = client.get("/stories/the-little-station/image")
+    assert served.status_code == 200
+    assert served.headers["content-type"].startswith("image/png")
+    assert served.content == PNG
+
+
+def test_dashboard_story_list_and_player_use_the_logo_when_no_cover_is_set(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "station.mp3"\n    title: "The little station"\n'
+    )
+    stories = tmp_path / "stories"
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=stories,
+            assign_catalog=PathCatalog(catalog_path),
+        )
+    )
+    client.post("/stories", data={"story_title": "The little station"})
+    listed = client.get("/stories").text.split("<h2>Saved stories</h2>", 1)[1]
+    library = client.get("/library").text
+
+    assert 'src="/logo.svg"' in listed
+    assert 'src="/logo.svg"' in library.split("<caption>Library</caption>", 1)[1]
+    player = FakePlayer()
+    player.play("station.mp3", position_sec=1.0, uid="04aabbccddeeff")
+    playing = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=stories,
+            assign_catalog=PathCatalog(catalog_path),
+            player=player,
+        )
+    ).get("/now-playing").text
+    now = playing.split('aria-label="Now playing"', 1)[1]
+    assert '<img class="cover" src="/logo.svg" alt="">' in now
+
+
+def test_dashboard_player_shows_the_story_cover(tmp_path: Path) -> None:
+    import yaml
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    stories = tmp_path / "stories"
+    pack = stories / "the-little-station"
+    pack.mkdir(parents=True)
+    (pack / "cover.png").write_bytes(PNG)
+    (pack / "story.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "title": "The little station",
+                "library_path": "station.mp3",
+                "image": {"file": "cover.png", "size": len(PNG), "media_type": "image/png"},
+            },
+            sort_keys=True,
+        )
+    )
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - uid: "04aabbccddeeff"\n    path: "station.mp3"\n    title: "The little station"\n'
+    )
+    player = FakePlayer()
+    player.play("station.mp3", position_sec=1.0, uid="04aabbccddeeff")
+    html = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=stories,
+            assign_catalog=PathCatalog(catalog_path),
+            player=player,
+        )
+    ).get("/now-playing").text
+
+    now = html.split('aria-label="Now playing"', 1)[1]
+    assert '<img class="cover" src="/stories/the-little-station/image" alt="">' in now
+
+
+def test_dashboard_rejects_a_cover_that_is_not_an_image(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    stories = tmp_path / "stories"
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=stories))
+    client.post("/stories", data={"story_title": "The little station"})
+    rejected = client.post(
+        "/stories/image",
+        files={"image": ("notes.html", b"<html></html>", "text/html")},
+        follow_redirects=False,
+    )
+
+    assert rejected.status_code == 303
+    assert "notice=image-needed" in rejected.headers["location"]
+    assert not (stories / "the-little-station" / "cover.html").exists()
+    assert not (stories / "the-little-station" / "cover.png").exists()
+
+
+def test_dashboard_saving_a_story_keeps_its_cover(tmp_path: Path) -> None:
+    import yaml
+    from fastapi.testclient import TestClient
+
+    stories = tmp_path / "stories"
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=stories))
+    client.post("/stories", data={"story_title": "The little station", "outline": "a ride"})
+    client.post("/stories/image", files={"image": ("photo.png", PNG, "image/png")})
+    client.post("/stories", data={"story_title": "The little station", "outline": "a longer ride"})
+
+    notes = yaml.safe_load((stories / "the-little-station" / "story.yaml").read_text())
+    assert notes["image"]["file"] == "cover.png"
+    assert notes["outline"] == "a longer ride"
+    assert (stories / "the-little-station" / "cover.png").read_bytes() == PNG
+
+
+def test_dashboard_assign_writes_the_cover_onto_the_track(tmp_path: Path) -> None:
+    import yaml
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    stories = tmp_path / "stories"
+    pack = stories / "the-little-station"
+    pack.mkdir(parents=True)
+    (pack / "cover.png").write_bytes(PNG)
+    (pack / "story.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "title": "The little station",
+                "library_path": "station.mp3",
+                "image": {"file": "cover.png", "size": len(PNG), "media_type": "image/png"},
+            },
+            sort_keys=True,
+        )
+    )
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            stories=stories,
+            assign_catalog=PathCatalog(catalog_path),
+        )
+    )
+    response = client.post(
+        "/assign",
+        data={"uid": "04aabbccddeeff", "path": "station.mp3", "title": "The little station"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    image = yaml.safe_load(catalog_path.read_text())["tracks"][0]["image"]
+    assert image["file"] == "cover.png"
+    assert image["story"] == "the-little-station"
+    assert image["media_type"] == "image/png"

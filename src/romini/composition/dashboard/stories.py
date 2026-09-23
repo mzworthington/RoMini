@@ -12,10 +12,14 @@ from romini.composition.dashboard.shared import (
     elevenlabs_api_key,
     library_paths,
     load_story_notes,
+    locate_cover,
     notice,
     open_story_pack,
+    publish_story_cover,
     record_spoken_track,
+    remember_story_cover,
     safe_character_slugs,
+    save_story_cover,
     spoken_file_name,
     story_slug,
     studio_keys,
@@ -47,6 +51,34 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if current_pack(ctx.stories) != ctx.stories / slug:
             raise HTTPException(status_code=404)
         return ctx.page(request, "stories.html", page="stories", page_title="Stories")
+
+    @app.get("/stories/{slug}/image")
+    def story_image(slug: str) -> FileResponse:
+        if ctx.stories is None:
+            raise HTTPException(status_code=404)
+        located = locate_cover(ctx.stories, slug)
+        if located is None:
+            raise HTTPException(status_code=404)
+        path, media = located
+        return FileResponse(path, media_type=media)
+
+    @app.post("/stories/image", response_model=None)
+    async def upload_story_image(request: Request) -> RedirectResponse:
+        if ctx.stories is None:
+            raise HTTPException(status_code=404)
+        pack = current_pack(ctx.stories)
+        dest = f"/stories/{pack.name}" if pack != ctx.stories else "/stories"
+        if pack == ctx.stories or not (pack / "story.yaml").is_file():
+            return notice("/stories", "needed")
+        form = await request.form()
+        upload = form.get("image")
+        data = await upload.read() if hasattr(upload, "read") else b""
+        if save_story_cover(pack, data) is None:
+            ctx.note("story", "Image rejected")
+            return notice(dest, "image-needed")
+        publish_story_cover(ctx.stories, ctx.assign_catalog, pack)
+        ctx.note("story", f"Stored cover for {pack.name}")
+        return notice(dest, "image")
 
     @app.get("/stories/{slug}/spoken")
     def preview_spoken(slug: str) -> FileResponse:
@@ -223,5 +255,6 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         pack.mkdir(parents=True, exist_ok=True)
         (pack / filename).write_bytes(audio)
         record_spoken_track(pack, filename=filename, library_path=filename)
+        remember_story_cover(ctx.stories, ctx.assign_catalog, filename)
         ctx.note("speak", f"Spoke story {notes['title'] or filename}")
         return notice("/stories", "spoke")

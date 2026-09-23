@@ -51,6 +51,17 @@ function updateStoryLength(value) {
 <textarea id="script" name="script">{{ script }}</textarea>
 <button>Save story</button>
 </form>
+{% if opened_story_slug %}
+<div class="cover-card">
+<img class="cover" src="{{ story_image or '/logo.svg' }}" alt="">
+<form action="/stories/image" method="post" enctype="multipart/form-data">
+<label for="cover">Cover image</label>
+<input id="cover" name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required>
+<button>Upload image</button>
+</form>
+<p class="hint">Stored on the box with this story. The story list and the player show it, or the RoMini logo when none is set.</p>
+</div>
+{% endif %}
 {% if story_title %}
 <form action="/stories/draft" method="post" class="form-busy" data-busy="Writing the script…">
 <p id="draft-status" class="status" hidden role="status" aria-live="polite"></p>
@@ -107,10 +118,11 @@ function updateStoryLength(value) {
 <div class="table-wrap">
 <table>
 <caption>Saved stories</caption>
-<thead><tr><th>Title</th><th>Action</th></tr></thead>
+<thead><tr><th>Cover</th><th>Title</th><th>Action</th></tr></thead>
 <tbody>
 {% for story in saved_stories %}
 <tr>
+    <td><img class="cover" src="{{ story.image or '/logo.svg' }}" alt=""></td>
     <td><span class="track-title">{{ story.title }}</span></td>
     <td>
         <a class="button" href="/stories/{{ story.slug }}">Open</a>
