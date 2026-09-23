@@ -34,7 +34,7 @@ Use a **Raspberry Pi 4** with Lite OS, house Wi-Fi and SSH. The player is a GitH
 
 The box installs the latest **GitHub Release** wheel into `/var/lib/romini/install/venv`. The timer runs 5 minutes after boot and at **03:15**. Laptop commits are not on the box until that Release exists. Do not `git pull` — there is no repo on the Pi.
 
-Force it now (SSH, nothing playing):
+Force it now (SSH, nothing playing).
 
 ```bash
 sudo systemctl start romini-update.service
