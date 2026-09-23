@@ -42,7 +42,9 @@ class LocalUpdate:
     def check(self) -> None:
         if self._profile != "pi":
             return
-        subprocess.run(
+        completed = subprocess.run(
             ["sudo", "-n", "systemctl", "start", "--no-block", "romini-update.service"],
             check=False,
         )
+        if completed.returncode != 0:
+            raise OSError("romini-update did not start")
