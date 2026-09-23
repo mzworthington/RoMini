@@ -2679,6 +2679,20 @@ def test_pi_update_check_starts_the_nightly_service(monkeypatch) -> None:
     assert calls == [["sudo", "-n", "systemctl", "start", "--no-block", "romini-update.service"]]
 
 
+def test_pi_power_restart_uses_passwordless_sudo(monkeypatch) -> None:
+    from romini.composition.dashboard.power import LocalPower
+
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], check: bool = False) -> None:
+        calls.append(cmd)
+
+    monkeypatch.setattr("romini.composition.dashboard.power.subprocess.run", run)
+    LocalPower(halt=None, profile="pi").restart()
+
+    assert calls == [["sudo", "-n", "systemctl", "restart", "romini-core"]]
+
+
 def test_dashboard_volume_quieter_steps_the_mixer() -> None:
     from fastapi.testclient import TestClient
 

@@ -32,7 +32,7 @@ class LocalPower:
     def _system(self, *args: str) -> None:
         if self._profile != "pi":
             return
-        subprocess.run(["systemctl", *args], check=False)
+        subprocess.run(["sudo", "-n", "systemctl", *args], check=False)
 
 
 class LocalUpdate:
