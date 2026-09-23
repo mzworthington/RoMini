@@ -6,6 +6,7 @@ from pathlib import Path
 from romini.adapters.sqlite.audit import SqliteAudit
 from romini.adapters.sqlite.catalog import SqliteCatalog
 from romini.adapters.sqlite.mixer import SqliteMixer
+from romini.adapters.sqlite.play_log import SqlitePlayLog
 from romini.adapters.sqlite.schema import ensure_schema, open_state
 from romini.adapters.sqlite.sessions import SqliteSessions
 from romini.adapters.sqlite.settings import SqliteSettings
@@ -17,6 +18,7 @@ from romini.composition.sessions import MemorySessions
 from romini.features.audit.record import record_event
 from romini.features.library.import_catalog import import_catalog
 from romini.features.library.register_tag import register_tag
+from romini.features.listening.log import sync_playback
 from romini.features.play_by_tag.place_figure import (
     Halt,
     Mixer,
@@ -63,13 +65,39 @@ class SimBox:
             player.mixer = mixer
         self.halt = halt if halt is not None else LoggingHalt()
 
-    def note(self, action: str, summary: str) -> None:
+    def note(self, action: str, summary: str, *, headline: str = "") -> None:
         log = getattr(self, "audit", None)
         if log is None:
             return
-        record_event(log, action=action, summary=summary, clock=lambda: datetime.now(UTC))
+        record_event(
+            log,
+            action=action,
+            summary=summary,
+            headline=headline,
+            clock=lambda: datetime.now(UTC),
+        )
+
+    def close_listening(self) -> None:
+        log = getattr(self, "listening", None)
+        if log is None:
+            return
+        log.end(datetime.now().astimezone())
+
+    def mark_listening(self, was_playing: bool) -> None:
+        log = getattr(self, "listening", None)
+        if log is None:
+            return
+        sync_playback(
+            log,
+            was_playing=was_playing,
+            is_playing=self.player.is_playing(),
+            at=datetime.now().astimezone(),
+        )
 
     def place(self, uid: str) -> None:
+        settings = getattr(self, "settings", None)
+        beep = True if settings is None else settings.nfc_beep()
+        earcon = getattr(self, "earcon", None) if beep else None
         if self.assign_mode:
             catalog = getattr(self, "catalog_file", None)
             if catalog is not None:
@@ -77,10 +105,11 @@ class SimBox:
                     uid=uid,
                     catalog=catalog,
                     led=self.led,
-                    earcon=getattr(self, "earcon", None),
+                    earcon=earcon,
                 )
-                self.note("register", f"Registered {uid}")
+                self.note("register", f"Registered {uid}", headline="Figure registered")
             return
+        was_playing = self.player.is_playing()
         on_figure_placed(
             uid,
             play_mode=self.play_mode,
@@ -89,22 +118,26 @@ class SimBox:
             player=self.player,
             led=self.led,
             sessions=self.sessions,
+            earcon=earcon,
+            beep=beep,
         )
+        self.mark_listening(was_playing)
         if self.player.is_playing() and self.player.playing_uid() == uid:
-            self.note("play", f"Played {self.player.playing_path()}")
+            self.note("play", f"Played {self.player.playing_path()}", headline="Story playing")
             return
         selected = self.player.selected_track()
         if selected is not None and selected[0] == uid:
-            self.note("select", f"Selected {uid}")
+            self.note("select", f"Selected {uid}", headline="Figure selected")
             return
         if self.library.track_for(uid) is None:
-            self.note("place", f"No story for {uid}")
+            self.note("place", f"No story for {uid}", headline="No story linked")
             return
-        self.note("place", f"Placed {uid}")
+        self.note("place", f"Placed {uid}", headline="Figure placed")
 
     def lift(self, uid: str, *, elapsed_sec: float, position_sec: float) -> None:
         if self.sessions is None:
             return
+        was_playing = self.player.is_playing()
         on_figure_lifted(
             uid,
             play_mode=self.play_mode,
@@ -113,7 +146,8 @@ class SimBox:
             player=self.player,
             sessions=self.sessions,
         )
-        self.note("lift", f"Lifted {uid}")
+        self.mark_listening(was_playing)
+        self.note("lift", f"Lifted {uid}", headline="Tag lifted")
 
 
 def load_sim_box(
@@ -156,7 +190,9 @@ def load_sim_box(
     box.state = conn
     box.catalog_file = data_dir / "catalog.yaml"
     box.earcon = player if hasattr(player, "play_earcon") else None
+    box.settings = settings
     box.audit = SqliteAudit(conn)
+    box.listening = SqlitePlayLog(conn)
     return box
 
 

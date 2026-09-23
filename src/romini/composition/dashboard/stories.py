@@ -12,14 +12,10 @@ from romini.composition.dashboard.shared import (
     elevenlabs_api_key,
     library_paths,
     load_story_notes,
-    locate_cover,
     notice,
     open_story_pack,
-    publish_story_cover,
     record_spoken_track,
-    remember_story_cover,
     safe_character_slugs,
-    save_story_cover,
     spoken_file_name,
     story_slug,
     studio_keys,
@@ -51,34 +47,6 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if current_pack(ctx.stories) != ctx.stories / slug:
             raise HTTPException(status_code=404)
         return ctx.page(request, "stories.html", page="stories", page_title="Stories")
-
-    @app.get("/stories/{slug}/image")
-    def story_image(slug: str) -> FileResponse:
-        if ctx.stories is None:
-            raise HTTPException(status_code=404)
-        located = locate_cover(ctx.stories, slug)
-        if located is None:
-            raise HTTPException(status_code=404)
-        path, media = located
-        return FileResponse(path, media_type=media)
-
-    @app.post("/stories/image", response_model=None)
-    async def upload_story_image(request: Request) -> RedirectResponse:
-        if ctx.stories is None:
-            raise HTTPException(status_code=404)
-        pack = current_pack(ctx.stories)
-        dest = f"/stories/{pack.name}" if pack != ctx.stories else "/stories"
-        if pack == ctx.stories or not (pack / "story.yaml").is_file():
-            return notice("/stories", "needed")
-        form = await request.form()
-        upload = form.get("image")
-        data = await upload.read() if hasattr(upload, "read") else b""
-        if save_story_cover(pack, data) is None:
-            ctx.note("story", "Image rejected")
-            return notice(dest, "image-needed")
-        publish_story_cover(ctx.stories, ctx.assign_catalog, pack)
-        ctx.note("story", f"Stored cover for {pack.name}")
-        return notice(dest, "image")
 
     @app.get("/stories/{slug}/spoken")
     def preview_spoken(slug: str) -> FileResponse:
@@ -128,7 +96,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         slug = str(form.get("slug") or "").strip()
         open_story_pack(ctx.stories, slug)
         if slug:
-            ctx.note("story", f"Opened story {slug}")
+            ctx.note("story", f"Opened story {slug}", headline="Story opened")
         return notice("/stories", "story")
 
     @app.post("/stories/new", response_model=None)
@@ -155,7 +123,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             if current_pack(ctx.stories) == pack:
                 clear_current(ctx.stories)
             shutil.rmtree(pack)
-            ctx.note("story", f"Deleted story {slug}")
+            ctx.note("story", f"Deleted story {slug}", headline="Story deleted")
         return notice("/stories", "story")
 
     @app.post("/stories/draft", response_model=None)
@@ -164,7 +132,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             raise HTTPException(status_code=404)
         key = studio_keys(ctx.secrets, ctx.box_secrets)["GEMINI_API_KEY"]
         if not key:
-            ctx.note("story", "Draft failed (no key)")
+            ctx.note("story", "Draft failed (no key)", headline="Draft failed")
             return notice("/stories", "draft-needed")
         writer = ctx.drafter or GeminiScriptDraft(api_key=key, post=ctx.draft_post or gemini_http_post)
         notes = load_story_notes(ctx.stories)
@@ -191,7 +159,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             script=script,
             character_slugs=character_slug_list(notes),
         )
-        ctx.note("story", f"Drafted story {notes['title'] or 'untitled'}")
+        ctx.note("story", f"Drafted story {notes['title'] or 'untitled'}", headline="Story drafted")
         return notice("/stories", "drafted")
 
     @app.post("/stories/speak", response_model=None)
@@ -207,15 +175,15 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         voice_id = chosen if chosen in allowed else (named_voices[0]["id"] if named_voices else "")
         key = elevenlabs_api_key(keys["ELEVENLABS_API_KEY"])
         if keys["ELEVENLABS_API_KEY"] and not key:
-            ctx.note("speak", "Speak failed (key id)")
+            ctx.note("speak", "Speak failed (key id)", headline="Speak failed")
             return notice("/stories", "speak-key-id")
         if not key or not voice_id:
-            ctx.note("speak", "Speak failed (no key)")
+            ctx.note("speak", "Speak failed (no key)", headline="Speak failed")
             return notice("/stories", "speak-needed")
         notes = load_story_notes(ctx.stories)
         script = notes["script"].strip()
         if not script:
-            ctx.note("speak", "Speak failed (no script)")
+            ctx.note("speak", "Speak failed (no script)", headline="Speak failed")
             return notice("/stories", "speak-needed")
         speaker = ctx.speech or ElevenLabsSpeech(api_key=key, post=ctx.speak_post or http_post)
         try:
@@ -246,7 +214,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             catalog=ctx.catalog,
         )
         if not stored:
-            ctx.note("speak", "Speak failed (full)")
+            ctx.note("speak", "Speak failed (full)", headline="Speak failed")
             return notice("/stories", "full")
         if pack != ctx.stories and pack.is_dir():
             for old in pack.iterdir():
@@ -255,6 +223,5 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         pack.mkdir(parents=True, exist_ok=True)
         (pack / filename).write_bytes(audio)
         record_spoken_track(pack, filename=filename, library_path=filename)
-        remember_story_cover(ctx.stories, ctx.assign_catalog, filename)
-        ctx.note("speak", f"Spoke story {notes['title'] or filename}")
+        ctx.note("speak", f"Spoke story {notes['title'] or filename}", headline="Story spoken")
         return notice("/stories", "spoke")

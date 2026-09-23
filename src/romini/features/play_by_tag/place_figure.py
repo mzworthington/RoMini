@@ -73,6 +73,7 @@ def on_figure_placed(
     led: StatusLed,
     sessions: Sessions | None = None,
     earcon: Earcon | None = None,
+    beep: bool = True,
 ) -> None:
     if assign_mode:
         return
@@ -97,7 +98,7 @@ def on_figure_placed(
     position = 0.0
     if sessions is not None:
         position = sessions.position_for(uid) or 0.0
-    if earcon is not None:
+    if beep and earcon is not None:
         earcon.play_earcon(CONNECT_EARCON_PATH)
     player.play(path, position_sec=position, uid=uid)
     led.pulse()
@@ -142,6 +143,15 @@ def on_play_long_pressed(*, player: Player) -> None:
     if uid is None or path is None:
         return
     player.play(path, position_sec=0.0, uid=uid)
+
+
+def on_seek(*, player: Player, progress: int, duration_sec: float) -> None:
+    uid = player.playing_uid()
+    path = player.playing_path()
+    if uid is None or path is None or duration_sec <= 0:
+        return
+    fraction = max(0, min(100, progress)) / 100
+    player.play(path, position_sec=duration_sec * fraction, uid=uid)
 
 
 def on_volume_up(*, mixer: Mixer) -> None:

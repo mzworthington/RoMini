@@ -92,6 +92,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             raise HTTPException(status_code=404)
         form = await request.form()
         action = str(form.get("action") or "")
+        back = dashboard_return(form.get("return"), "/settings")
         if action == "restart":
             ctx.power.restart()
             ctx.note("power", "Restart requested", headline="Restart requested")
@@ -102,8 +103,8 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             ctx.power.poweroff()
             ctx.note("power", "Halt", headline="Halt requested")
         else:
-            return notice("/settings", "needed")
-        return notice("/settings", "power")
+            return notice(back, "needed")
+        return notice(back, "power")
 
     @app.post("/system/update", response_model=None)
     def system_update() -> RedirectResponse:

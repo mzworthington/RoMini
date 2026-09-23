@@ -2,7 +2,7 @@ from mimetypes import guess_type
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
 from romini.composition.dashboard.shared import (
@@ -10,13 +10,16 @@ from romini.composition.dashboard.shared import (
     has_required,
     is_audio_track,
     library_paths,
+    locate_track_cover,
     notice,
-    remember_story_cover,
+    remember_track_cover,
+    save_track_cover,
 )
 from romini.features.library.add_track import add_track
 from romini.features.library.assign import confirm_assign
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import PlayMode, on_figure_placed
+from romini.features.stories.cover import with_track_image
 
 
 class QuietLed:
@@ -83,7 +86,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             if not has_required(body.uid, body.path, body.title):
                 raise HTTPException(status_code=422)
             confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
-            remember_story_cover(ctx.stories, ctx.assign_catalog, body.path)
+            remember_track_cover(ctx.covers, ctx.assign_catalog, body.path)
             ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")
             return Response(status_code=204)
         form = await request.form()
@@ -91,7 +94,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         if not has_required(body.uid, body.path, body.title):
             return notice("/library", "needed")
         confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
-        remember_story_cover(ctx.stories, ctx.assign_catalog, body.path)
+        remember_track_cover(ctx.covers, ctx.assign_catalog, body.path)
         ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")
         return notice("/library", "assigned")
 
@@ -113,6 +116,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         play_mode = PlayMode.PRESENCE
         if ctx.settings is not None:
             play_mode = ctx.settings.play_mode() or PlayMode.PRESENCE
+        was_playing = ctx.player.is_playing()
         on_figure_placed(
             uid,
             play_mode=play_mode,
@@ -126,6 +130,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             led=getattr(ctx.pad, "led", None) or QuietLed(),
             sessions=getattr(ctx.pad, "sessions", None),
         )
+        ctx.mark_listening(was_playing)
         if ctx.player.is_playing():
             ctx.note("play", f"Played {ctx.player.playing_path()}", headline="Story playing")
         else:
@@ -136,9 +141,43 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     def stop_library_track() -> RedirectResponse:
         if ctx.player is None:
             raise HTTPException(status_code=404)
+        was_playing = ctx.player.is_playing()
         ctx.player.stop()
+        ctx.mark_listening(was_playing)
         ctx.note("play", "Stopped", headline="Playback stopped")
         return notice("/library", "stopped")
+
+    @app.post("/library/cover", response_model=None)
+    async def upload_track_cover(request: Request) -> RedirectResponse:
+        if ctx.covers is None:
+            raise HTTPException(status_code=404)
+        form = await request.form()
+        path = str(form.get("path") or "")
+        if path not in library_paths(ctx.storage):
+            return notice("/library", "image-needed")
+        upload = form.get("image")
+        data = await upload.read() if hasattr(upload, "read") else b""
+        info = save_track_cover(ctx.covers, path, data)
+        if info is None:
+            ctx.note("upload", "Image rejected")
+            return notice("/library", "image-needed")
+        if ctx.assign_catalog is not None:
+            original = ctx.assign_catalog.read_text()
+            updated = with_track_image(original, paths={path}, info=info)
+            if updated != original:
+                ctx.assign_catalog.write_text(updated)
+        ctx.note("upload", f"Stored cover for {path}")
+        return notice("/library", "image")
+
+    @app.get("/library/cover/{path:path}")
+    def track_cover(path: str) -> FileResponse:
+        if ctx.covers is None or path not in library_paths(ctx.storage):
+            raise HTTPException(status_code=404)
+        located = locate_track_cover(ctx.covers, path)
+        if located is None:
+            raise HTTPException(status_code=404)
+        file_path, media = located
+        return FileResponse(file_path, media_type=media)
 
     @app.get("/library/file/{path:path}")
     def preview_track(path: str) -> Response:

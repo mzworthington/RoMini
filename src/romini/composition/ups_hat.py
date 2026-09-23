@@ -1,11 +1,13 @@
 from collections.abc import Callable
 
-from romini.features.battery.charge import percent_from_pack_volts
+from romini.features.battery.charge import flow_from_current_ma, percent_from_pack_volts
 
 INA219_ADDR = 0x43
 REG_BUS_VOLTAGE = 0x02
+REG_CURRENT = 0x04
 REG_CALIBRATION = 0x05
 CALIBRATION_16V_5A = 26868
+CURRENT_LSB_MA = 0.1524
 
 
 class UpsHatBattery:
@@ -38,6 +40,23 @@ class UpsHatBattery:
         if volts is None:
             return None
         return percent_from_pack_volts(volts)
+
+    def _current_ma(self) -> float | None:
+        try:
+            self._write(REG_CALIBRATION, CALIBRATION_16V_5A)
+            raw = self._read_u16(REG_CURRENT)
+        except OSError:
+            return None
+        if raw > 32767:
+            raw -= 65536
+        return raw * CURRENT_LSB_MA
+
+    @property
+    def flow(self) -> str | None:
+        current = self._current_ma()
+        if current is None:
+            return None
+        return flow_from_current_ma(current)
 
 
 def _smbus(bus: int) -> object:

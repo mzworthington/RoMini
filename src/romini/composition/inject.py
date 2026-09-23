@@ -24,18 +24,22 @@ def apply_sim_line(box: SimBox, line: str) -> None:
         return
     if command == "vol" and rest.strip() == "up":
         on_volume_up(mixer=box.mixer)
-        box.note("volume", f"Volume set to {box.mixer.level}")
+        box.note("volume", f"Volume set to {box.mixer.level}", headline="Volume changed")
         return
     if command == "vol" and rest.strip() == "down":
         on_volume_down(mixer=box.mixer)
-        box.note("volume", f"Volume set to {box.mixer.level}")
+        box.note("volume", f"Volume set to {box.mixer.level}", headline="Volume changed")
         return
     if command == "play" and rest.strip() == "long":
+        was_playing = box.player.is_playing()
         on_play_long_pressed(player=box.player)
-        box.note("play", "Restarted track")
+        box.mark_listening(was_playing)
+        box.note("play", "Restarted track", headline="Story restarted")
         return
     if command == "play":
+        was_playing = box.player.is_playing()
         on_play_pressed(player=box.player)
+        box.mark_listening(was_playing)
         if box.player.is_playing():
             box.note("play", f"Played {box.player.playing_path()}", headline="Story playing")
         else:
@@ -52,6 +56,7 @@ def apply_sim_line(box: SimBox, line: str) -> None:
             position_sec=0.0,
         )
         box.note("halt", "Halt", headline="Halt requested")
+        box.close_listening()
 
 
 def run_sim_lines(box: SimBox, lines: Iterable[str]) -> None:

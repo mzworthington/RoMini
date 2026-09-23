@@ -65,19 +65,6 @@
 {% endif %}
 <p class="hint">{% if tags %}Last tag read: {{ tags[-1].uid }}{% else %}No tag read yet{% endif %}</p>
 </section>
-{% if pad %}
-<div class="board">
-<section class="card">
-<h2>Present a figure</h2>
-<p class="hint">Sim only. Paste a UID the way the plate would read it.</p>
-<form action="/present" method="post">
-<label for="present-uid">UID</label>
-<input id="present-uid" name="uid" type="text" autocomplete="off" spellcheck="false" required>
-<button>Present</button>
-</form>
-</section>
-</div>
-{% endif %}
 <ul class="summary-cards">
 <li class="summary-card">
 <div class="summary-head">
@@ -104,6 +91,12 @@
 <p class="summary-note">{{ free_space }}</p>
 {% endif %}
 <div class="meter sage" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ disk_fill }}" aria-label="MicroSD used"><span style="width: {{ disk_fill }}%"></span></div>
+</li>
+<li class="summary-card">
+<div class="summary-head">
+<p class="summary-label">Today's Session</p>
+</div>
+<p class="summary-value"><strong>{{ listen_today }}</strong></p>
 </li>
 </ul>
 <section class="card queue">
@@ -188,17 +181,21 @@
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
 {% endif %}
 </section>
-<aside class="card">
-<h2>Activity stream</h2>
+<aside class="card activity-stream">
+<header class="stream-head">
+<h2><svg class="stream-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 7 7 6.9 6.9 0 0 1-4.9-2.1l-1.4 1.4A9 9 0 1 0 13 3zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8z"/></svg>Activity Stream</h2>
+<p class="fifo">Live FIFO</p>
+</header>
 {% if audit_entries %}
 <ul class="activity">
-{% for entry in audit_entries %}
-<li><span>{{ entry.when }}</span> <strong>{{ entry.headline }}</strong><p>{{ entry.summary }}</p></li>
+{% for entry in audit_entries[:4] %}
+<li><span class="activity-mark tone-{{ ['primary', 'secondary', 'quiet', 'secondary'][loop.index0 % 4] }}" aria-hidden="true"></span><strong>{{ entry.headline }}</strong><time datetime="{{ entry.when_iso }}">{{ entry.clock }}</time>{% if entry.summary and entry.summary != entry.headline %}<p>{{ entry.summary }}</p>{% endif %}</li>
 {% endfor %}
 </ul>
 {% else %}
 <p class="empty">No activity yet</p>
 {% endif %}
+<a class="journal" href="/settings#audit">View Complete Hardware Journal</a>
 <section class="inset">
 <h2>Storybox</h2>
 <p class="hint">{{ host.hostname }}{% if host.address != "Not reported" %} · {{ host.address }}{% endif %}</p>

@@ -10,18 +10,6 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     def figures_page(request: Request) -> HTMLResponse:
         return ctx.page(request, "figures.html", page="figures", page_title="Figures")
 
-    @app.post("/present")
-    async def present_figure(request: Request) -> RedirectResponse:
-        if ctx.pad is None:
-            raise HTTPException(status_code=404)
-        form = await request.form()
-        uid = str(form["uid"]).strip()
-        if not uid:
-            return notice("/figures", "needed")
-        ctx.pad.place(uid)
-        ctx.note("present", f"Presented {uid}", headline="Figure presented")
-        return notice("/figures", "presented")
-
     @app.post("/register-mode")
     async def switch_register_mode(request: Request) -> RedirectResponse:
         if ctx.register is None:
@@ -40,5 +28,5 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         form = await request.form()
         name = str(form.get("name") or "")
         name_tag(uid=uid, name=name, catalog=ctx.assign_catalog)
-        ctx.note("name", f"Named {uid} {name}".strip())
+        ctx.note("name", f"Named {uid} {name}".strip(), headline="Figure named")
         return notice("/figures", "named")

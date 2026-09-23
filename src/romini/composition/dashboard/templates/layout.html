@@ -36,7 +36,6 @@
 </ul>
 </nav>
 <ul class="status-pills">
-<li>{{ free_space }}</li>
 {% if charge is not none %}<li>{{ charge }}% charged</li>{% endif %}
 {% if mixer %}<li>Cap {{ volume_ceiling }}</li>{% endif %}
 <li>Wi-Fi {{ host.wifi }}</li>
@@ -77,7 +76,7 @@
 {% elif page == "settings" %}
 <p class="page-kicker">Hardware telemetry</p>
 <h2 class="page-title">Hardware &amp; System Configuration</h2>
-<p class="lede">Power, volume, keys, and what the box has been doing.</p>
+<p class="lede">{% set mdns = host.hostname if host.hostname.endswith('.local') else host.hostname ~ '.local' %}{{ mdns }} ({{ host.address }}) · Uptime {{ host.uptime }} · Raspberry Pi 4 Model B (4GB RAM)</p>
 {% endif %}
 </div>
 {% if page == "home" %}

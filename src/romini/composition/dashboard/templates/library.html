@@ -1,6 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="studio">
+<section class="card deck live-deck hero-dock" aria-label="Live physical deck">
+<div class="deck-kicker">
+<p class="kicker">Live Physical Deck</p>
+<p class="hint">{% if now_playing %}ISO 14443-A detected{% else %}Waiting for a figure{% endif %}</p>
+</div>
+</section>
+<section class="card scan-dock" aria-label="Quick reader sensor">
+<p class="kicker">Quick Reader Sensor</p>
+<h2>Scan &amp; Map Tag</h2>
+</section>
 <ul class="metrics">
 <li><span>Tracks in the library</span><span class="metric">{{ tracks|length }}</span></li>
 <li><span>Mapped figures</span><span class="metric">{{ tags|length }}</span></li>
@@ -78,6 +88,25 @@
 <button>Assign</button>
 </form>
 </section>
+<section class="card">
+<h2>Cover image</h2>
+{% if library_files %}
+<form action="/library/cover" method="post" enctype="multipart/form-data">
+<label for="cover-path">Track</label>
+<select id="cover-path" name="path" required>
+{% for file in library_files %}
+<option value="{{ file.path }}">{{ file.label }}</option>
+{% endfor %}
+</select>
+<label for="cover">Image</label>
+<input id="cover" name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required>
+<button>Upload image</button>
+</form>
+<p class="hint">Stored with this track. The library and the player show it, or the RoMini logo when none is set.</p>
+{% else %}
+<p class="hint">Upload a track first</p>
+{% endif %}
+</section>
 <section class="card" id="audition" aria-label="In-browser audition">
 <h2>Listen</h2>
 {% if library_paths %}
@@ -126,7 +155,14 @@
 <tbody>
 {% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower) and (not unassigned or not track.figure) %}
 <tr>
-    <td><img class="cover" src="{{ track.image or '/logo.svg' }}" alt=""></td>
+    <td>
+        <img class="cover" src="{{ track.image or '/logo.svg' }}" alt="">
+        <form action="/library/cover" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="path" value="{{ track.path }}">
+        <label>Cover image<input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
+        <button>Upload image</button>
+        </form>
+    </td>
     <td><span class="track-title">{{ track.title }}</span></td>
     <td>{% if track.figure %}<span class="chip">{{ track.figure }}</span>{% else %}<span class="chip missing">No figure linked</span>{% endif %}</td>
     <td>{{ track.path }}</td>

@@ -34,13 +34,12 @@ def test_with_track_image_attaches_file_info_to_the_matching_track() -> None:
     updated = with_track_image(
         catalog,
         paths={"station.mp3"},
-        story="the-little-station",
         info={"file": "cover.png", "size": 12, "media_type": "image/png"},
     )
 
     assert "file: cover.png" in updated
     assert "media_type: image/png" in updated
-    assert "story: the-little-station" in updated
+    assert "story:" not in updated
     assert "size: 12" in updated
 
 
@@ -51,7 +50,6 @@ def test_with_track_image_leaves_other_tracks_alone() -> None:
         with_track_image(
             catalog,
             paths={"station.mp3"},
-            story="the-little-station",
             info={"file": "cover.png", "size": 12, "media_type": "image/png"},
         )
         == catalog

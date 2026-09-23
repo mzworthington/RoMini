@@ -2,11 +2,12 @@ import os
 import socket
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from shutil import disk_usage
 from typing import Protocol
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import yaml
 from fastapi import Request
@@ -22,9 +23,12 @@ from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
 from romini.features.library.assign import CatalogFile
 from romini.features.library.track_facts import describe_audio
+from romini.features.listening.log import PlayLog
+from romini.features.listening.today import format_listen_length, listening_today
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer, describe_now_playing
 from romini.features.play_by_tag.place_figure import Mixer, PlayMode
-from romini.features.stories.cover import cover_media_type, image_file_info, is_story_slug, with_track_image
+from romini.features.safety.bedtime import bedtime_due, sleep_label
+from romini.features.stories.cover import cover_media_type, image_file_info, with_track_image
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -47,6 +51,18 @@ def format_free_space(n: int) -> str:
         if size < 1024 or unit == "TB":
             return f"{size:.1f} {unit} free"
     return f"{n} bytes free"
+
+
+def memory_fill(memory: str) -> int | None:
+    used_text, _, total_text = memory.partition("/")
+    try:
+        used = int(used_text.strip().split()[0])
+        total = int(total_text.strip().split()[0])
+    except (ValueError, IndexError):
+        return None
+    if total <= 0:
+        return None
+    return min(100, round(100 * used / total))
 
 
 def _read_text(path: str) -> str:
@@ -142,7 +158,6 @@ HOME_NOTICES = {
     "register-on": "Place a figure on the box",
     "register-off": "Register off",
     "named": "Figure named",
-    "presented": "Figure presented",
     "placed": "Figure placed",
     "paused": "Paused",
     "playing": "Playing",
@@ -159,6 +174,9 @@ HOME_NOTICES = {
     "speak-needed": "Could not speak the story",
     "speak-key-id": "ElevenLabs needs the secret that starts with sk_, not the key ID",
     "muted": "Muted",
+    "beep": "NFC beep saved",
+    "sleep": "The box will sleep in 30 minutes",
+    "sleep-off": "Bedtime cancelled",
     "power": "Power request sent",
     "image": "Cover image stored",
     "image-needed": "Choose a PNG, JPEG, GIF, or WebP image",
@@ -400,132 +418,72 @@ def list_saved_stories(root: Path | None) -> list[dict[str, str]]:
         title = str(data.get("title") or "").strip()
         if not title:
             continue
-        found.append({"title": title, "slug": path.name, "image": story_cover_url(root, path.name)})
+        found.append({"title": title, "slug": path.name})
     return found
 
 
-def story_cover_url(root: Path | None, slug: str) -> str:
-    located = locate_cover(root, slug)
-    if located is None:
-        return ""
-    return f"/stories/{slug}/image"
-
-
-def locate_cover(root: Path | None, slug: str) -> tuple[Path, str] | None:
-    if root is None or not is_story_slug(slug):
+def track_cover_folder(root: Path, audio_path: str) -> Path | None:
+    name = audio_path.replace("\\", "/").strip()
+    if not name or name.startswith("/") or any(part in {"", ".", ".."} for part in name.split("/")):
         return None
-    yaml_path = root / slug / "story.yaml"
-    if not yaml_path.is_file():
-        return None
-    data = yaml.safe_load(yaml_path.read_text()) or {}
-    image = data.get("image") if isinstance(data.get("image"), dict) else {}
-    filename = str(image.get("file") or "")
-    media = cover_media_type(filename)
-    if not media:
-        return None
-    path = (root / slug / filename).resolve()
+    folder = (root / name).resolve()
     try:
-        path.relative_to((root / slug).resolve())
+        folder.relative_to(root.resolve())
     except ValueError:
         return None
-    if not path.is_file():
-        return None
-    return path, media
+    return folder
 
 
-def covers_by_audio_path(root: Path | None) -> dict[str, str]:
-    found: dict[str, str] = {}
-    if root is None or not root.is_dir():
-        return found
-    for pack in sorted(root.iterdir()):
-        if locate_cover(root, pack.name) is None:
-            continue
-        data = yaml.safe_load((pack / "story.yaml").read_text()) or {}
-        url = f"/stories/{pack.name}/image"
-        for key in ("library_path", "spoken_file"):
-            audio = str(data.get(key) or "").strip()
-            if audio:
-                found[audio] = url
-    return found
-
-
-def resolve_track_image(track: dict[str, object], *, stories: Path | None, covers: dict[str, str]) -> str:
-    path = str(track.get("path") or "")
-    if path and path in covers:
-        return covers[path]
-    image = track.get("image")
-    if isinstance(image, dict) and stories is not None:
-        slug = str(image.get("story") or "")
-        if locate_cover(stories, slug) is not None:
-            return story_cover_url(stories, slug)
-    return ""
-
-
-def save_story_cover(pack: Path, data: bytes) -> dict[str, object] | None:
+def save_track_cover(root: Path, audio_path: str, data: bytes) -> dict[str, object] | None:
     info = image_file_info(data)
-    yaml_path = pack / "story.yaml"
-    if info is None or not yaml_path.is_file():
+    folder = track_cover_folder(root, audio_path)
+    if info is None or folder is None:
         return None
-    for old in pack.glob("cover.*"):
+    folder.mkdir(parents=True, exist_ok=True)
+    for old in folder.glob("cover.*"):
         if old.is_file():
             old.unlink()
     filename = str(info["file"])
-    (pack / filename).write_bytes(data)
-    notes = yaml.safe_load(yaml_path.read_text()) or {}
-    stored = {"file": filename, "size": info["size"], "media_type": info["media_type"]}
-    notes["image"] = stored
-    yaml_path.write_text(yaml.safe_dump(notes, sort_keys=True))
-    return stored
+    (folder / filename).write_bytes(data)
+    return {"file": filename, "size": info["size"], "media_type": info["media_type"]}
 
 
-def publish_story_cover(stories: Path, catalog: CatalogFile | None, pack: Path) -> None:
-    yaml_path = pack / "story.yaml"
-    if not yaml_path.is_file():
+def locate_track_cover(root: Path | None, audio_path: str) -> tuple[Path, str] | None:
+    if root is None:
+        return None
+    folder = track_cover_folder(root, audio_path)
+    if folder is None or not folder.is_dir():
+        return None
+    for path in sorted(folder.glob("cover.*")):
+        media = cover_media_type(path.name)
+        if path.is_file() and media:
+            return path, media
+    return None
+
+
+def track_cover_url(audio_path: str) -> str:
+    return "/library/cover/" + quote(audio_path, safe="/")
+
+
+def resolve_track_image(track: dict[str, object], *, covers: Path | None) -> str:
+    path = str(track.get("path") or "")
+    if locate_track_cover(covers, path) is None:
+        return ""
+    return track_cover_url(path)
+
+
+def remember_track_cover(covers: Path | None, catalog: CatalogFile | None, audio_path: str) -> None:
+    if covers is None or catalog is None or not audio_path.strip():
         return
-    data = yaml.safe_load(yaml_path.read_text()) or {}
-    for key in ("library_path", "spoken_file"):
-        audio = str(data.get(key) or "").strip()
-        if audio:
-            remember_story_cover(stories, catalog, audio)
-
-
-def remember_story_cover(stories: Path | None, catalog: CatalogFile | None, audio_path: str) -> None:
-    if stories is None or catalog is None or not audio_path.strip():
+    located = locate_track_cover(covers, audio_path)
+    if located is None:
         return
-    match = _cover_info_for_audio(stories, audio_path)
-    if match is None:
-        return
-    slug, info = match
+    path, media = located
+    info = {"file": path.name, "size": path.stat().st_size, "media_type": media}
     original = catalog.read_text()
-    updated = with_track_image(original, paths={audio_path}, story=slug, info=info)
+    updated = with_track_image(original, paths={audio_path}, info=info)
     if updated != original:
         catalog.write_text(updated)
-
-
-def _cover_info_for_audio(root: Path, audio_path: str) -> tuple[str, dict[str, object]] | None:
-    if not root.is_dir():
-        return None
-    for pack in sorted(root.iterdir()):
-        yaml_path = pack / "story.yaml"
-        if not pack.is_dir() or not yaml_path.is_file():
-            continue
-        data = yaml.safe_load(yaml_path.read_text()) or {}
-        paths = {str(data.get(key) or "").strip() for key in ("library_path", "spoken_file")}
-        if audio_path not in paths:
-            continue
-        image = data.get("image")
-        if not isinstance(image, dict):
-            continue
-        filename = str(image.get("file") or "")
-        media = cover_media_type(filename)
-        file_path = pack / filename
-        if not media or not file_path.is_file():
-            continue
-        size = image.get("size")
-        if isinstance(size, bool) or not isinstance(size, int):
-            size = file_path.stat().st_size
-        return pack.name, {"file": filename, "size": size, "media_type": media}
-    return None
 
 
 def write_character(root: Path, *, name: str, background: str, slug: str = "") -> Path:
@@ -706,6 +664,7 @@ def render_page(
     assign_catalog: CatalogFile | None,
     settings: SqliteSettings | None,
     stories: Path | None,
+    covers: Path | None,
     characters: Path | None,
     secrets: Path | None,
     box_secrets: Path | None,
@@ -719,6 +678,7 @@ def render_page(
     flash: str = "",
     power: object | None = None,
     updates: object | None = None,
+    listening: PlayLog | None = None,
 ) -> HTMLResponse:
     tracks: list[dict[str, str]] = []
     tags: list[dict[str, str]] = []
@@ -730,7 +690,6 @@ def render_page(
             if str(tag.get("uid") or "").strip()
         ]
         names = {tag["uid"]: tag["name"] for tag in tags}
-        covers = covers_by_audio_path(stories)
         tracks = []
         for track in data.get("tracks") or []:
             uid = str(track.get("uid") or "")
@@ -750,14 +709,16 @@ def render_page(
                         "length": facts.length if facts else "",
                         "size": facts.size if facts else "",
                         "duration_sec": str(facts.duration_sec) if facts else "",
-                        "image": resolve_track_image(track, stories=stories, covers=covers),
+                        "image": resolve_track_image(track, covers=covers),
                     }
                 )
     play_mode = PlayMode.PRESENCE.value
+    sleep_at = None
     if settings is not None:
         remembered = settings.play_mode()
         if remembered is not None:
             play_mode = remembered.value
+        sleep_at = settings.sleep_at()
     notice_key = request.query_params.get("notice", "")
     detail = request.query_params.get("detail", "").strip()
     bound_uids = {track["uid"] for track in tracks if track["uid"].strip()}
@@ -783,12 +744,14 @@ def render_page(
         audit_entries = [
             {
                 "when": entry.happened_at.strftime("%Y-%m-%d %H:%M"),
+                "clock": entry.happened_at.strftime("%H:%M"),
                 "when_iso": entry.happened_at.isoformat(),
-                "headline": entry.headline,
+                "headline": entry.headline.strip() or entry.action.replace("-", " ").capitalize(),
                 "summary": entry.summary,
             }
             for entry in audit.recent(limit=KEEP)
         ]
+    host = read_host_facts()
     return templates.TemplateResponse(
         request,
         template,
@@ -799,6 +762,7 @@ def render_page(
             "version": installed_version(),
             "charge": battery.percent if battery is not None else None,
             "pack_volts": getattr(battery, "volts", None) if battery is not None else None,
+            "pack_flow": getattr(battery, "flow", None) if battery is not None else None,
             "notice": flash or detail or HOME_NOTICES.get(notice_key, ""),
             "characters": notes["characters"],
             "outline": notes["outline"],
@@ -810,7 +774,6 @@ def render_page(
             ),
             "spoken_file": spoken_file_name(stories),
             "opened_story_slug": opened_story_slug,
-            "story_image": story_cover_url(stories, opened_story_slug) if opened_story_slug else "",
             "saved_stories": list_saved_stories(stories),
             "saved_characters": list_saved_characters(characters),
             "selected_character_slugs": character_slug_list(notes),
@@ -832,6 +795,10 @@ def render_page(
             "library_paths": library_paths(storage),
             "library_files": library_file_labels(stories, library_paths(storage)),
             "play_mode": play_mode,
+            "nfc_beep": settings.nfc_beep() if settings is not None else True,
+            "can_sleep": settings is not None,
+            "sleep_label": sleep_label(sleep_at, datetime.now().astimezone()),
+            "sleep_armed": sleep_at is not None and not bedtime_due(sleep_at, datetime.now().astimezone()),
             "presence": PlayMode.PRESENCE.value,
             "tap": PlayMode.TAP.value,
             "pad": pad is not None,
@@ -849,12 +816,18 @@ def render_page(
                 update_status,
                 channel=os.environ.get("GITHUB_REPO", "mzworthington/RoMini"),
             ),
-            "host": read_host_facts(),
+            "host": host,
+            "memory_fill": memory_fill(host["memory"]),
             "unbound_tags": unbound_tags,
             "active_figures": active_figures,
             "figure_fill": figure_fill,
             "disk_used": disk_used,
             "disk_fill": disk_fill,
+            "listen_today": (
+                format_listen_length(listening_today(listening.intervals(), now=datetime.now().astimezone()))
+                if listening is not None
+                else "0m"
+            ),
             "focus_uid": request.query_params.get("uid", "").strip(),
             "bind_prompt": request.query_params.get("bind", "") == "1",
             "disk_total": disk_total,
@@ -877,6 +850,7 @@ class DashboardCtx:
     mixer: Mixer | None
     battery: Battery | None
     stories: Path | None
+    covers: Path | None
     characters: Path | None
     secrets: Path | None
     box_secrets: Path | None
@@ -891,6 +865,8 @@ class DashboardCtx:
     note_failed: Callable[[str, str, BaseException], None]
     power: object | None = None
     updates: object | None = None
+    listening: PlayLog | None = None
+    mark_listening: Callable[[bool], None] = lambda _was_playing: None
 
     def page(self, request: Request, template: str, *, page: str, page_title: str) -> HTMLResponse:
         flash = getattr(self, "flash", "") or ""
@@ -904,6 +880,7 @@ class DashboardCtx:
             assign_catalog=self.assign_catalog,
             settings=self.settings,
             stories=self.stories,
+            covers=self.covers,
             characters=self.characters,
             secrets=self.secrets,
             box_secrets=self.box_secrets,
@@ -917,4 +894,5 @@ class DashboardCtx:
             flash=flash,
             power=self.power,
             updates=self.updates,
+            listening=self.listening,
         )

@@ -18,7 +18,7 @@ Upload a file or folder, assign a figure to a library track, preview audio, then
 
 ## Figures
 
-Turn NFC register on, present a UID (sim), and name tags.
+Turn NFC register on, then name tags. Paste a UID on the sim harness.
 
 ![Figures](./images/figures.png)
 

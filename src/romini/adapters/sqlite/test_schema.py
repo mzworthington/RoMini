@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 from romini.adapters.sqlite.catalog import SqliteCatalog
@@ -43,6 +44,27 @@ def test_sqlite_settings_accept_a_shared_connection(tmp_path: Path) -> None:
     SqliteSettings(conn).remember_play_mode(PlayMode.TAP)
 
     assert SqliteSettings(conn).play_mode() is PlayMode.TAP
+
+
+def test_nfc_beep_defaults_on_and_can_be_turned_off(tmp_path: Path) -> None:
+    settings = SqliteSettings(tmp_path / "state.sqlite")
+
+    assert settings.nfc_beep() is True
+    settings.remember_nfc_beep(False)
+
+    assert SqliteSettings(tmp_path / "state.sqlite").nfc_beep() is False
+
+
+def test_sleep_deadline_is_remembered_until_cleared(tmp_path: Path) -> None:
+    deadline = datetime(2026, 9, 23, 20, 30, tzinfo=UTC)
+    settings = SqliteSettings(tmp_path / "state.sqlite")
+
+    assert settings.sleep_at() is None
+    settings.remember_sleep_at(deadline)
+
+    assert SqliteSettings(tmp_path / "state.sqlite").sleep_at() == deadline
+    settings.remember_sleep_at(None)
+    assert settings.sleep_at() is None
 
 
 def test_sqlite_catalog_accepts_a_shared_connection(tmp_path: Path) -> None:

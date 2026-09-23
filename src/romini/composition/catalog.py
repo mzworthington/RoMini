@@ -24,7 +24,7 @@ def poll_catalog(
     )
     SqliteCatalog(data_dir / "state.sqlite").replace_tracks(box.library.tracks)
     if previous_mtime is not None:
-        box.note("catalog", "Updated catalog")
+        box.note("catalog", "Updated catalog", headline="Catalog updated")
     return mtime
 
 

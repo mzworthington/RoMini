@@ -60,7 +60,6 @@ def test_assign_confirm_keeps_the_cover_when_the_path_stays() -> None:
         "      file: cover.png\n"
         "      size: 12\n"
         "      media_type: image/png\n"
-        "      story: frog-prince\n"
     )
 
     confirm_assign(
@@ -72,8 +71,8 @@ def test_assign_confirm_keeps_the_cover_when_the_path_stays() -> None:
 
     image = (yaml.safe_load(catalog.text) or {})["tracks"][0]["image"]
     assert image["file"] == "cover.png"
-    assert image["story"] == "frog-prince"
     assert image["media_type"] == "image/png"
+    assert "story" not in image
 
 
 def test_assign_confirm_drops_the_cover_when_the_audio_changes() -> None:
@@ -87,7 +86,6 @@ def test_assign_confirm_drops_the_cover_when_the_audio_changes() -> None:
         "      file: cover.png\n"
         "      size: 12\n"
         "      media_type: image/png\n"
-        "      story: frog-prince\n"
     )
 
     confirm_assign(

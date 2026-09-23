@@ -172,11 +172,11 @@ def test_now_playing_carries_the_story_image() -> None:
                 "uid": "04aabbccddeeff",
                 "title": "The Frog Prince",
                 "path": "stories/frog-prince.mp3",
-                "image": "/stories/frog-prince/image",
+                "image": "/library/cover/stories/frog-prince.mp3",
             }
         ],
         tags=[{"uid": "04aabbccddeeff", "name": "Frog"}],
     )
 
     assert view is not None
-    assert view.image == "/stories/frog-prince/image"
+    assert view.image == "/library/cover/stories/frog-prince.mp3"

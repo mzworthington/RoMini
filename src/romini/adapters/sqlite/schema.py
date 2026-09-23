@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 _MIGRATIONS = {
     1: """
@@ -37,6 +37,13 @@ _MIGRATIONS = {
         """,
     3: """
         ALTER TABLE audit_log ADD COLUMN headline TEXT NOT NULL DEFAULT '';
+        """,
+    4: """
+        CREATE TABLE IF NOT EXISTS play_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            started_at TEXT NOT NULL,
+            ended_at TEXT
+        );
         """,
 }
 

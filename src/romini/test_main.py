@@ -473,6 +473,7 @@ def test_romini_core_dashboard_reads_box_env_for_studio_keys(tmp_path: Path, mon
     assert seen["secrets"] == data / "studio.env"
     assert seen["box_secrets"] == Path("/etc/romini/env")
     assert seen["stories"] == data / "stories"
+    assert seen["covers"] == data / "covers"
     assert seen["characters"] == data / "characters"
 
 

@@ -39,6 +39,26 @@ def test_ups_hat_reports_pack_voltage() -> None:
     assert UpsHatBattery(BrokenSmbus()).volts is None
 
 
+class CurrentBus:
+    def __init__(self, raw: int) -> None:
+        self._raw = raw
+
+    def write_i2c_block_data(self, addr: int, register: int, data: list[int]) -> None:
+        assert addr == 0x43
+
+    def read_i2c_block_data(self, addr: int, register: int, length: int) -> list[int]:
+        assert addr == 0x43
+        assert register == 0x04
+        assert length == 2
+        return [(self._raw >> 8) & 0xFF, self._raw & 0xFF]
+
+
+def test_ups_hat_current_sign_says_charging_or_discharging() -> None:
+    assert UpsHatBattery(CurrentBus(100)).flow == "charging"
+    assert UpsHatBattery(CurrentBus((-80) & 0xFFFF)).flow == "discharging"
+    assert UpsHatBattery(BrokenSmbus()).flow is None
+
+
 def test_open_ups_hat_skips_when_the_bus_is_missing() -> None:
     from romini.composition.ups_hat import open_ups_hat
 

@@ -60,7 +60,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         slug = str(form.get("slug") or "").strip()
         open_character_pack(ctx.characters, slug)
         if slug:
-            ctx.note("character", f"Opened character {slug}")
+            ctx.note("character", f"Opened character {slug}", headline="Character opened")
         return notice("/characters", "character")
 
     @app.post("/characters/new", response_model=None)

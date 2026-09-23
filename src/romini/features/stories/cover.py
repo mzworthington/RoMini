@@ -21,10 +21,6 @@ def cover_media_type(filename: str) -> str:
     return COVER_TYPES.get(filename, "")
 
 
-def is_story_slug(slug: str) -> bool:
-    return bool(slug) and slug not in {".", ".."} and "/" not in slug and "\\" not in slug
-
-
 def image_file_info(data: bytes) -> dict[str, object] | None:
     if not data or len(data) > COVER_LIMIT:
         return None
@@ -39,16 +35,15 @@ def with_track_image(
     catalog_text: str,
     *,
     paths: set[str],
-    story: str,
     info: dict[str, object],
 ) -> str:
     filename = str(info.get("file") or "")
     media_type = cover_media_type(filename)
     size = info.get("size")
-    if not paths or not is_story_slug(story) or not media_type or isinstance(size, bool) or not isinstance(size, int):
+    if not paths or not media_type or isinstance(size, bool) or not isinstance(size, int):
         return catalog_text
     data = yaml.safe_load(catalog_text) or {}
-    image = {"file": filename, "size": size, "media_type": media_type, "story": story}
+    image = {"file": filename, "size": size, "media_type": media_type}
     changed = False
     for row in data.get("tracks") or []:
         if str(row.get("path") or "") in paths:

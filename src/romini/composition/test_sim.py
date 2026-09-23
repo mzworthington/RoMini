@@ -41,6 +41,42 @@ from romini.fakes import (
 from romini.features.play_by_tag.place_figure import PlayMode
 
 
+def test_sim_place_plays_the_connect_chirp(tmp_path: Path) -> None:
+    class ChirpPlayer(FakePlayer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.chirps: list[str] = []
+
+        def play_earcon(self, path: str) -> None:
+            self.chirps.append(path)
+
+    player = ChirpPlayer()
+    box = load_sim_box(data_dir=write_frog_data(tmp_path), player=player, led=FakeLed())
+
+    box.place(FROG_UID)
+
+    assert player.chirps == ["romini/connect.wav"]
+
+
+def test_sim_place_skips_the_connect_chirp_when_nfc_beep_is_off(tmp_path: Path) -> None:
+    class ChirpPlayer(FakePlayer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.chirps: list[str] = []
+
+        def play_earcon(self, path: str) -> None:
+            self.chirps.append(path)
+
+    player = ChirpPlayer()
+    box = load_sim_box(data_dir=write_frog_data(tmp_path), player=player, led=FakeLed())
+    box.settings.remember_nfc_beep(False)
+
+    box.place(FROG_UID)
+
+    assert player.chirps == []
+    assert player.plays
+
+
 def test_sim_place_plays_mapped_catalog_track() -> None:
     player = FakePlayer()
     led = FakeLed()
@@ -64,6 +100,21 @@ def test_sim_place_records_the_audit_log() -> None:
 
     summaries = [entry.summary for entry in box.audit.recent()]
     assert summaries == [f"Played {SIM_LIBRARY_ROOT}/{FROG_REL_PATH}"]
+
+
+def test_sim_place_opens_todays_listening_while_the_story_plays() -> None:
+    from romini.features.listening.log import MemoryPlayLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led)
+    box.listening = MemoryPlayLog()
+
+    box.place(FROG_UID)
+
+    intervals = box.listening.intervals()
+    assert len(intervals) == 1
+    assert intervals[0].ended_at is None
 
 
 def test_sim_unknown_figure_records_the_code_in_the_audit_log() -> None:
@@ -107,6 +158,52 @@ def test_sim_lift_pauses_after_grace() -> None:
     assert sessions.positions == {FROG_UID: 14.5}
 
 
+def test_sim_halt_closes_todays_listening() -> None:
+    from romini.composition.inject import apply_sim_line
+    from romini.features.listening.log import MemoryPlayLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led, mixer=FakeMixer(level=4, ceiling=100), halt=FakeHalt())
+    box.listening = MemoryPlayLog()
+    box.place(FROG_UID)
+
+    apply_sim_line(box, "halt")
+
+    assert box.listening.intervals()[0].ended_at is not None
+
+
+def test_sim_play_line_closes_todays_listening() -> None:
+    from romini.composition.inject import apply_sim_line
+    from romini.features.listening.log import MemoryPlayLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led)
+    box.listening = MemoryPlayLog()
+    box.place(FROG_UID)
+
+    apply_sim_line(box, "play")
+
+    assert box.listening.intervals()[0].ended_at is not None
+
+
+def test_sim_lift_closes_todays_listening() -> None:
+    from romini.features.listening.log import MemoryPlayLog
+
+    player = FakePlayer()
+    led = FakeLed()
+    box = frog_sim_box(player, led, sessions=FakeSessions())
+    box.listening = MemoryPlayLog()
+
+    box.place(FROG_UID)
+    box.lift(FROG_UID, elapsed_sec=2.1, position_sec=14.5)
+
+    intervals = box.listening.intervals()
+    assert len(intervals) == 1
+    assert intervals[0].ended_at is not None
+
+
 def test_load_sim_box_from_romini_data(tmp_path: Path) -> None:
     data = write_frog_data(tmp_path)
     player = FakePlayer()
@@ -116,6 +213,7 @@ def test_load_sim_box_from_romini_data(tmp_path: Path) -> None:
     box.place(FROG_UID)
 
     assert player.plays == [(str(frog_story_path(data)), 0.0)]
+    assert box.listening.intervals()[0].ended_at is None
 
 
 def test_load_sim_box_from_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -766,6 +864,21 @@ def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
     )
 
     assert sleeps == [NFC_POLL_SEC, NFC_POLL_SEC]
+
+
+def test_core_ticks_power_off_when_bedtime_is_due(tmp_path: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    halt = FakeHalt()
+    box.halt = halt
+    box.settings.remember_sleep_at(datetime.now(UTC) - timedelta(minutes=1))
+
+    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None], sleep=lambda _: None)
+
+    assert halt.poweroffs == 1
+    assert box.settings.sleep_at() is None
 
 
 def test_sim_line_play_starts_selected_tap_track() -> None:

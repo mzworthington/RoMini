@@ -10,6 +10,7 @@ from romini.features.audit.record import AuditLog, record_event
 from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
 from romini.features.library.assign import CatalogFile
+from romini.features.listening.log import PlayLog, sync_playback
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer
 from romini.features.play_by_tag.place_figure import Mixer
 
@@ -50,6 +51,7 @@ def create_dashboard(
     mixer: Mixer | None = None,
     battery: Battery | None = None,
     stories: Path | None = None,
+    covers: Path | None = None,
     characters: Path | None = None,
     secrets: Path | None = None,
     box_secrets: Path | None = None,
@@ -59,6 +61,7 @@ def create_dashboard(
     speak_post: Callable[..., bytes] | None = None,
     player: NowPlayingPlayer | None = None,
     audit: AuditLog | None = None,
+    listening: PlayLog | None = None,
     update_status: Path | None = None,
     power: object | None = None,
     updates: object | None = None,
@@ -81,7 +84,17 @@ def create_dashboard(
         suffix = f" ({code})" if isinstance(code, int) else ""
         detail = str(getattr(err, "vendor_message", "") or "").strip()
         extra = f": {detail}" if detail else ""
-        note(action, f"{label} failed{suffix}{extra}")
+        note(action, f"{label} failed{suffix}{extra}", headline=f"{label} failed")
+
+    def mark_listening(was_playing: bool) -> None:
+        if listening is None or player is None:
+            return
+        sync_playback(
+            listening,
+            was_playing=was_playing,
+            is_playing=player.is_playing(),
+            at=datetime.now().astimezone(),
+        )
 
     ctx = DashboardCtx(
         storage=storage,
@@ -94,6 +107,7 @@ def create_dashboard(
         mixer=mixer,
         battery=battery,
         stories=stories,
+        covers=covers,
         characters=characters,
         secrets=secrets,
         box_secrets=box_secrets,
@@ -108,6 +122,8 @@ def create_dashboard(
         note_failed=note_failed,
         power=power,
         updates=updates,
+        listening=listening,
+        mark_listening=mark_listening,
     )
     home.mount(app, ctx)
     figures.mount(app, ctx)
