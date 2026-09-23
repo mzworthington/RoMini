@@ -99,27 +99,6 @@
 <p class="summary-value"><strong>{{ listen_today }}</strong></p>
 </li>
 </ul>
-<section class="card queue">
-<h2>Needs a story</h2>
-{% if unbound_tags %}
-<p class="hint">{{ unbound_tags|length }} figure{% if unbound_tags|length != 1 %}s{% endif %} still need an audio link.</p>
-<ul class="figures">
-{% for tag in unbound_tags %}
-<li class="figure queue-item">
-<img class="figure-mark" src="/mark.svg" width="48" height="48" alt="">
-{% if tag.name %}<h3>{{ tag.name }}</h3>{% endif %}
-<p class="uid">{{ tag.uid }}</p>
-<p class="hint">No story linked</p>
-<a class="button" href="/library?uid={{ tag.uid }}">Assign audio</a>
-</li>
-{% endfor %}
-</ul>
-{% elif tags %}
-<p class="empty">Every figure has a story.</p>
-{% else %}
-<p class="hint">Register a figure before you can link a story.</p>
-{% endif %}
-</section>
 <div class="studio-main">
 <section class="card">
 <h2>Figures</h2>
