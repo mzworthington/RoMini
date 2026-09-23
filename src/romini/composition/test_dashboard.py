@@ -2887,6 +2887,18 @@ def test_story_studio_header_actions_follow_the_design() -> None:
     assert 'class="plus-glyph"' in actions
 
 
+def test_dashboard_scan_tag_stays_on_one_line_and_system_nav_names_hardware() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    primary = html.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
+    scan = html.split(".scan {", 1)[1].split("}", 1)[0]
+
+    assert ">System &amp; Hardware<" in primary
+    assert "white-space: nowrap" in scan
+    assert "flex: none" in scan
+
+
 def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> None:
     from fastapi.testclient import TestClient
 
@@ -2896,7 +2908,7 @@ def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> 
     assert ">Live Player<" in primary
     assert ">Figures &amp; Tags<" in primary
     assert ">Audio Library<" in primary
-    assert ">System<" in primary
+    assert ">System &amp; Hardware<" in primary
     assert ">Home<" not in primary
     assert ">Settings<" not in primary
     assert ">Stories<" not in primary
@@ -4054,7 +4066,7 @@ def test_dashboard_pages_split_parent_jobs() -> None:
         assert ">Figures &amp; Tags<" in primary
         assert ">Audio Library<" in primary
         assert ">Story Studio<" in primary
-        assert ">System<" in primary
+        assert ">System &amp; Hardware<" in primary
         assert ">Settings<" not in primary
         assert 'href="/write"' not in page
         assert ">Write<" not in page

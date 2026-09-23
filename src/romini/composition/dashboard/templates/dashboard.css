@@ -1331,8 +1331,10 @@ td button, td a.button { margin: 0; min-height: 2.25rem; }
 .lede { max-width: 40rem; }
 .scan {
   display: inline-flex;
+  flex: none;
   align-items: center;
   min-height: 2.5rem;
+  white-space: nowrap;
   padding: 0.35rem 0.95rem;
   border-radius: 999px;
   background: #D97706;
