@@ -49,6 +49,8 @@ sudo raspi-config nonint do_spi 0
 PROV="$(mktemp -d)"
 "${VENV}/bin/python" -m romini.composition.provision "${PROV}"
 sudo cp "${PROV}/systemd/system/"* /etc/systemd/system/
+sudo cp "${PROV}/sudoers.d/romini" /etc/sudoers.d/romini
+sudo chmod 440 /etc/sudoers.d/romini
 sudo mkdir -p /etc/avahi/services
 sudo cp "${PROV}/avahi/services/romini.service" /etc/avahi/services/
 rm -rf "${PROV}"

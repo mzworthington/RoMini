@@ -42,6 +42,24 @@ def test_romini_core_service_starts_on_boot() -> None:
     assert "AmbientCapabilities=CAP_NET_BIND_SERVICE" in ROMINI_CORE_SERVICE
 
 
+def test_romini_core_service_lets_sudo_become_root() -> None:
+    from romini.composition.provision import ROMINI_CORE_SERVICE
+
+    assert "CapabilityBoundingSet" not in ROMINI_CORE_SERVICE
+
+
+def test_provision_lets_the_dashboard_systemctl_without_a_password(tmp_path: Path) -> None:
+    from romini.composition.provision import write_provision_files
+
+    dest = tmp_path / "etc"
+    write_provision_files(dest)
+    sudoers = (dest / "sudoers.d" / "romini").read_text()
+
+    assert "NOPASSWD" in sudoers
+    assert "/usr/bin/systemctl restart romini-core" in sudoers
+    assert "/usr/bin/systemctl start --no-block romini-update.service" in sudoers
+
+
 def test_romini_update_timer_runs_installed_module() -> None:
     from romini.composition.provision import ROMINI_UPDATE_SERVICE, ROMINI_UPDATE_TIMER
 

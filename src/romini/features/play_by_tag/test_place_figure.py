@@ -260,6 +260,43 @@ def test_figure_returns_after_grace_resumes_remembered_position() -> None:
     ]
 
 
+def test_tap_plays_the_connect_chime_when_a_story_starts() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    player = FakePlayer()
+    earcon = FakeEarcon()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=player,
+        led=FakeLed(),
+        earcon=earcon,
+    )
+
+    assert earcon.plays == ["romini/connect.wav"]
+    assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
+
+
+def test_tap_stays_quiet_when_the_nfc_chime_is_off() -> None:
+    library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
+    earcon = FakeEarcon()
+
+    on_figure_placed(
+        "04AABBCC",
+        play_mode=PlayMode.TAP,
+        assign_mode=False,
+        library=library,
+        player=FakePlayer(),
+        led=FakeLed(),
+        earcon=earcon,
+        beep=False,
+    )
+
+    assert earcon.plays == []
+
+
 def test_tap_starts_the_story() -> None:
     library = FakeLibrary(tracks={"04AABBCC": "/var/lib/romini/tracks/bear.mp3"})
     player = FakePlayer()

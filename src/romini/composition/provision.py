@@ -21,13 +21,17 @@ EnvironmentFile=-/etc/romini/env
 RuntimeDirectory=romini
 RuntimeDirectoryMode=0700
 AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ExecStart=/var/lib/romini/install/venv/bin/romini-core
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+"""
+ROMINI_SUDOERS = """%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl restart romini-core
+%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl start --no-block romini-update.service
+%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl reboot
+%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff
 """
 ROMINI_UPDATE_SERVICE = """[Unit]
 Description=RoMini GitHub Release updater
@@ -83,6 +87,9 @@ def write_provision_files(dest: Path) -> None:
     avahi = dest / "avahi" / "services"
     avahi.mkdir(parents=True, exist_ok=True)
     (avahi / "romini.service").write_text(AVAHI_HTTP_SERVICE)
+    sudoers = dest / "sudoers.d"
+    sudoers.mkdir(parents=True, exist_ok=True)
+    (sudoers / "romini").write_text(ROMINI_SUDOERS)
     (dest / "fstab.romini-data").write_text(ROMINI_DATA_FSTAB + "\n")
     (dest / "config.txt.romini").write_text(GPIO_SHUTDOWN_OVERLAY + "\n" + I2C_ARM + "\n" + SPI_ARM + "\n")
 

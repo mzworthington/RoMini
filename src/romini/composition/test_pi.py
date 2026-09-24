@@ -88,9 +88,13 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
 def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
     calls: list[list[str]] = []
 
-    def popen(cmd: list[str], *args, **kwargs) -> object:
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    def popen(cmd: list[str], *args, **kwargs) -> Proc:
         calls.append(cmd)
-        return object()
+        return Proc()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
     MpvPlayer().play_earcon("romini/connect.wav")
@@ -101,6 +105,29 @@ def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
         "--audio-device=alsa/sysdefault:CARD=Headphones",
     ]
     assert calls[0][-1].endswith("connect.wav")
+
+
+def test_mpv_chime_releases_the_headphones_before_the_story_starts(monkeypatch) -> None:
+    order: list[str] = []
+
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            order.append("chime-done")
+            return 0
+
+    def popen(cmd: list[str], *args, **kwargs) -> object:
+        if str(cmd[-1]).endswith("connect.wav"):
+            order.append("chime-start")
+            return Proc()
+        order.append("story-start")
+        return object()
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    player = MpvPlayer()
+    player.play_earcon("romini/connect.wav")
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
+
+    assert order.index("chime-done") < order.index("story-start")
 
 
 def test_pn532_nfc_reads_uid_as_lowercase_hex() -> None:

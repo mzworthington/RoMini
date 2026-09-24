@@ -2,6 +2,7 @@ import json
 import subprocess
 from collections.abc import Callable
 from datetime import datetime
+from importlib.resources import files
 from os import environ
 from pathlib import Path
 
@@ -140,12 +141,15 @@ class MpvPlayer:
             return
 
     def play_earcon(self, path: str) -> None:
-        from importlib.resources import files
-
         name = path.rsplit("/", 1)[-1]
         wav = files("romini").joinpath(name)
         audio = str(wav) if wav.is_file() else path
-        subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
+        proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=1)
 
 
 class MpvIpcStatus:

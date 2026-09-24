@@ -86,6 +86,8 @@ def on_figure_placed(
             return
         if player.is_playing():
             player.stop()
+        if beep and earcon is not None:
+            earcon.play_earcon(CONNECT_EARCON_PATH)
         player.play(path, position_sec=0.0, uid=uid)
         led.pulse()
         return
