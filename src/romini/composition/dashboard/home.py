@@ -43,7 +43,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
 
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request) -> HTMLResponse:
-        return ctx.page(request, "home.html", page="home", page_title="")
+        return ctx.page(request, "home.html", page="home", page_title="Live Player")
 
     @app.get("/now-playing", response_class=HTMLResponse)
     def now_playing_deck(request: Request) -> HTMLResponse:

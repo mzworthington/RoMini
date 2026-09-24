@@ -409,9 +409,10 @@ def render_page(
     updates: object | None = None,
     listening: PlayLog | None = None,
 ) -> HTMLResponse:
+    studio = page in {"stories", "characters"}
     tracks: list[dict[str, str]] = []
     tags: list[dict[str, str]] = []
-    if assign_catalog is not None:
+    if assign_catalog is not None and not studio:
         data = yaml.safe_load(assign_catalog.read_text()) or {}
         tags = []
         for tag in data.get("tags") or []:
@@ -476,12 +477,31 @@ def render_page(
         used_bytes = max(total_bytes - storage.free_bytes, 0)
         disk_used = format_free_space(used_bytes).removesuffix(" free")
         disk_fill = min(100, round(100 * used_bytes / total_bytes))
-    notes = load_story_notes(stories)
-    opened_story_slug = current_pack(stories).name if stories is not None and current_pack(stories) != stories else ""
-    opened_character = load_open_character(characters)
-    keys = studio_keys(secrets, box_secrets)
+    if studio:
+        notes = load_story_notes(stories)
+        opened_story_slug = (
+            current_pack(stories).name if stories is not None and current_pack(stories) != stories else ""
+        )
+        opened_character = load_open_character(characters)
+        saved_stories = list_saved_stories(stories)
+        saved_characters = list_saved_characters(characters)
+        spoken_file = spoken_file_name(stories)
+        voices = load_voices()
+    else:
+        notes = {
+            key: ""
+            for key in ("title", "characters", "interests", "outline", "script", "character_slugs", "duration_seconds")
+        }
+        opened_story_slug = ""
+        opened_character = {"name": "", "background": "", "slug": ""}
+        saved_stories = []
+        saved_characters = []
+        spoken_file = ""
+        voices = []
+    library_files = library_file_labels(stories, library_paths(storage)) if studio or page == "library" else []
+    keys = studio_keys(secrets, box_secrets) if studio or page == "settings" else {}
     audit_entries = []
-    if audit is not None:
+    if audit is not None and page in {"figures", "settings"}:
         audit_entries = [
             {
                 "when": entry.happened_at.strftime("%Y-%m-%d %H:%M"),
@@ -519,29 +539,29 @@ def render_page(
             "story_length_label": listen_length_label(
                 duration_seconds=parse_duration_seconds(notes.get("duration_seconds"))
             ),
-            "spoken_file": spoken_file_name(stories),
+            "spoken_file": spoken_file,
             "opened_story_slug": opened_story_slug,
             "stories_root": str(stories) if stories else "",
-            "saved_stories": list_saved_stories(stories),
-            "saved_characters": list_saved_characters(characters),
+            "saved_stories": saved_stories,
+            "saved_characters": saved_characters,
             "selected_character_slugs": character_slug_list(notes),
             "character_name": opened_character["name"],
             "character_background": opened_character["background"],
             "opened_character_slug": opened_character["slug"],
-            "elevenlabs_voices": keys["ELEVENLABS_VOICE_IDS"],
-            "voices": load_voices(),
-            "gemini_key_set": bool(keys["GEMINI_API_KEY"]),
-            "elevenlabs_key_set": bool(elevenlabs_api_key(keys["ELEVENLABS_API_KEY"])),
-            "elevenlabs_key_id": bool(keys["ELEVENLABS_API_KEY"])
-            and not elevenlabs_api_key(keys["ELEVENLABS_API_KEY"]),
-            "gemini_key_mask": mask_secret(keys["GEMINI_API_KEY"]),
-            "elevenlabs_key_mask": mask_secret(elevenlabs_api_key(keys["ELEVENLABS_API_KEY"])),
+            "elevenlabs_voices": keys.get("ELEVENLABS_VOICE_IDS", ""),
+            "voices": voices,
+            "gemini_key_set": bool(keys.get("GEMINI_API_KEY")),
+            "elevenlabs_key_set": bool(elevenlabs_api_key(keys.get("ELEVENLABS_API_KEY", ""))),
+            "elevenlabs_key_id": bool(keys.get("ELEVENLABS_API_KEY"))
+            and not elevenlabs_api_key(keys.get("ELEVENLABS_API_KEY", "")),
+            "gemini_key_mask": mask_secret(keys.get("GEMINI_API_KEY", "")),
+            "elevenlabs_key_mask": mask_secret(elevenlabs_api_key(keys.get("ELEVENLABS_API_KEY", ""))),
             "query": request.query_params.get("q", "").strip(),
             "unassigned": request.query_params.get("unassigned", "") == "1",
             "tracks": tracks,
             "tags": tags,
             "library_paths": library_paths(storage),
-            "library_files": library_file_labels(stories, library_paths(storage)),
+            "library_files": library_files,
             "play_mode": play_mode,
             "nfc_beep": settings.nfc_beep() if settings is not None else True,
             "can_sleep": settings is not None,
@@ -571,7 +591,7 @@ def render_page(
             "disk_fill": disk_fill,
             "listen_today": (
                 format_listen_length(listening_today(listening.intervals(), now=datetime.now().astimezone()))
-                if listening is not None
+                if page == "figures" and listening is not None
                 else "0m"
             ),
             "focus_uid": request.query_params.get("uid", "").strip(),

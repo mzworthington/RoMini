@@ -16,7 +16,7 @@ from romini.features.stories.cover import with_tag_image
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     @app.get("/figures", response_class=HTMLResponse)
     def figures_page(request: Request) -> HTMLResponse:
-        return ctx.page(request, "figures.html", page="figures", page_title="Figures")
+        return ctx.page(request, "figures.html", page="figures", page_title="Figures & Tags")
 
     @app.post("/register-mode")
     async def switch_register_mode(request: Request) -> RedirectResponse:

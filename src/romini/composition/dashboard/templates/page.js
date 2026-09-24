@@ -44,6 +44,13 @@
     });
   }
 
+  function landedUrl(requested, responseUrl) {
+    var asked = new URL(requested, location.origin);
+    var landed = new URL(responseUrl || requested, location.origin);
+    if (!landed.hash) landed.hash = asked.hash;
+    return landed.href;
+  }
+
   function apply(html, finalUrl, push) {
     var doc = new DOMParser().parseFromString(html, "text/html");
     var next = doc.querySelector(".shell");
@@ -54,17 +61,24 @@
     }
     var incoming = doc.querySelector("[data-toast] .toast-text");
     var message = incoming ? incoming.textContent.trim() : "";
-    var nextPath = new URL(finalUrl, location.origin).pathname;
-    var samePath = nextPath === location.pathname;
+    var landed = new URL(finalUrl, location.origin);
+    var previous = new URL(location.href);
+    var samePath = landed.pathname === previous.pathname;
     var y = window.scrollY;
     shell.replaceWith(next);
     runScripts(next);
     document.title = doc.title;
-    var clean = cleanUrl(finalUrl);
+    var clean = cleanUrl(landed.href);
     if (push && !samePath) history.pushState({ spa: 1 }, "", clean);
     else history.replaceState({ spa: 1 }, "", clean);
     if (message) show(message);
-    if (push && !samePath) window.scrollTo(0, 0);
+    var moved = push || landed.pathname !== previous.pathname || landed.hash !== previous.hash;
+    var target = null;
+    if (moved && landed.hash.length > 1) {
+      target = document.getElementById(decodeURIComponent(landed.hash.slice(1)));
+    }
+    if (target && target.scrollIntoView) target.scrollIntoView();
+    else if (push && !samePath) window.scrollTo(0, 0);
     else window.scrollTo(0, y);
     syncPoll();
   }
@@ -75,7 +89,7 @@
     return fetch(url, { credentials: "same-origin" })
       .then(function (response) {
         return response.text().then(function (html) {
-          apply(html, response.url || url, push);
+          apply(html, landedUrl(url, response.url), push);
         });
       })
       .catch(function () {

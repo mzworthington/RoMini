@@ -19,7 +19,7 @@ from romini.features.play_by_tag.place_figure import PlayMode, on_volume_down, o
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     @app.get("/settings", response_class=HTMLResponse)
     def settings_page(request: Request) -> HTMLResponse:
-        return ctx.page(request, "settings.html", page="settings", page_title="Settings")
+        return ctx.page(request, "settings.html", page="settings", page_title="System & Hardware")
 
     class PlayModeBody(BaseModel):
         play_mode: PlayMode

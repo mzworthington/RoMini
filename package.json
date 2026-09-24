@@ -1,0 +1,11 @@
+{
+  "name": "romini-dashboard-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/romini/composition/dashboard/*.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

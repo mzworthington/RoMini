@@ -510,14 +510,14 @@ def test_dashboard_figure_library_uses_tag_cards(tmp_path: Path) -> None:
     assert "Deep Dark Wood" in gruffalo
     assert "Currently on Deck" in gruffalo
     assert "Configure Tag" in gruffalo
-    assert 'href="/library?uid=04aabbccddeeff"' in gruffalo
+    assert 'href="/library?uid=04aabbccddeeff#assign"' in gruffalo
     assert "Needs Audio" in unbound
     assert 'class="figure-mark figure-blank"' in unbound
     assert 'class="blank-disc"' in unbound
     assert "04:55:A1:09" in unbound
     assert "No tracks linked" in unbound
     assert "Assign Audio" in unbound
-    assert 'href="/library?uid=0455a109"' in unbound
+    assert 'href="/library?uid=0455a109#assign"' in unbound
 
 
 def test_dashboard_figure_library_switches_between_list_and_grid(tmp_path: Path) -> None:
@@ -720,7 +720,7 @@ def test_dashboard_figures_panels_control_playback_and_register(tmp_path: Path) 
     assert 'name="return" value="/figures"' in deck
     assert 'action="/volume"' in deck
     assert 'name="level"' in deck
-    assert 'href="/library?uid=04aabbccddeeff"' in deck
+    assert 'href="/library?uid=04aabbccddeeff#assign"' in deck
     assert "Edit Mapping" in deck
     assert "Register this figure" in scan
     assert 'name="register" value="on"' in scan
@@ -1072,3 +1072,110 @@ def test_dashboard_upload_can_ask_for_a_figure_link_next() -> None:
     assert response.headers["location"] == "/library?notice=uploaded&bind=1"
     html = TestClient(create_dashboard(storage=storage)).get("/library?bind=1").text
     assert "Link the new track to a figure." in html
+
+
+def test_dashboard_figures_deck_pads_the_story_sheet() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/figures").text
+    sheet = html.split(".hero-dock .player-sheet {", 1)[1].split("}", 1)[0]
+    shell = html.split(".hero-dock.deck {", 1)[1].split("}", 1)[0]
+    controls = html.split(".hero-dock .deck-controls {", 1)[1].split("}", 1)[0]
+
+    assert "padding: 1.25rem 1.4rem" in sheet
+    assert "background: #fff" in sheet
+    assert "background: transparent" in shell
+    assert "margin-top: auto" not in controls
+
+
+def test_dashboard_figure_card_shows_the_story_bound_to_it(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy-and-the-banana.mp3"\n'
+        '    title: "Romy and the banana"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert "Romy and the banana" in card
+
+
+def test_dashboard_figure_card_shows_the_length_of_its_story(tmp_path: Path) -> None:
+    import io
+    import wave
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 8000)
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy.wav"\n'
+        '    title: "Romy"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"stories/romy.wav": buffer.getvalue()}),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert "Romy" in card
+    assert "0:01" in card
+    assert "15.7 KB" in card
+
+
+def test_dashboard_figure_card_says_when_no_story_is_linked(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tags:\n  - uid: "04aabbccddeeff"\n    name: "Banana"\ntracks: []\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
+
+    assert "No story linked" in card

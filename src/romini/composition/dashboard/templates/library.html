@@ -86,15 +86,52 @@
     if (!event.dataTransfer || !event.dataTransfer.files.length) {
       return;
     }
-    input.files = event.dataTransfer.files;
-    input.form.submit();
+    enqueue(event.dataTransfer.files);
   });
   input.addEventListener("change", function () {
-    if (input.files.length) input.form.submit();
+    if (input.files.length) enqueue(input.files);
   });
   folder.addEventListener("change", function () {
-    if (folder.files.length) folder.form.submit();
+    if (folder.files.length) enqueue(folder.files);
   });
+  function enqueue(fileList) {
+    var files = Array.prototype.slice.call(fileList);
+    var index = 0;
+    var status = document.getElementById("sync-status");
+    var meter = document.getElementById("sync-meter");
+    var bar = meter ? meter.querySelector("span") : null;
+    var bind = document.getElementById("bind-after");
+    function sendNext() {
+      if (index >= files.length) return;
+      var file = files[index];
+      var body = new FormData();
+      body.append("file", file, file.name);
+      if (bind && bind.checked) body.append("bind", "1");
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", input.form.action || "/tracks");
+      xhr.upload.addEventListener("progress", function (event) {
+        if (!event.lengthComputable || !meter || !bar || !status) return;
+        var pct = Math.round((event.loaded / event.total) * 100);
+        meter.setAttribute("aria-valuenow", String(pct));
+        bar.style.width = pct + "%";
+        status.textContent = (index + 1) + " of " + files.length + " · " + file.name;
+      });
+      xhr.addEventListener("load", function () {
+        index += 1;
+        if (index >= files.length) {
+          window.location = xhr.responseURL || "/library";
+          return;
+        }
+        sendNext();
+      });
+      xhr.addEventListener("error", function () {
+        if (status) status.textContent = "Could not transfer " + file.name;
+      });
+      if (status) status.textContent = (index + 1) + " of " + files.length + " · " + file.name;
+      xhr.send(body);
+    }
+    sendNext();
+  }
 })();
 </script>
 </section>
@@ -102,9 +139,9 @@
 <div class="quota-head">
 <p class="quota-label sync-label">Active Sync Queue</p>
 </div>
-<p class="quota-note">Nothing transferring</p>
+<p class="quota-note" id="sync-status">Nothing transferring</p>
 <p class="quota-note">Local Wi-Fi</p>
-<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Transfer progress"><span style="width: 0%"></span></div>
+<div class="meter" id="sync-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Transfer progress"><span style="width: 0%"></span></div>
 </section>
 </div>
 <section class="card library-catalog">
@@ -146,7 +183,7 @@
 <td>
 {% if has_player %}
 {% if preview %}
-<form action="/library/stop" method="post"><button class="play-dot is-playing" type="submit" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Stop</span></button></form>
+<form action="/library/stop" method="post"><button class="play-dot is-playing" type="submit" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg><span>Stop</span></button></form>
 {% else %}
 <form action="/library/play/{{ track.uid }}" method="post"><button class="play-dot" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Play</span></button></form>
 {% endif %}

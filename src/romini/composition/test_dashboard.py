@@ -119,11 +119,22 @@ def test_dashboard_page_titles_match_the_nav_labels() -> None:
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
 
-    assert '<h2 class="page-title">Live Player</h2>' in client.get("/").text
-    assert '<h2 class="page-title">Figures &amp; Tags</h2>' in client.get("/figures").text
-    assert '<h2 class="page-title">Audio Library</h2>' in client.get("/library").text
-    assert '<h2 class="page-title">Story Studio</h2>' in client.get("/stories").text
-    assert '<h2 class="page-title">System &amp; Hardware</h2>' in client.get("/settings").text
+    home = client.get("/").text
+    figures = client.get("/figures").text
+    library = client.get("/library").text
+    stories = client.get("/stories").text
+    settings = client.get("/settings").text
+
+    assert '<h2 class="page-title">Live Player</h2>' in home
+    assert "<title>Live Player · RoMini</title>" in home
+    assert '<h2 class="page-title">Figures &amp; Tags</h2>' in figures
+    assert "<title>Figures &amp; Tags · RoMini</title>" in figures
+    assert '<h2 class="page-title">Audio Library</h2>' in library
+    assert "<title>Audio Library · RoMini</title>" in library
+    assert '<h2 class="page-title">Story Studio</h2>' in stories
+    assert "<title>Story Studio · RoMini</title>" in stories
+    assert '<h2 class="page-title">System &amp; Hardware</h2>' in settings
+    assert "<title>System &amp; Hardware · RoMini</title>" in settings
 
 
 def test_dashboard_live_player_is_playback_without_the_old_jump_list() -> None:
@@ -1215,6 +1226,26 @@ def test_dashboard_activity_stream_is_a_short_live_preview_of_the_journal() -> N
     assert "View Complete Hardware Journal" in html
 
 
+def test_dashboard_hash_links_scroll_to_the_named_section(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tags:\n  - uid: "04aabbccddeeff"\n    name: "Frog"\n')
+    client = TestClient(
+        create_dashboard(storage=FakeStorage(free_bytes=1024), assign_catalog=PathCatalog(catalog_path))
+    )
+    figures = client.get("/figures").text
+    settings = client.get("/settings").text
+
+    assert 'href="/settings#audit"' in figures
+    assert 'id="audit"' in settings
+    assert 'href="/library?uid=04aabbccddeeff#assign"' in figures
+    assert "scrollIntoView" in figures
+    assert "decodeURIComponent(landed.hash.slice(1))" in figures
+
+
 def test_dashboard_activity_stream_skips_a_description_that_repeats_the_headline() -> None:
     from datetime import UTC, datetime
 
@@ -2105,3 +2136,198 @@ def test_studio_keys_writes_and_reloads_a_gemini_key(tmp_path: Path) -> None:
     loaded = studio_keys(secrets)
 
     assert loaded["GEMINI_API_KEY"] == "gem-secret"
+
+
+def test_dashboard_live_player_splits_the_plate_from_the_story(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 125.0
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+    studio = html.split('class="studio"', 1)[1].split("</script>", 1)[0]
+
+    assert studio.index("On the plate") < studio.index('class="deck-title"')
+    assert ">Frog<" in studio
+    assert 'querySelector(".studio")' in html
+
+
+def test_dashboard_live_player_deck_leads_with_the_story(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/frog-prince.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog-prince.mp3"\n'
+        '    title: "The Frog Prince"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+
+    assert '<h2 class="deck-title">The Frog Prince</h2>' in html
+    assert ">Now playing<" in html
+    assert ">Story<" in html
+
+
+def test_dashboard_live_player_shows_how_far_through_the_story(tmp_path: Path) -> None:
+    import io
+    import wave
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 8000)
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return "04aabbccddeeff"
+
+        def playing_path(self) -> str:
+            return "stories/romy.wav"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 19, 22, 33)
+
+        def position_sec(self) -> float:
+            return 0.5
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy.wav"\n'
+        '    title: "Romy"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Romy\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"stories/romy.wav": buffer.getvalue()}),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/")
+        .text
+    )
+    deck = html.split('aria-label="Now playing"', 1)[1].split("</section>", 1)[0]
+
+    assert 'class="scrub"' in deck
+    assert 'style="width: 50%"' in deck
+    assert deck.index('class="scrub"') < deck.index(">0:01<")
+
+
+def test_dashboard_play_pauses_when_a_story_is_playing() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    player = FakePlayer()
+    player.play("stories/frog-prince.mp3", position_sec=0.0, uid="04aabbccddeeff")
+    response = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=player)).post(
+        "/play",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?notice=paused"
+    assert player.is_playing() is False
+    assert player.pauses == 1
+
+
+def test_dashboard_live_player_restarts_the_story_from_the_laptop() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    player = FakePlayer()
+    player.play("stories/frog-prince.mp3", position_sec=40.0, uid="04aabbccddeeff")
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=player))
+    html = client.get("/").text
+
+    assert 'action="/play/restart"' in html
+    assert ">Restart<" in html
+    response = client.post("/play/restart", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert player.is_playing() is True
+    assert player.plays[-1] == ("stories/frog-prince.mp3", 0.0)

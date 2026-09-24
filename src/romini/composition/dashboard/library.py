@@ -34,7 +34,7 @@ class QuietLed:
 def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     @app.get("/library", response_class=HTMLResponse)
     def library_page(request: Request) -> HTMLResponse:
-        return ctx.page(request, "library.html", page="library", page_title="Library")
+        return ctx.page(request, "library.html", page="library", page_title="Audio Library")
 
     @app.post("/tracks", response_model=None)
     async def upload_track(request: Request) -> RedirectResponse:

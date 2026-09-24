@@ -62,7 +62,7 @@
 <span>{{ volume_level }}%</span>
 </form>
 {% endif %}
-<a class="edit-mapping" href="{% if now_playing and now_playing.uid %}/library?uid={{ now_playing.uid }}{% else %}/library{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>Edit Mapping</a>
+<a class="edit-mapping" href="{% if now_playing and now_playing.uid %}/library?uid={{ now_playing.uid }}#assign{% else %}/library#assign{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>Edit Mapping</a>
 </div>
 </div>
 </section>
@@ -205,10 +205,10 @@
 <footer class="figure-foot">
 {% if bound %}
 <span class="hint">{% if bound[0].suffix %}{{ bound[0].suffix }}{% endif %}{% if bound[0].size %}{% if bound[0].suffix %} · {% endif %}{{ bound[0].size }}{% endif %}</span>
-<a class="chip-btn" href="/library?uid={{ tag.uid }}">Configure Tag</a>
+<a class="chip-btn" href="/library?uid={{ tag.uid }}#assign">Configure Tag</a>
 {% else %}
 <span class="hint">No tracks linked</span>
-<a class="assign-audio" href="/library?uid={{ tag.uid }}">Assign Audio</a>
+<a class="assign-audio" href="/library?uid={{ tag.uid }}#assign">Assign Audio</a>
 {% endif %}
 </footer>
 <details class="figure-rename">

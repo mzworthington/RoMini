@@ -375,6 +375,22 @@ def test_dashboard_library_grid_lays_tracks_in_four_columns() -> None:
     assert "grid-template-columns: repeat(4, minmax(0, 1fr))" in rule
 
 
+def test_dashboard_sync_queue_reports_the_file_being_transferred() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    queue = html.split('aria-label="Active sync queue"', 1)[1].split("</section>", 1)[0]
+    script = html.split('id="upload-well"', 1)[1].split("</section>", 1)[0]
+
+    assert 'id="sync-status"' in queue
+    assert 'id="sync-meter"' in queue
+    assert "XMLHttpRequest" in script
+    assert script.index('append("file"') < script.index(".send(")
+    assert 'upload.addEventListener("progress"' in script
+    assert script.index('meter.setAttribute("aria-valuenow"') < script.index("window.location")
+    assert "form.submit()" not in script
+
+
 def test_dashboard_library_upload_well_takes_a_dropped_audio_file() -> None:
     from fastapi.testclient import TestClient
 
@@ -384,7 +400,7 @@ def test_dashboard_library_upload_well_takes_a_dropped_audio_file() -> None:
     assert well.index("Drag audio files directly onto this panel") < well.index('id="file"')
     assert 'addEventListener("drop"' in well
     drop = well.split('addEventListener("drop"', 1)[1]
-    assert drop.index("input.files = event.dataTransfer.files") < drop.index("form.submit()")
+    assert drop.index("enqueue(event.dataTransfer.files)") < drop.index("function enqueue")
     assert well.count('addEventListener("change"') == 2
 
 
@@ -605,6 +621,9 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     waiting = catalog.split(">The Very Hungry Caterpillar<", 1)[1].split("</tr>", 1)[0]
 
     assert 'class="play-dot is-playing"' in playing
+    stop = playing.split('aria-label="Stop"', 1)[1].split("</button>", 1)[0]
+    assert 'd="M6 6h12v12H6z"' in stop
+    assert "M9 7.5v9l8-4.5z" not in stop
     assert "Active Preview" in playing
     assert 'class="credit-name"' in playing
     assert "Julia Donaldson" in playing
@@ -1214,3 +1233,38 @@ def test_track_cover_stores_and_finds_a_png(tmp_path: Path) -> None:
     assert saved["file"] == "cover.png"
     assert found is not None
     assert found[0].name == "cover.png"
+
+
+def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Banana"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/romy-and-the-banana.mp3"\n'
+        '    title: "Romy and the banana"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    table = html[html.index("<caption>Library</caption>") : html.index("</table>")]
+    head = table.split("</thead>", 1)[0]
+    row = table.split("<tbody>", 1)[1]
+
+    assert head.index("<th>Story Title</th>") < head.index("<th>Figure</th>")
+    assert row.index('class="track-title"') < row.index('class="chip linked"')
+    assert ">Romy and the banana<" in row
+    assert ">Banana<" in row
