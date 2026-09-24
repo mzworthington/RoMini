@@ -5,6 +5,8 @@ from threading import Thread
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+from jinja2 import Environment, FileSystemLoader
+
 from romini.composition.inject import apply_sim_line
 from romini.composition.sim import SimBox
 
@@ -18,7 +20,10 @@ SIM_ASSETS = {
 
 
 def sim_home_page() -> bytes:
-    css = (TEMPLATES_DIR / "dashboard.css").read_text() + (TEMPLATES_DIR / "sim.css").read_text()
+    css = (
+        Environment(loader=FileSystemLoader(TEMPLATES_DIR)).get_template("dashboard.css").render()
+        + (TEMPLATES_DIR / "sim.css").read_text()
+    )
     return (TEMPLATES_DIR / "sim.html").read_text().replace("{{ css }}", css).encode()
 
 

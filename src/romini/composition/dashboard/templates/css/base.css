@@ -1,0 +1,194 @@
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/plus-jakarta-sans.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --story-coral: #D97706;
+  --coral-press: #B15F00;
+  --magic-ochre: #D97706;
+  --olive-sun: #E5DFD5;
+  --warm-chestnut: #2B2825;
+  --midnight-navy: #2B2825;
+  --cloud-foam: #F9F7F2;
+  --line: #E5DFD5;
+  --muted: #78736B;
+  --radius: 0.9rem;
+  --shadow: 0 1px 2px rgba(30, 41, 59, 0.06), 0 10px 28px rgba(30, 41, 59, 0.06);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font: 400 1.0625rem/1.5 "Plus Jakarta Sans", system-ui, sans-serif;
+  color: var(--midnight-navy);
+  background:
+    radial-gradient(1100px 480px at 50% -120px, #FFF4E5 0%, transparent 62%),
+    var(--cloud-foam);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+.shell {
+  max-width: 77.5rem;
+  margin: 0 auto;
+  padding: 1.35rem 1.25rem calc(3rem + env(safe-area-inset-bottom));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
+main { margin: 0; padding: 0; }
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: stretch;
+  margin: 0 0 1.25rem;
+}
+.board > section {
+  flex: 1 1 20rem;
+  margin: 0;
+  min-width: 0;
+}
+.board:has(.drop) {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  align-items: stretch;
+}
+.board:has(.drop) > section { height: 100%; }
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+.drop {
+  background: #F9F7F2;
+  border-style: dashed;
+  border-width: 1.5px;
+}
+.new-pack {
+  margin: 0 0 1rem;
+}
+.new-pack form { margin: 0; }
+.new-pack button {
+  margin: 0;
+  background: #fff;
+  color: var(--midnight-navy);
+  border: 2px solid var(--story-coral);
+}
+.topbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+  margin: 0 0 1.35rem;
+  padding: 0.45rem 0.55rem 0.45rem 0.7rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(43, 40, 37, 0.02), 0 10px 28px rgba(43, 40, 37, 0.05);
+}
+.topbar .masthead { margin: 0; flex: 0 0 auto; }
+.topbar nav[aria-label="Dashboard"] { flex: 0 1 auto; }
+.topbar nav[aria-label="Dashboard"] ul { margin: 0; }
+.top-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  min-width: 0;
+}
+.status-pills {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.status-pills li {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0 0 1.1rem;
+}
+.masthead > div { min-width: 0; }
+.mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 5px var(--olive-sun),
+    0 10px 24px rgba(30, 41, 59, 0.08);
+  flex-shrink: 0;
+}
+h1, h2, caption {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+h1 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 span { color: var(--story-coral); }
+.tag {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+.masthead > div {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 0.45rem;
+  align-items: center;
+}
+.online {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5B7065;
+}
+.dot {
+  display: inline-block;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-right: 0.28rem;
+  border-radius: 50%;
+  background: #5B7065;
+  vertical-align: 0.05rem;
+}
+.lede {
+  color: var(--muted);
+  margin: 0.4rem 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.welcome { text-align: center; }
+.welcome .lede { margin: 0 0 1rem; text-align: left; }

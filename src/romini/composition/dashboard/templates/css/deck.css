@@ -1,0 +1,101 @@
+.now-playing,
+.deck {
+  text-align: left;
+  margin: 0;
+  padding: 1.25rem 1.35rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(43, 40, 37, 0.02), 0 8px 24px rgba(43, 40, 37, 0.05);
+}
+.kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--story-coral);
+}
+.deck h2,
+.now-playing h2,
+.deck-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.now-playing dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+.now-playing dt {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.now-playing dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.now-playing-transport {
+  margin: 0.85rem 0 0;
+}
+.now-playing-transport button {
+  width: auto;
+  margin: 0;
+}
+.welcome-art {
+  display: block;
+  width: min(100%, 16.5rem);
+  height: auto;
+  margin: 0 auto 1.15rem;
+  padding: 0.55rem;
+}
+header { margin: 0 0 1rem; }
+.jumps {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+  text-align: left;
+}
+.jumps form { margin: 0; }
+.jumps a,
+.jumps button.jump {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  text-align: left;
+  color: inherit;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(30, 41, 59, 0.03);
+  margin-top: 0;
+  min-height: 2.75rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.jumps a:hover,
+.jumps button.jump:hover {
+  border-color: var(--olive-sun);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+.jumps a:active,
+.jumps button.jump:active {
+  transform: translateY(0);
+}
+.jumps strong {
+  display: block;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-weight: 800;
+  margin: 0 0 0.15rem;
+}

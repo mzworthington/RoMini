@@ -8,7 +8,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from shutil import disk_usage
 from typing import Protocol
-from urllib.parse import quote, unquote, urlencode
+from urllib.parse import unquote, urlencode
 
 import yaml
 from fastapi import Request
@@ -16,16 +16,82 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from romini.adapters.sqlite.settings import SqliteSettings
+from romini.composition.dashboard.covers import (
+    figure_cover_key,
+    figure_cover_url,
+    locate_track_cover,
+    resolve_track_image,
+)
+from romini.composition.dashboard.covers import (
+    remember_track_cover as remember_track_cover,
+)
+from romini.composition.dashboard.covers import (
+    save_track_cover as save_track_cover,
+)
+from romini.composition.dashboard.covers import (
+    track_cover_folder as track_cover_folder,
+)
+from romini.composition.dashboard.covers import (
+    track_cover_url as track_cover_url,
+)
 from romini.composition.dashboard.packs import (
+    character_name_taken as character_name_taken,
+)
+from romini.composition.dashboard.packs import (
+    character_slug_list,
     current_pack,
+    library_file_labels,
+    list_saved_characters,
+    list_saved_stories,
+    load_open_character,
     load_story_notes,
-    story_slug,
+    spoken_file_name,
+)
+from romini.composition.dashboard.packs import (
+    clear_current as clear_current,
+)
+from romini.composition.dashboard.packs import (
+    draft_character_text as draft_character_text,
+)
+from romini.composition.dashboard.packs import (
+    open_character_pack as open_character_pack,
 )
 from romini.composition.dashboard.packs import (
     open_story_pack as open_story_pack,
 )
 from romini.composition.dashboard.packs import (
+    record_spoken_track as record_spoken_track,
+)
+from romini.composition.dashboard.packs import (
+    safe_character_slugs as safe_character_slugs,
+)
+from romini.composition.dashboard.packs import (
+    story_slug as story_slug,
+)
+from romini.composition.dashboard.packs import (
+    unique_track_filename as unique_track_filename,
+)
+from romini.composition.dashboard.packs import (
+    write_character as write_character,
+)
+from romini.composition.dashboard.packs import (
     write_story_notes as write_story_notes,
+)
+from romini.composition.dashboard.studio_keys import (
+    DRAFT_MODEL,
+    VOICE_MODEL,
+    elevenlabs_api_key,
+    mask_secret,
+    studio_keys,
+)
+from romini.composition.dashboard.studio_keys import (
+    STUDIO_KEY_NAMES as STUDIO_KEY_NAMES,
+)
+from romini.composition.dashboard.studio_keys import (
+    parse_env_file as parse_env_file,
+)
+from romini.composition.dashboard.studio_keys import (
+    write_studio_keys as write_studio_keys,
 )
 from romini.composition.story_audio import Speech, load_voices
 from romini.composition.story_draft import listen_length_label, parse_duration_seconds
@@ -40,7 +106,6 @@ from romini.features.listening.today import format_listen_length, listening_toda
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer, describe_now_playing
 from romini.features.play_by_tag.place_figure import Mixer, PlayMode
 from romini.features.safety.bedtime import bedtime_due, sleep_label
-from romini.features.stories.cover import cover_media_type, image_file_info, with_track_image
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -80,17 +145,6 @@ def format_tag_uid(uid: str) -> str:
     if len(compact) < 2 or len(compact) % 2 or any(character not in "0123456789ABCDEF" for character in compact):
         return text
     return ":".join(compact[index : index + 2] for index in range(0, len(compact), 2))
-
-
-def figure_cover_key(uid: str) -> str | None:
-    name = uid.replace("\\", "/").strip()
-    if not name or name.startswith("/") or any(part in {"", ".", ".."} for part in name.split("/")):
-        return None
-    return "figures/" + name
-
-
-def figure_cover_url(uid: str) -> str:
-    return "/figures/cover/" + quote(uid, safe="")
 
 
 def memory_fill(memory: str) -> int | None:
@@ -210,9 +264,6 @@ class ScriptDraft(Protocol):
     ) -> str: ...
 
 
-DRAFT_MODEL = "Gemini 3.6 Flash"
-VOICE_MODEL = "ElevenLabs v3"
-
 HOME_NOTICES = {
     "assigned": "Figure assigned",
     "play-mode": "Play mode saved",
@@ -316,309 +367,9 @@ def has_required(*values: str) -> bool:
 AUDIO_SUFFIXES = {".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"}
 
 
-def unique_track_filename(*, slug: str, taken: set[str], keep: str = "") -> str:
-    stem = slug or "story"
-    suffix = ".mp3"
-    if keep == f"{stem}{suffix}":
-        return keep
-    rest = keep[len(stem) : -len(suffix)] if keep.startswith(stem) and keep.endswith(suffix) else ""
-    if rest.startswith("-") and rest[1:].isdigit():
-        return keep
-    name = f"{stem}{suffix}"
-    n = 2
-    while name in taken:
-        name = f"{stem}-{n}{suffix}"
-        n += 1
-    return name
-
-
-def character_slug_list(notes: dict[str, str]) -> list[str]:
-    return [part for part in notes.get("character_slugs", "").split(",") if part]
-
-
-def safe_character_slugs(values: list[object]) -> list[str]:
-    slugs: list[str] = []
-    for value in values:
-        slug = str(value).strip()
-        if not slug or slug in {".", ".."} or "/" in slug or "\\" in slug:
-            continue
-        slugs.append(slug)
-    return slugs
-
-
-def draft_character_text(notes: dict[str, str], catalog: Path | None) -> str:
-    slugs = character_slug_list(notes)
-    if not slugs:
-        return notes.get("characters", "")
-    by_slug = {item["slug"]: item for item in list_saved_characters(catalog)}
-    parts: list[str] = []
-    for slug in slugs:
-        item = by_slug.get(slug)
-        if item is None:
-            continue
-        background = item["background"].strip()
-        parts.append(f"{item['name']}: {background}" if background else item["name"])
-    return "\n".join(parts)
-
-
-def record_spoken_track(pack: Path, *, filename: str, library_path: str) -> None:
-    yaml_path = pack / "story.yaml"
-    data = yaml.safe_load(yaml_path.read_text()) if yaml_path.is_file() else {}
-    data = data or {}
-    data["spoken_file"] = filename
-    data["library_path"] = library_path
-    yaml_path.parent.mkdir(parents=True, exist_ok=True)
-    yaml_path.write_text(yaml.safe_dump(data, sort_keys=True))
-
-
-def library_file_labels(root: Path | None, paths: list[str]) -> list[dict[str, str]]:
-    titles: dict[str, str] = {}
-    for story in list_saved_stories(root):
-        yaml_path = (root or Path()) / story["slug"] / "story.yaml"
-        data = yaml.safe_load(yaml_path.read_text()) if yaml_path.is_file() else {}
-        data = data or {}
-        for key in ("library_path", "spoken_file"):
-            path = str(data.get(key) or "").strip()
-            if path:
-                titles[path] = story["title"]
-    return [{"path": path, "label": f"{path} · {titles[path]}" if path in titles else path} for path in paths]
-
-
-def list_saved_stories(root: Path | None) -> list[dict[str, str]]:
-    if root is None or not root.is_dir():
-        return []
-    found: list[dict[str, str]] = []
-    for path in sorted(root.iterdir()):
-        yaml_path = path / "story.yaml"
-        if not path.is_dir() or not yaml_path.is_file():
-            continue
-        data = yaml.safe_load(yaml_path.read_text()) or {}
-        title = str(data.get("title") or "").strip()
-        if not title:
-            continue
-        found.append({"title": title, "slug": path.name})
-    return found
-
-
-def track_cover_folder(root: Path, audio_path: str) -> Path | None:
-    name = audio_path.replace("\\", "/").strip()
-    if not name or name.startswith("/") or any(part in {"", ".", ".."} for part in name.split("/")):
-        return None
-    folder = (root / name).resolve()
-    try:
-        folder.relative_to(root.resolve())
-    except ValueError:
-        return None
-    return folder
-
-
-def save_track_cover(root: Path, audio_path: str, data: bytes) -> dict[str, object] | None:
-    info = image_file_info(data)
-    folder = track_cover_folder(root, audio_path)
-    if info is None or folder is None:
-        return None
-    folder.mkdir(parents=True, exist_ok=True)
-    for old in folder.glob("cover.*"):
-        if old.is_file():
-            old.unlink()
-    filename = str(info["file"])
-    (folder / filename).write_bytes(data)
-    return {"file": filename, "size": info["size"], "media_type": info["media_type"]}
-
-
-def locate_track_cover(root: Path | None, audio_path: str) -> tuple[Path, str] | None:
-    if root is None:
-        return None
-    folder = track_cover_folder(root, audio_path)
-    if folder is None or not folder.is_dir():
-        return None
-    for path in sorted(folder.glob("cover.*")):
-        media = cover_media_type(path.name)
-        if path.is_file() and media:
-            return path, media
-    return None
-
-
-def track_cover_url(audio_path: str) -> str:
-    return "/library/cover/" + quote(audio_path, safe="/")
-
-
-def resolve_track_image(track: dict[str, object], *, covers: Path | None) -> str:
-    path = str(track.get("path") or "")
-    if locate_track_cover(covers, path) is None:
-        return ""
-    return track_cover_url(path)
-
-
-def remember_track_cover(covers: Path | None, catalog: CatalogFile | None, audio_path: str) -> None:
-    if covers is None or catalog is None or not audio_path.strip():
-        return
-    located = locate_track_cover(covers, audio_path)
-    if located is None:
-        return
-    path, media = located
-    info = {"file": path.name, "size": path.stat().st_size, "media_type": media}
-    original = catalog.read_text()
-    updated = with_track_image(original, paths={audio_path}, info=info)
-    if updated != original:
-        catalog.write_text(updated)
-
-
-def write_character(root: Path, *, name: str, background: str, slug: str = "") -> Path:
-    target = slug or story_slug(name)
-    pack = root / target if target else root
-    pack.mkdir(parents=True, exist_ok=True)
-    if target:
-        (root / "current").write_text(f"{target}\n")
-    (pack / "character.yaml").write_text(yaml.safe_dump({"name": name, "background": background}, sort_keys=True))
-    return pack
-
-
-def character_name_taken(root: Path, *, name: str, except_slug: str = "") -> bool:
-    want = story_slug(name)
-    folded = name.strip().casefold()
-    if not want and not folded:
-        return False
-    for item in list_saved_characters(root):
-        if item["slug"] == except_slug:
-            continue
-        if item["slug"] == want or item["name"].casefold() == folded:
-            return True
-    return False
-
-
-def open_character_pack(root: Path, slug: str) -> None:
-    if not slug or slug in {".", ".."} or "/" in slug or "\\" in slug:
-        return
-    if not (root / slug / "character.yaml").is_file():
-        return
-    (root / "current").write_text(f"{slug}\n")
-
-
-def clear_current(root: Path) -> None:
-    pointer = root / "current"
-    if pointer.is_file():
-        pointer.unlink()
-
-
-def load_open_character(root: Path | None) -> dict[str, str]:
-    notes = {"name": "", "background": "", "slug": ""}
-    if root is None:
-        return notes
-    pack = current_pack(root)
-    path = pack / "character.yaml"
-    if not path.is_file():
-        return notes
-    data = yaml.safe_load(path.read_text()) or {}
-    notes["name"] = str(data.get("name") or "")
-    notes["background"] = str(data.get("background") or "")
-    notes["slug"] = pack.name if pack != root else ""
-    return notes
-
-
-def list_saved_characters(root: Path | None) -> list[dict[str, str]]:
-    if root is None or not root.is_dir():
-        return []
-    found: list[dict[str, str]] = []
-    for path in sorted(root.iterdir()):
-        yaml_path = path / "character.yaml"
-        if not path.is_dir() or not yaml_path.is_file():
-            continue
-        data = yaml.safe_load(yaml_path.read_text()) or {}
-        name = str(data.get("name") or "").strip()
-        if not name:
-            continue
-        found.append(
-            {
-                "name": name,
-                "slug": path.name,
-                "background": str(data.get("background") or ""),
-            }
-        )
-    return found
-
-
-def spoken_file_name(root: Path | None) -> str:
-    if root is None:
-        return ""
-    pack = current_pack(root)
-    if not pack.is_dir():
-        return ""
-    names = sorted(path.name for path in pack.iterdir() if path.is_file() and path.suffix.lower() == ".mp3")
-    if not names:
-        return ""
-    stem = pack.name if pack != root else ""
-    preferred = [name for name in names if stem and name.startswith(stem) and name.endswith(".mp3")]
-    return preferred[-1] if preferred else names[0]
-
-
 def is_audio_track(filename: str) -> bool:
     name = filename.replace("\\", "/").strip()
     return bool(name) and Path(name).suffix.lower() in AUDIO_SUFFIXES
-
-
-STUDIO_KEY_NAMES = ("GEMINI_API_KEY", "ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_IDS")
-
-
-def parse_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    try:
-        if not path.is_file():
-            return values
-        lines = path.read_text().splitlines()
-    except OSError:
-        return values
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, _, value = stripped.partition("=")
-        values[key.strip()] = value.strip().strip("'").strip('"')
-    return values
-
-
-def elevenlabs_api_key(value: str) -> str:
-    key = value.strip()
-    parts = key.split("-")
-    if len(parts) == 5 and [len(part) for part in parts] == [8, 4, 4, 4, 12]:
-        return ""
-    return key
-
-
-def studio_keys(secrets: Path | None, box_secrets: Path | None = None) -> dict[str, str]:
-    file_vals = parse_env_file(secrets) if secrets is not None else {}
-    box_vals = parse_env_file(box_secrets) if box_secrets is not None else {}
-
-    def pick(name: str) -> str:
-        return (file_vals.get(name) or box_vals.get(name) or os.environ.get(name) or "").strip()
-
-    return {name: pick(name) for name in STUDIO_KEY_NAMES}
-
-
-def mask_secret(value: str) -> str:
-    if len(value) < 4:
-        return ""
-    return f"••••{value[-4:]}"
-
-
-def write_studio_keys(
-    secrets: Path,
-    *,
-    gemini_key: str,
-    elevenlabs_key: str,
-    elevenlabs_voices: str,
-) -> None:
-    current = parse_env_file(secrets)
-    if gemini_key.strip():
-        current["GEMINI_API_KEY"] = gemini_key.strip()
-    usable_elevenlabs = elevenlabs_api_key(elevenlabs_key)
-    if usable_elevenlabs:
-        current["ELEVENLABS_API_KEY"] = usable_elevenlabs
-    current["ELEVENLABS_VOICE_IDS"] = elevenlabs_voices.strip()
-    secrets.parent.mkdir(parents=True, exist_ok=True)
-    lines = [f"{name}={current[name]}\n" for name in STUDIO_KEY_NAMES if current.get(name)]
-    secrets.write_text("".join(lines))
-    secrets.chmod(0o600)
 
 
 class PathCatalog:
