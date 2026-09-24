@@ -112,8 +112,8 @@ def test_dashboard_tap_mode_copy_says_tap_starts_and_same_figure_pauses() -> Non
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
 
-    assert "tap the figure to start" in html
-    assert "same figure again to pause" in html
+    assert "Tap the figure to start." in html
+    assert "Tap that same figure again to pause." in html
 
 
 def test_dashboard_library_table_shows_figure_name_not_uid(tmp_path: Path) -> None:
@@ -146,7 +146,7 @@ def test_dashboard_library_table_shows_figure_name_not_uid(tmp_path: Path) -> No
     assert "<th>Figure</th>" in table
     assert "<th>UID</th>" not in table
     assert "Banana" in table
-    assert "04aabbccddeeff" not in table
+    assert ">04aabbccddeeff<" not in table
 
 
 def test_dashboard_library_search_keeps_the_matching_figure(tmp_path: Path) -> None:
@@ -211,7 +211,7 @@ def test_dashboard_library_can_show_only_tracks_with_no_figure(tmp_path: Path) -
     )
     table = html[html.index("<tbody>") : html.index("</tbody>")]
 
-    assert 'href="/library?unassigned=1"' in html
+    assert "unassigned=1" in html
     assert "The helmet" in table
     assert "A picnic" not in table
 
@@ -303,7 +303,9 @@ def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
     from romini.composition.dashboard import PathCatalog
 
     catalog_path = tmp_path / "catalog.yaml"
-    catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: Frog Prince\ntracks: []\n")
+    catalog_path.write_text(
+        "tags:\n  - uid: 04aabbccddeeff\n    name: Frog Prince\ntracks:\n  - path: stories/pond.mp3\n    title: Pond\n"
+    )
     html = (
         TestClient(
             create_dashboard(
@@ -315,7 +317,7 @@ def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
         .text
     )
 
-    assign = html.split("<h2>Assign a figure</h2>", 1)[1].split('<select id="path"', 1)[0]
+    assign = html.split('action="/assign"', 1)[1].split("</form>", 1)[0]
     assert '<select id="uid"' not in assign
     assert 'class="figure-tile"' in assign
     assert 'value="04aabbccddeeff"' in assign
@@ -337,7 +339,9 @@ def test_dashboard_assign_shows_each_figure_as_a_picture_tile(tmp_path: Path) ->
         '    name: "Frog Prince"\n'
         '  - uid: "0455a109"\n'
         '    name: "Blue Disc"\n'
-        "tracks: []\n"
+        "tracks:\n"
+        "  - path: stories/pond.mp3\n"
+        "    title: Pond\n"
     )
     html = (
         TestClient(
@@ -350,7 +354,7 @@ def test_dashboard_assign_shows_each_figure_as_a_picture_tile(tmp_path: Path) ->
         .get("/library")
         .text
     )
-    assign = html.split("<h2>Assign a figure</h2>", 1)[1].split("</form>", 1)[0]
+    assign = html.split('action="/assign"', 1)[1].split("</form>", 1)[0]
 
     assert 'name="uid"' in assign
     assert "<select" not in assign.split('<select id="path"', 1)[0]
@@ -538,7 +542,6 @@ def test_dashboard_figure_library_switches_between_list_and_grid(tmp_path: Path)
         .text
     )
     toolbar = html.split('class="figure-toolbar"', 1)[1].split('id="figure-list"', 1)[0]
-    script = html.split('id="figure-list"', 1)[1].split("</script>", 1)[0]
     list_rule = html.split(".figures.is-list {", 1)[1].split("}", 1)[0]
     switch = html.split(".figure-library .view-switch {", 1)[1].split("}", 1)[0]
     pressed = html.split('.figure-library .view-switch .chip-btn[aria-pressed="true"] {', 1)[1].split("}", 1)[0]
@@ -553,11 +556,12 @@ def test_dashboard_figure_library_switches_between_list_and_grid(tmp_path: Path)
     assert 'aria-pressed="true"' in grid
     assert 'class="figures"' in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
     assert "is-list" not in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
-    assert "figure-view-list" in script
-    assert 'classList.toggle("is-list"' in script
+    assert 'href="/figures?view=list' in listing
+    assert 'href="/figures?view=grid' in grid
     assert "grid-template-columns: 1fr" in list_rule
     assert "background: #f4ece7" in switch
     assert "background: #fff" in pressed
+    assert "color: #2b2825" in pressed
 
 
 def test_dashboard_figure_does_not_borrow_a_picture_from_its_track(tmp_path: Path) -> None:
@@ -713,13 +717,9 @@ def test_dashboard_figures_panels_control_playback_and_register(tmp_path: Path) 
     assert "Live Physical Deck" in deck
     assert "The Gruffalo" in deck
     assert "Deep Dark Wood" in deck
-    assert 'action="/play"' in deck
-    assert 'action="/play/previous"' in deck
-    assert 'action="/play/next"' in deck
-    assert 'action="/play/restart"' in deck
-    assert 'name="return" value="/figures"' in deck
-    assert 'action="/volume"' in deck
-    assert 'name="level"' in deck
+    assert 'href="/"' in deck
+    assert "Live Player" in deck
+    assert 'action="/play"' not in deck
     assert 'href="/library?uid=04aabbccddeeff#assign"' in deck
     assert "Edit Mapping" in deck
     assert "Register this figure" in scan
@@ -733,6 +733,84 @@ def test_dashboard_figures_panels_control_playback_and_register(tmp_path: Path) 
     assert nxt.status_code == 303
     assert nxt.headers["location"].startswith("/figures?notice=")
     assert player.playing_uid() == "04bbccddeeff00"
+
+
+def test_dashboard_figures_search_and_display_stay_in_the_url(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    library = tmp_path / "library"
+    (library / "stories").mkdir(parents=True)
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Frog"\n'
+        '  - uid: "04bbccddeeff00"\n'
+        '    name: "Bear"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog.mp3"\n'
+        '    title: "Pond"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=DiskStorage(library),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures?view=list&filter=open&q=bear")
+        .text
+    )
+    figures = html.split('id="figure-list"', 1)[1].split("</ul>", 1)[0]
+
+    assert "is-list" in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
+    assert 'href="/figures?view=list&amp;filter=open' in html
+    assert ">Bear<" in figures
+    assert ">Frog<" not in figures
+
+
+def test_dashboard_figures_deck_leaves_playback_on_the_live_player(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    (library / "stories").mkdir(parents=True)
+    (library / "stories" / "frog.mp3").write_bytes(b"id3")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "The Gruffalo"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/frog.mp3"\n'
+        '    title: "Deep Dark Wood"\n'
+    )
+    player = FakePlayer()
+    player.play(str(library / "stories" / "frog.mp3"), position_sec=12, uid="04aabbccddeeff")
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=DiskStorage(library),
+                assign_catalog=PathCatalog(catalog_path),
+                player=player,
+                mixer=FakeMixer(level=65),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    deck = html.split('aria-label="Live physical deck"', 1)[1].split("</section>", 1)[0]
+
+    assert 'href="/"' in deck
+    assert "Live Player" in deck
+    assert 'action="/play"' not in deck
+    assert 'action="/volume"' not in deck
 
 
 def test_dashboard_figures_live_deck_matches_the_player_sheet(tmp_path: Path) -> None:
@@ -772,8 +850,9 @@ def test_dashboard_figures_live_deck_matches_the_player_sheet(tmp_path: Path) ->
     deck = html.split('aria-label="Live physical deck"', 1)[1].split("</section>", 1)[0]
 
     assert deck.index('class="player-sheet"') < deck.index('class="deck-controls"')
-    assert "ISO 14443-A Detected" in deck
-    assert "UID: 04:AA:BB:CC:DD:EE:FF" in deck
+    assert "ISO 14443-A" not in deck
+    assert "UID:" not in deck
+    assert "Figure on the box" in deck
     assert "Bedtime Story" in deck
     assert "Julia Donaldson Collection" in deck
     assert 'class="now-line"' in deck
@@ -956,10 +1035,12 @@ def test_dashboard_live_player_docks_the_figure_inside_the_plate(tmp_path: Path)
     head, ring = plate.split('class="dock-ring"', 1)
     face = ring.split("dock-facts", 1)[0]
 
-    assert "UID 04aabbccddeeff" in head
+    assert "UID" not in head
     assert ">Frog<" in face
     assert "The Frog Prince" in face
-    assert "Contact verified" in face
+    assert "Playing" in face
+    assert "Contact verified" not in face
+    assert "RFID" not in plate
     assert 'class="dock-check"' in face
     assert "Hand-carved" not in plate
     assert "100%" not in plate
@@ -1038,7 +1119,9 @@ def test_dashboard_library_selects_the_figure_from_the_queue(tmp_path: Path) -> 
         '    name: "Banana"\n'
         '  - uid: "04ffeeddccbbaa"\n'
         '    name: "Frog"\n'
-        "tracks: []\n"
+        "tracks:\n"
+        "  - path: stories/pond.mp3\n"
+        "    title: Pond\n"
     )
     html = (
         TestClient(

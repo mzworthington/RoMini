@@ -499,6 +499,26 @@ def render_page(
         spoken_file = ""
         voices = []
     library_files = library_file_labels(stories, library_paths(storage)) if studio or page == "library" else []
+    if page == "library":
+        known = {track["path"] for track in tracks}
+        for item in library_files:
+            path = item["path"]
+            if path in known:
+                continue
+            tracks.append(
+                {
+                    "uid": "",
+                    "title": Path(path).stem.replace("-", " ").replace("_", " "),
+                    "artist": "",
+                    "path": path,
+                    "suffix": Path(path).suffix.lower().lstrip(".").upper(),
+                    "figure": "",
+                    "length": "",
+                    "size": "",
+                    "duration_sec": "",
+                    "image": "",
+                }
+            )
     keys = studio_keys(secrets, box_secrets) if studio or page == "settings" else {}
     audit_entries = []
     if audit is not None and page in {"figures", "settings"}:
@@ -558,6 +578,14 @@ def render_page(
             "elevenlabs_key_mask": mask_secret(elevenlabs_api_key(keys.get("ELEVENLABS_API_KEY", ""))),
             "query": request.query_params.get("q", "").strip(),
             "unassigned": request.query_params.get("unassigned", "") == "1",
+            "library_view": request.query_params.get("view")
+            if request.query_params.get("view") in {"list", "grid"}
+            else "list",
+            "figure_view": request.query_params.get("view")
+            if request.query_params.get("view") in {"list", "grid"}
+            else "grid",
+            "figure_filter": "open" if request.query_params.get("filter") == "open" else "all",
+            "figure_query": request.query_params.get("q", "").strip(),
             "tracks": tracks,
             "tags": tags,
             "library_paths": library_paths(storage),
@@ -574,7 +602,7 @@ def render_page(
             "register": register is not None,
             "assign_mode": bool(register.assign_mode) if register is not None else False,
             "poll": (page == "figures" and register is not None and register.assign_mode)
-            or update["label"] == "Checking",
+            or (page == "settings" and update["label"] == "Checking"),
             "mixer": mixer is not None,
             "volume_level": mixer.level if mixer is not None else 0,
             "volume_ceiling": mixer.ceiling if mixer is not None else 100,

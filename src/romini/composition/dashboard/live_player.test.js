@@ -127,3 +127,19 @@ test("moving the scrubber seeks in place", () => {
   assert.equal(page.fetches[0].init.method, "POST");
   assert.equal(page.fetches[0].init.body.get("at"), "9");
 });
+
+test("dragging the volume cap holds the deck still", async () => {
+  const page = boot(`
+    <div class="studio">
+      <form class="guard-volume"><input type="range" name="level" value="4"></form>
+    </div>
+  `);
+  page.window.document
+    .querySelector(".guard-volume input")
+    .dispatchEvent(new page.window.Event("pointerdown", { bubbles: true }));
+
+  await page.time.tick(2000);
+
+  assert.deepEqual(page.fetches, []);
+  assert.equal(page.window.document.querySelector(".studio").isConnected, true);
+});

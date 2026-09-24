@@ -224,8 +224,8 @@
 .library-catalog .view-switch .chip-btn[aria-pressed="true"],
 .figure-library .view-switch .chip-btn[aria-pressed="true"] {
   background: #fff;
-  color: var(--midnight-navy);
-  box-shadow: 0 1px 2px rgba(43, 40, 37, 0.08);
+  color: #2b2825;
+  box-shadow: 0 1px 2px rgba(43, 40, 37, 0.12);
 }
 .library-toolbar .filters { margin: 0; }
 .library-catalog .filters a[aria-current="page"] { background: #2b2825; color: #fff; border-color: #2b2825; }
@@ -273,6 +273,15 @@
   margin: 0;
   overflow: visible;
   clip: auto;
+}
+.library-catalog td label.figure-tile {
+  position: relative;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
 }
 .library-catalog table.is-grid { display: block; }
 .library-catalog table.is-grid tbody {
@@ -392,6 +401,25 @@ button.play-dot.is-playing { background: #b15f00; color: #fff; }
   gap: 0.1rem;
 }
 .row-actions form { display: inline-flex; align-items: center; gap: 0.1rem; margin: 0; }
+.library-catalog td:has(.row-assign) { position: relative; }
+.library-catalog .catalog-sheet:has(.row-assign[open]),
+.library-catalog .table-wrap:has(.row-assign[open]) { overflow: visible; }
+.row-assign[open] form {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  top: 2rem;
+  display: block;
+  width: min(24rem, 70vw);
+  padding: 0.85rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  box-shadow: 0 8px 24px rgba(43, 40, 37, 0.12);
+  text-align: left;
+}
+.row-assign .figure-tiles { grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); }
+.row-assign .figure-tile img { width: 2.75rem; height: 2.75rem; }
 .library-catalog .icon-btn {
   position: relative;
   display: inline-flex;

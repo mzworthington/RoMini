@@ -284,11 +284,10 @@ def test_dashboard_upload_form_has_a_folder_picker() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
 
-    assert '<label for="folder">Folder of tracks</label>' in html
-    folder = html.split('id="folder"', 1)[1].split(">", 1)[0]
-    assert "webkitdirectory" in folder
-    assert "multiple" in folder
-    assert "accept=" not in folder
+    file_input = html.split('id="file"', 1)[1].split(">", 1)[0]
+    assert "multiple" in file_input
+    assert 'accept="audio/*"' in file_input
+    assert "webkitdirectory" not in html
 
 
 def test_dashboard_upload_blank_file_does_not_store() -> None:
@@ -305,14 +304,25 @@ def test_dashboard_upload_blank_file_does_not_store() -> None:
     assert catalog.paths == []
 
 
-def test_dashboard_assign_form_marks_required_fields() -> None:
+def test_dashboard_assign_form_marks_required_fields(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
-    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks:\n  - path: stories/pond.mp3\n    title: The pond\n")
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), assign_catalog=PathCatalog(catalog_path)))
+        .get("/library")
+        .text
+    )
 
     assert "<legend>Figure</legend>" in html
-    assert 'id="title" name="title" type="text" required>' in html
-    assert 'id="path" name="path" required>' in html
+    assert 'name="title"' in html
+    assert 'type="text" required' in html
+    assert 'name="path"' in html
+    assign = html.split('action="/assign"', 1)[1]
+    assert "required" in assign.split('name="path"', 1)[1].split(">", 1)[0]
 
 
 def test_dashboard_library_page_matches_the_audio_library_layout() -> None:
@@ -327,7 +337,10 @@ def test_dashboard_library_page_matches_the_audio_library_layout() -> None:
     assert "Drag audio files directly onto this panel" in html
     assert "Active Sync Queue" in html
     assert "Figure" in html
-    assert "Browse Laptop Disk" in html
+    assert "Choose audio files" in html
+    assert "Browse Laptop Disk" not in html
+    assert 'id="folder"' not in html
+    assert 'id="sync-retry"' in html
     assert 'class="card deck' not in html
     assert 'class="card scan-dock"' not in html
 
@@ -341,7 +354,6 @@ def test_dashboard_library_tracks_use_nordic_cards_and_an_empty_state() -> None:
     assert html.count('class="card') >= 2
     assert "No stories yet. Upload a track, then assign a figure." in html
     assert 'for="file"' in html
-    assert "<legend>Figure</legend>" in html
     assert 'aria-label="Preview"' not in html
 
 
@@ -387,7 +399,7 @@ def test_dashboard_sync_queue_reports_the_file_being_transferred() -> None:
     assert "XMLHttpRequest" in script
     assert script.index('append("file"') < script.index(".send(")
     assert 'upload.addEventListener("progress"' in script
-    assert script.index('meter.setAttribute("aria-valuenow"') < script.index("window.location")
+    assert script.index('meter.setAttribute("aria-valuenow"') < script.index("next.click()")
     assert "form.submit()" not in script
 
 
@@ -401,7 +413,7 @@ def test_dashboard_library_upload_well_takes_a_dropped_audio_file() -> None:
     assert 'addEventListener("drop"' in well
     drop = well.split('addEventListener("drop"', 1)[1]
     assert drop.index("enqueue(event.dataTransfer.files)") < drop.index("function enqueue")
-    assert well.count('addEventListener("change"') == 2
+    assert well.count('addEventListener("change"') == 1
 
 
 def test_dashboard_library_upload_has_no_second_submit_button() -> None:
@@ -422,9 +434,8 @@ def test_dashboard_assign_path_lists_library_files() -> None:
     )
     html = TestClient(create_dashboard(storage=storage)).get("/library").text
 
-    assert '<select id="path" name="path" required>' in html
-    assert '<option value="frog.mp3">' in html
-    assert '<option value="stories/frog-prince.mp3">' in html
+    assert 'name="path" value="frog.mp3"' in html
+    assert 'name="path" value="stories/frog-prince.mp3"' in html
 
 
 def test_dashboard_assign_path_empty_when_library_has_no_files() -> None:
@@ -432,7 +443,7 @@ def test_dashboard_assign_path_empty_when_library_has_no_files() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
 
-    assert "Upload a track first" in html
+    assert "No stories yet. Upload a track, then assign a figure." in html
 
 
 def test_dashboard_assign_form_writes_catalog_yaml(tmp_path: Path) -> None:
@@ -1102,11 +1113,10 @@ def test_dashboard_library_page_puts_upload_and_assign_above_the_catalog() -> No
     assert 'aria-current="page"' in html
     board = html.index('class="board"')
     upload = html.index("Drag audio files directly onto this panel")
-    assign = html.index("<h2>Assign a figure</h2>")
     library = html.index('<h2 class="catalog-title">Library</h2>')
-    assert board < upload < library < assign
+    assert board < upload < library
     assert 'action="/tracks"' in html
-    assert 'action="/assign"' in html
+    assert "<h2>Assign a figure</h2>" not in html
 
 
 def test_dashboard_library_audition_bar_stays_in_the_page_column() -> None:
@@ -1268,3 +1278,103 @@ def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> Non
     assert row.index('class="track-title"') < row.index('class="chip linked"')
     assert ">Romy and the banana<" in row
     assert ">Banana<" in row
+
+
+def test_dashboard_library_keeps_display_mode_and_shows_the_filtered_count(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        "  - path: stories/pond.mp3\n"
+        "    title: The pond\n"
+        "  - path: stories/hill.mp3\n"
+        "    title: The hill\n"
+        "    uid: '04aabbccddeeff'\n"
+        "tags:\n"
+        "  - uid: '04aabbccddeeff'\n"
+        "    name: Frog\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library?view=grid&q=pond")
+        .text
+    )
+
+    assert 'id="view-grid"' in html
+    assert 'href="/library?view=grid' in html
+    assert 'aria-pressed="true"' in html.split('id="view-grid"', 1)[1].split(">", 1)[0]
+    assert "Showing 1 of 2" in html
+    assert ">The hill<" not in html.split("<tbody>", 1)[1].split("</tbody>", 1)[0]
+
+
+def test_dashboard_display_mode_marks_the_active_view_on_white() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    rule = html.split('.view-switch .chip-btn[aria-pressed="true"] {', 1)[1].split("}", 1)[0]
+
+    assert "background: #fff" in rule
+    assert "color: #2b2825" in rule
+
+
+def test_dashboard_library_assigns_a_figure_from_the_track_row(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Frog"\n'
+        "tracks:\n"
+        '  - path: "stories/pond.mp3"\n'
+        '    title: "The pond"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    table = html[html.index("<caption>Library</caption>") : html.index("</table>")]
+    row = table.split(">The pond<", 1)[1].split("</tr>", 1)[0]
+    below = html.split("</table>", 1)[1]
+
+    assert 'action="/assign"' in row
+    assert 'name="path" value="stories/pond.mp3"' in row
+    assert 'action="/assign"' not in below
+
+
+def test_dashboard_assign_popover_shows_the_figure_tiles() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    rule = html.split(".library-catalog td label.figure-tile {", 1)[1].split("}", 1)[0]
+
+    assert "width: auto" in rule
+    assert "height: auto" in rule
+    assert "overflow: visible" in rule
+    assert "clip: auto" in rule
+
+
+def test_dashboard_assign_row_opens_wide_enough_to_name_the_figure() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+    rule = html.split(".row-assign[open] form {", 1)[1].split("}", 1)[0]
+
+    assert "width: min(24rem, 70vw)" in rule
+    assert "position: absolute" in rule

@@ -11,6 +11,7 @@
 <style>{% include "dashboard.css" %}</style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="shell"{% if poll %} data-poll{% endif %}>
 <header>
 <div class="topbar">
@@ -24,23 +25,23 @@
 </div>
 <nav aria-label="Dashboard">
 <ul>
+<li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Live Player</a></li>
 <li><a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}>Figures &amp; Tags</a></li>
 <li><a href="/library"{% if page == "library" %} aria-current="page"{% endif %}>Audio Library</a></li>
-<li><a href="/"{% if page == "home" %} aria-current="page"{% endif %}>Live Player</a></li>
 <li><a href="/stories"{% if page == "stories" or page == "characters" %} aria-current="page"{% endif %}>Story Studio</a></li>
 <li><a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}>System &amp; Hardware</a></li>
 </ul>
 </nav>
 <div class="top-actions">
 <ul class="status-pills">
-{% if charge is not none %}<li>{{ charge }}% charged</li>{% endif %}
-{% if mixer %}<li>Cap {{ volume_ceiling }}</li>{% endif %}
-<li>Wi-Fi {{ host.wifi }}</li>
+{% if charge is not none %}<li><a href="/settings#pack">{{ charge }}% charged</a></li>{% endif %}
+{% if mixer %}<li><a href="/#volume">Cap {{ volume_ceiling }}</a></li>{% endif %}
+<li><a href="/settings#network">{% if host.wifi == "Not reported" %}WiFi N/A{% else %}Wi-Fi {{ host.wifi }}{% endif %}</a></li>
 </ul>
 </div>
 </div>
 </header>
-<main>
+<main id="main">
 {% block content %}{% endblock %}
 </main>
 <footer class="site-foot">

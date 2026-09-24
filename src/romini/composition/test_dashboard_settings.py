@@ -126,6 +126,9 @@ def test_dashboard_settings_shows_volume_when_mixer_is_wired() -> None:
     assert 'max="100"' in html
     assert 'value="10"' in html
     assert "power button" in html.lower()
+    assert ">Set volume<" not in html
+    level = html.split('id="volume-level"', 1)[1].split(">", 1)[0]
+    assert "requestSubmit()" in level
 
 
 def test_dashboard_hardware_shows_percent_volume_studio_keys_and_box_facts() -> None:
@@ -150,7 +153,7 @@ def test_dashboard_hardware_shows_percent_volume_studio_keys_and_box_facts() -> 
     assert "1.0 KB free" in html
     assert 'for="volume-level"' in html
     assert 'for="gemini-key"' in html
-    assert 'for="play_mode"' in html
+    assert 'class="play-modes"' in html
     assert html.count('class="card"') >= 4
 
 
@@ -1069,8 +1072,12 @@ def test_dashboard_hardware_shows_live_host_facts_without_inventing_wifi() -> No
     assert "<h2>Host</h2>" in html
     assert "<h2>Network</h2>" in html
     assert socket.gethostname() in html
+    network = html.split('id="network"', 1)[1].split("</section>", 1)[0]
+
     assert ">Wi-Fi<" in html
-    assert "Not reported" in html
+    assert "Not reported" in network
+    assert 'class="badge">WiFi N/A<' in network
+    assert "Wi-Fi Not reported" not in network
     assert "sudo nmtui" in html
     assert "software ceiling" not in html.lower()
 
@@ -1153,3 +1160,19 @@ def test_dashboard_sleep_can_be_cancelled(tmp_path: Path) -> None:
     assert response.headers["location"].startswith("/settings")
     assert settings.sleep_at() is None
     assert "Sleep in 30m" in client.get("/settings").text
+
+
+def test_dashboard_play_mode_is_a_choice_that_saves_itself() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    form = html.split('action="/play-mode"', 1)[1].split("</form>", 1)[0]
+
+    assert 'type="radio"' in form
+    assert 'value="presence"' in form
+    assert 'value="tap"' in form
+    assert "requestSubmit()" in form
+    assert ">Save play mode<" not in form
+    assert "<select" not in form
+    rule = html.split(".play-modes fieldset {", 1)[1].split("}", 1)[0]
+    assert "grid-template-columns: 1fr;" in rule

@@ -8,8 +8,8 @@
 </div>
 <div class="page-actions">
 {% if can_power %}
-<form action="/system/power" method="post"><input type="hidden" name="action" value="restart"><button class="soft-pill" type="submit">Restart daemon</button></form>
-<form action="/system/power" method="post"><input type="hidden" name="action" value="reboot"><button class="soft-pill" type="submit">Reboot</button></form>
+<form onsubmit="return confirm('Restart the daemon?')" action="/system/power" method="post"><input type="hidden" name="action" value="restart"><button class="soft-pill" type="submit">Restart daemon</button></form>
+<form onsubmit="return confirm('Reboot the Storybox?')" action="/system/power" method="post"><input type="hidden" name="action" value="reboot"><button class="soft-pill" type="submit">Reboot</button></form>
 <form action="/system/power" method="post" onsubmit="return confirm('Power the Storybox down?')"><input type="hidden" name="action" value="poweroff"><button class="danger-pill" type="submit">Safe power down</button></form>
 {% else %}
 <button type="button" class="soft-pill" disabled>Restart daemon</button>
@@ -51,7 +51,7 @@
 <div class="gauge"><span>Playback</span><strong>ALSA Headphones · mpv.sock</strong></div>
 {% if mixer %}<div class="gauge"><span>Hardware limiter</span><strong>Cap {{ volume_ceiling }}</strong></div>{% endif %}
 </section>
-<section class="card subsystem">
+<section class="card subsystem" id="pack">
 <p class="kicker">Telemetry unit {% if pack_flow == "charging" %}<span class="badge">Charging</span>{% elif pack_flow == "discharging" %}<span class="badge">Discharging</span>{% elif pack_flow == "steady" %}<span class="badge">Steady</span>{% endif %}</p>
 <h2>Pack</h2>
 {% if charge is not none %}
@@ -91,8 +91,7 @@
 </div>
 <form action="/volume" method="post">
 <label for="volume-level">Level</label>
-<input id="volume-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}">
-<button>Set volume</button>
+<input id="volume-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" onchange="this.form.requestSubmit()">
 </form>
 </div>
 {% endif %}
@@ -117,8 +116,8 @@
 </section>
 </div>
 <div class="hw-side">
-<section class="card subsystem">
-<p class="kicker">Remote access <span class="badge">Wi-Fi {{ host.wifi }}</span></p>
+<section class="card subsystem" id="network">
+<p class="kicker">Remote access <span class="badge">{% if host.wifi == "Not reported" %}WiFi N/A{% else %}Wi-Fi {{ host.wifi }}{% endif %}</span></p>
 <h2>Network</h2>
 <p class="hint">Read only. Change Wi-Fi over SSH so this page cannot strand the box.</p>
 <dl class="facts">
@@ -187,14 +186,20 @@ sudo nmtui</pre>
 </section>
 <section class="card">
 <h2>Play mode</h2>
-<form action="/play-mode" method="post">
-<label for="play_mode">How figures start a story</label>
-<select id="play_mode" name="play_mode">
-<option value="presence"{% if play_mode == presence %} selected{% endif %}>Presence — plays while the figure sits on the box</option>
-<option value="tap"{% if play_mode == tap %} selected{% endif %}>Tap — tap the figure to start; same figure again to pause</option>
-</select>
-<p class="hint">Presence is the default. Tap plays the story to the end unless you tap that figure again.</p>
-<button>Save play mode</button>
+<form class="play-modes" action="/play-mode" method="post">
+<fieldset>
+<legend>How figures start a story</legend>
+<label class="play-mode">
+<input type="radio" name="play_mode" value="presence"{% if play_mode == presence %} checked{% endif %} onchange="this.form.requestSubmit()">
+<span>Presence</span>
+<small>Plays while the figure sits on the box.</small>
+</label>
+<label class="play-mode">
+<input type="radio" name="play_mode" value="tap"{% if play_mode == tap %} checked{% endif %} onchange="this.form.requestSubmit()">
+<span>Tap</span>
+<small>Tap the figure to start. Tap that same figure again to pause.</small>
+</label>
+</fieldset>
 </form>
 </section>
 <section class="card" aria-label="On the plate">

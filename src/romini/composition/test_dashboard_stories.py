@@ -1637,7 +1637,7 @@ def test_dashboard_story_picture_is_set_from_the_row(tmp_path: Path) -> None:
     assert ">Edit<" in row
     assert 'data-path="bedtime.mp3"' in row
     assert 'data-title="Bedtime"' in row
-    assert "data-title" in page.split("function fillAssign", 1)[1]
+    assert 'action="/assign"' in row
 
 
 def test_dashboard_player_shows_the_story_cover(tmp_path: Path) -> None:
@@ -1704,6 +1704,26 @@ def test_story_pack_saves_and_reloads_the_script(tmp_path: Path) -> None:
 
     assert notes["title"] == "Frog"
     assert notes["script"] == "Once upon a time"
+
+
+def test_story_studio_does_not_reload_while_an_update_check_is_running(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    status = tmp_path / "update-check.json"
+    status.write_text('{"when": "24 September 2026 at 10:56", "result": "checking"}')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                stories=tmp_path / "stories",
+                update_status=status,
+            )
+        )
+        .get("/stories")
+        .text
+    )
+
+    assert 'class="shell" data-poll' not in html
 
 
 def test_character_pack_saves_and_reloads_the_open_character(tmp_path: Path) -> None:

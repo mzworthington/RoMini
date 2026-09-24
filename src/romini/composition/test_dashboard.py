@@ -185,7 +185,11 @@ def test_dashboard_home_renders_when_host_is_missing() -> None:
 
     html = templates.get_template("layout.html").render(page="home", version="0")
 
-    assert "Wi-Fi Not reported" in html
+    header = html.split("<header", 1)[1].split("</header>", 1)[0]
+    pills = header.split('class="status-pills"', 1)[1].split("</ul>", 1)[0]
+
+    assert "WiFi N/A" in pills
+    assert "Wi-Fi Not reported" not in pills
 
 
 def test_dashboard_mobile_nav_scrolls_inside_the_card() -> None:
@@ -260,8 +264,18 @@ def test_dashboard_header_pills_are_charge_cap_and_wifi() -> None:
     pills = header.split('class="status-pills"', 1)[1].split("</ul>", 1)[0]
 
     assert pills.index("72% charged") < pills.index("Cap 75")
-    assert pills.index("Cap 75") < pills.index("Wi-Fi")
+    assert pills.index("Cap 75") < pills.index('href="/settings#network"')
     assert "free" not in pills
+
+
+def test_dashboard_status_pills_read_as_chips() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), mixer=FakeMixer(level=40))).get("/").text
+    rule = html.split(".status-pills a {", 1)[1].split("}", 1)[0]
+
+    assert "text-decoration: none" in rule
+    assert "color: inherit" in rule
 
 
 def test_dashboard_live_player_is_a_playback_deck() -> None:
@@ -280,9 +294,46 @@ def test_dashboard_live_player_matches_the_nordic_audio_deck() -> None:
 
     assert 'class="dock-ring"' in html
     assert 'class="waveform"' in html
-    assert 'aria-label="Night light"' in html
+    assert "Volume cap" in html
     assert "Screen-free domestic audio for growing minds." in html
     assert "Nothing is playing" in html
+
+
+def test_dashboard_live_player_hides_controls_the_box_does_not_drive() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+
+    assert "−15" not in html
+    assert "+15" not in html
+    assert "Night light" not in html
+    assert "Extend +15m" not in html
+
+
+def test_dashboard_delete_restart_and_reboot_ask_first(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    class Power:
+        def restart(self) -> None:
+            return None
+
+        def reboot(self) -> None:
+            return None
+
+        def poweroff(self) -> None:
+            return None
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path, power=Power()))
+    client.post("/stories", data={"story_title": "The little station"})
+    stories = client.get("/stories").text
+    delete_form = stories.split('action="/stories/delete"', 1)[0].rsplit("<form", 1)[1]
+    settings = client.get("/settings").text
+    restart_form = settings.split('value="restart"', 1)[0].rsplit("<form", 1)[1]
+    reboot_form = settings.split('value="reboot"', 1)[0].rsplit("<form", 1)[1]
+
+    assert "confirm(" in delete_form
+    assert "confirm(" in restart_form
+    assert "confirm(" in reboot_form
 
 
 def test_dashboard_scrubber_draws_many_thin_strokes() -> None:
@@ -307,6 +358,7 @@ def test_dashboard_home_shows_free_space() -> None:
 
     assert response.status_code == 200
     assert "1.0 KB free" in response.text
+    assert "free free" not in response.text
 
 
 def test_dashboard_home_shows_charge_when_a_battery_is_wired() -> None:
@@ -364,12 +416,9 @@ def test_dashboard_home_is_labelled_for_a_parent() -> None:
     assert "free_bytes" not in home
     assert "bytes free" in home or "KB free" in home
     assert "<label" in library
-    assert "<legend>Figure</legend>" in library
-    assert 'for="path"' in library
-    assert 'for="title"' in library
     assert 'for="file"' in library
-    assert 'for="play_mode"' in settings
-    assert "<select" in settings
+    assert 'class="play-mode"' in settings
+    assert 'name="play_mode"' in settings
     assert 'value="presence"' in settings
     assert 'value="tap"' in settings
 
@@ -390,10 +439,8 @@ def test_dashboard_home_has_assign_form() -> None:
     app = create_dashboard(storage=FakeStorage(free_bytes=1024))
     response = TestClient(app).get("/library")
 
-    assert 'action="/assign"' in response.text
-    assert 'name="uid"' in response.text
-    assert 'name="path"' in response.text
-    assert 'name="title"' in response.text
+    assert "No stories yet. Upload a track, then assign a figure." in response.text
+    assert 'action="/assign"' not in response.text
 
 
 def test_dashboard_library_header_has_no_storage_or_upload_actions() -> None:
@@ -636,7 +683,7 @@ def test_dashboard_notice_overlays_the_page_and_can_dismiss() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/?notice=assigned").text
-    main = html.split("<main>", 1)[1].split("</main>", 1)[0]
+    main = html.split("<main", 1)[1].split("</main>", 1)[0]
 
     assert 'class="toast"' in html
     assert "data-toast" in html
@@ -900,6 +947,48 @@ def test_dashboard_scan_tag_stays_on_one_line_and_system_nav_names_hardware() ->
     assert ">System &amp; Hardware<" in primary
 
 
+def test_dashboard_skip_link_dimmed_power_and_story_step_copy(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    home = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    stories = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), stories=tmp_path))
+    stories.post("/stories", data={"story_title": "The little station", "script": ""})
+    studio = stories.get("/stories").text
+
+    assert 'class="skip" href="#main"' in home
+    assert 'id="main"' in home
+    assert "opacity: 0.45" in home
+    assert "Insert softly" in studio
+    assert "Save a script to speak it." in studio
+
+
+def test_dashboard_nav_leads_with_the_live_player_and_status_opens_its_page() -> None:
+    from fastapi.testclient import TestClient
+
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                battery=FakeBattery(percent=72),
+                mixer=FakeMixer(level=40, ceiling=75),
+            )
+        )
+        .get("/")
+        .text
+    )
+    primary = html.split('<nav aria-label="Dashboard">', 1)[1].split("</nav>", 1)[0]
+    pills = html.split('class="status-pills"', 1)[1].split("</ul>", 1)[0]
+
+    assert primary.index(">Live Player<") < primary.index(">Figures &amp; Tags<")
+    assert primary.index(">Figures &amp; Tags<") < primary.index(">Audio Library<")
+    assert 'href="/settings#pack"' in pills
+    assert 'href="/#volume"' in pills
+    assert 'href="/settings#network"' in pills
+    assert 'id="volume"' in html
+    assert 'id="pack"' in TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    assert 'id="network"' in TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+
 def test_dashboard_primary_nav_is_live_player_figures_library_and_hardware() -> None:
     from fastapi.testclient import TestClient
 
@@ -1096,7 +1185,7 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     assert 'action="/assign"' not in figures
     assert 'action="/tracks"' not in figures
     assert 'action="/register-mode"' in figures
-    assert 'action="/assign"' in library
+    assert "Choose audio files" in library
     assert 'action="/tracks"' in library
     assert "<h2>Volume</h2>" not in figures
     assert "<h2>Add a character</h2>" in characters_page
@@ -1107,7 +1196,7 @@ def test_dashboard_pages_split_parent_jobs() -> None:
     assert "<legend>Characters</legend>" in stories
     assert 'action="/stories/draft"' not in stories
     assert "<h2>Studio keys</h2>" in settings
-    assert 'for="play_mode"' in settings
+    assert 'class="play-modes"' in settings
     assert "<h2>Volume</h2>" in settings
 
 
@@ -1833,7 +1922,7 @@ def test_dashboard_quiet_deck_draws_seek_marks() -> None:
         .split("</section>", 1)[0]
     )
 
-    assert quiet.count('class="seek-glyph"') == 3
+    assert quiet.count('class="seek-glyph"') == 1
 
 
 def test_dashboard_write_page_lets_you_pick_a_named_voice(tmp_path: Path) -> None:

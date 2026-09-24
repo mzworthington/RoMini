@@ -12,7 +12,13 @@
     state.bound = true;
     document.addEventListener("pointerdown", function (event) {
       var target = event.target;
-      if (target && target.closest && target.closest(".waveform input")) state.scrubbing = true;
+      if (
+        target &&
+        target.closest &&
+        (target.closest(".waveform input") || target.closest(".guard-volume input"))
+      ) {
+        state.scrubbing = true;
+      }
     });
     document.addEventListener("pointerup", function () {
       state.scrubbing = false;

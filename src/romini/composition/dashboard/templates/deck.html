@@ -2,8 +2,7 @@
 <div class="deck-layout">
 <section class="card plate" aria-label="On the plate">
 <div class="dock-head">
-<p class="kicker">Physical NFC dock</p>
-{% if now_playing and now_playing.uid %}<p class="uid">UID {{ now_playing.uid }}</p>{% endif %}
+<p class="kicker">On the box</p>
 </div>
 <div class="dock-ring"{% if now_playing and now_playing.is_playing %} data-live="on"{% endif %}>
 <div class="dock-face">
@@ -13,7 +12,7 @@
 {% if now_playing %}
 <h2>{{ now_playing.trigger }}</h2>
 <p class="hint">{{ now_playing.story }}</p>
-<p class="dock-meta">{% if now_playing.is_playing %}Contact verified{% else %}Waiting for the figure{% endif %}</p>
+<p class="dock-meta">{% if now_playing.is_playing %}Playing{% else %}Paused{% endif %}</p>
 {% else %}
 <h2>No figure yet</h2>
 <p class="hint">Place a figure on the box.</p>
@@ -21,8 +20,8 @@
 {% endif %}
 </div>
 <ul class="dock-facts">
-<li><span>RFID signal</span><strong>{% if now_playing and now_playing.is_playing %}Solid{% else %}Idle{% endif %}</strong></li>
-<li><span>Tap trigger</span><strong>{% if play_mode == tap %}Tap{% else %}Auto-resume{% endif %}</strong></li>
+<li><span>Playback</span><strong>{% if now_playing and now_playing.is_playing %}Playing{% elif now_playing %}Paused{% else %}Quiet{% endif %}</strong></li>
+<li><span>Starts</span><strong>{% if play_mode == tap %}When you tap the figure{% else %}While the figure sits on the box{% endif %}</strong></li>
 </ul>
 </section>
 {% if now_playing %}
@@ -34,11 +33,9 @@
 <p class="scrub-times"><span>{{ now_playing.place }}</span><span>Track progress</span>{% if now_playing.length %}<span>{{ now_playing.length }}</span>{% endif %}</p>
 <div class="transport">
 <form class="now-playing-transport" action="/play/restart" method="post"><button type="submit" class="seek restart" aria-label="Restart"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>Restart</span></button></form>
-<button type="button" class="seek" disabled title="Seek arrives with the player source"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c2.8 0 5 2.2 5 5s-2.2 5-5 5-5-2.2-5-5H5c0 3.9 3.1 7 7 7s7-3.1 7-7-3.1-7-7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>−15</span></button>
 {% set playing = now_playing.is_playing %}{% set return_to = "" %}{% set form_class = "now-playing-transport" %}{% include "play_control.html" %}
-<button type="button" class="seek" disabled title="Seek arrives with the player source"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2l4 4-4 4V7c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5h2c0 3.9-3.1 7-7 7s-7-3.1-7-7 3.1-7 7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>+15</span></button>
 </div>
-<div class="guard">
+<div class="guard" id="volume">
 <div class="guard-head">
 <h3>Volume cap</h3>
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
@@ -64,11 +61,9 @@
 <div class="waveform" style="--play: 0%" aria-hidden="true"><div class="bars">{% include "waveform_bars.html" %}</div><div class="bars played">{% include "waveform_bars.html" %}</div></div>
 <div class="transport">
 <button type="button" class="seek restart" disabled><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>Restart</span></button>
-<button type="button" class="seek" disabled><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c2.8 0 5 2.2 5 5s-2.2 5-5 5-5-2.2-5-5H5c0 3.9 3.1 7 7 7s7-3.1 7-7-3.1-7-7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>−15</span></button>
 {% if has_player %}<form class="now-playing-transport" action="/play" method="post"><button class="play-main" type="submit"><svg class="play-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Play</span></button></form>{% else %}<button type="button" class="play-main" disabled><svg class="play-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Play</span></button>{% endif %}
-<button type="button" class="seek" disabled><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2l4 4-4 4V7c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5h2c0 3.9-3.1 7-7 7s-7-3.1-7-7 3.1-7 7-7z"/><text x="12" y="15.5" text-anchor="middle" font-size="6.5" font-weight="700">15</text></svg><span>+15</span></button>
 </div>
-<div class="guard">
+<div class="guard" id="volume">
 <div class="guard-head">
 <h3>Volume cap</h3>
 {% if mixer %}<p>{{ volume_level }} of {{ volume_ceiling }}</p>{% else %}<p>Not connected</p>{% endif %}
@@ -87,23 +82,6 @@
 </div>
 </section>
 {% endif %}
-<section class="card halo" aria-label="Night light">
-<div class="guard-head">
-<h2>Night light halo</h2>
-<p class="hint" id="halo-level">Candle</p>
-</div>
-<p class="hint">A soft ring on the wooden box for bedtime. Colour choice is stored on this browser until the lamp is wired.</p>
-<div class="halo-picks" role="group" aria-label="Night light colour">
-<button type="button" class="pick candle" data-halo="Candle" aria-pressed="true">Candle</button>
-<button type="button" class="pick amber" data-halo="Amber" aria-pressed="false">Amber</button>
-<button type="button" class="pick moon" data-halo="Moon" aria-pressed="false">Moon</button>
-<button type="button" class="pick" data-halo="Off" aria-pressed="false">Off</button>
-</div>
-<div class="fade-row">
-<p><strong>Bedtime volume fade</strong><span>Gradual drop while the story plays</span></p>
-<button type="button" class="soft-pill" disabled>Extend +15m</button>
-</div>
-</section>
 <section class="card story-facts">
 <h2>Track and story</h2>
 {% if now_playing %}
@@ -125,6 +103,6 @@
 <p class="empty">No story on the plate.</p>
 {% endif %}
 </section>
-<p class="hw-strip"><span>HiFiBerry DAC</span><span>Waiting for the player</span><span>PN532</span><span>{% if now_playing %}Figure present{% else %}Idle{% endif %}</span><span>{{ free_space }}</span></p>
+<p class="hw-strip"><span>{{ free_space }} on the box</span></p>
 </div>
 </div>

@@ -103,6 +103,23 @@
   function editing() {
     var el = document.activeElement;
     if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return true;
+    return dirty();
+  }
+
+  function selectDirty(field) {
+    var options = field.options;
+    var marked = false;
+    for (var i = 0; i < options.length; i++) {
+      if (options[i].defaultSelected) marked = true;
+    }
+    if (!marked && !field.multiple) return options.length > 0 && field.selectedIndex !== 0;
+    for (var j = 0; j < options.length; j++) {
+      if (options[j].selected !== options[j].defaultSelected) return true;
+    }
+    return false;
+  }
+
+  function dirty() {
     var fields = document.querySelectorAll("input, textarea, select");
     for (var i = 0; i < fields.length; i++) {
       var field = fields[i];
@@ -112,6 +129,10 @@
       }
       if (field.type === "checkbox" || field.type === "radio") {
         if (field.checked !== field.defaultChecked) return true;
+        continue;
+      }
+      if (field.tagName === "SELECT") {
+        if (selectDirty(field)) return true;
         continue;
       }
       if (field.value !== field.defaultValue) return true;
@@ -134,6 +155,10 @@
   }
 
   document.addEventListener("click", function (event) {
+    var menus = document.querySelectorAll("details.row-assign[open]");
+    for (var i = 0; i < menus.length; i++) {
+      if (!menus[i].contains(event.target)) menus[i].open = false;
+    }
     var toast = event.target.closest("[data-toast]");
     if (toast && event.target.closest("[data-toast-close]")) {
       event.preventDefault();
@@ -156,6 +181,10 @@
     var url = new URL(link.href, location.href);
     if (url.origin !== location.origin) return;
     if (url.pathname === location.pathname && url.search === location.search) return;
+    if (dirty() && !window.confirm("Leave this page? Changes you have not saved will be lost.")) {
+      event.preventDefault();
+      return;
+    }
     event.preventDefault();
     visit(link.href, true);
   });
@@ -205,6 +234,12 @@
 
   window.addEventListener("popstate", function () {
     visit(location.href, false);
+  });
+
+  window.addEventListener("beforeunload", function (event) {
+    if (!dirty()) return;
+    event.preventDefault();
+    event.returnValue = "";
   });
 
   var open = document.querySelectorAll("[data-toast-stack] > [data-toast]");

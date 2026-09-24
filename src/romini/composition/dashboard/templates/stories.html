@@ -62,10 +62,10 @@ function updateStoryLength(value) {
 <div class="step-head"><span class="step">2</span><h2>Script</h2></div>
 <div class="cadence">
 <span>Cadence</span>
-<button type="button" class="stage-tag" data-tag="[softly]">[softly]</button>
-<button type="button" class="stage-tag" data-tag="[pause]">[pause]</button>
-<button type="button" class="stage-tag" data-tag="[whisper]">[whisper]</button>
-<button type="button" class="stage-tag" data-tag="[yawn]">[yawn]</button>
+<button type="button" class="stage-tag" data-tag="[softly]">Insert softly</button>
+<button type="button" class="stage-tag" data-tag="[pause]">Insert pause</button>
+<button type="button" class="stage-tag" data-tag="[whisper]">Insert whisper</button>
+<button type="button" class="stage-tag" data-tag="[yawn]">Insert yawn</button>
 </div>
 <label for="script">Script</label>
 <textarea id="script" name="script">{{ script }}</textarea>
@@ -79,6 +79,9 @@ function updateStoryLength(value) {
 </form>
 {% endif %}
 </section>
+{% if story_title and not script %}
+<p class="hint">Save a script to speak it.</p>
+{% endif %}
 {% if story_title and script %}
 <section class="card">
 <form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
@@ -172,7 +175,7 @@ function updateStoryLength(value) {
 <li{% if story.slug == opened_story_slug %} class="is-open"{% endif %}>
 <span class="track-title">{{ story.title }}</span>
 <a class="button" href="/stories/{{ story.slug }}">Open</a>
-<form action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>
+<form onsubmit="return confirm('Delete this story?')" action="/stories/delete" method="post"><button name="slug" value="{{ story.slug }}">Delete</button></form>
 </li>
 {% endfor %}
 </ul>

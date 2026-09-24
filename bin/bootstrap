@@ -23,6 +23,15 @@ source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e ".[dev]"
 
+if command -v mise >/dev/null 2>&1; then
+  mise install node
+fi
+if ! command -v npm >/dev/null 2>&1; then
+  echo "error: npm is required for the dashboard client tests." >&2
+  exit 1
+fi
+npm ci
+
 pre-commit install
 pre-commit install --hook-type pre-push
 pre-commit install --hook-type commit-msg

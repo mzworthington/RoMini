@@ -22,8 +22,8 @@
 {% endif %}
 <div class="player-sheet">
 <div class="deck-kicker">
-<p class="kicker"><span class="deck-live" aria-hidden="true"></span>Live Physical Deck{% if now_playing %} <span class="deck-detected">• ISO 14443-A Detected</span>{% endif %}</p>
-{% if sheet.uid_label %}<p class="uid-pill">UID: {{ sheet.uid_label }}</p>{% else %}<p class="hint">Waiting for a figure</p>{% endif %}
+<p class="kicker"><span class="deck-live" aria-hidden="true"></span>Live Physical Deck{% if now_playing %} <span class="deck-detected">Figure on the box</span>{% endif %}</p>
+{% if not now_playing %}<p class="hint">Waiting for a figure</p>{% endif %}
 </div>
 <div class="hero-row">
 <div class="dock-ring"{% if now_playing and now_playing.is_playing %} data-live="on"{% endif %}>
@@ -45,23 +45,8 @@
 </div>
 </div>
 <div class="deck-controls">
-<div class="transport">
-{% if has_player %}
-<form action="/play/previous" method="post"><input type="hidden" name="return" value="/figures"><button class="seek" type="submit" aria-label="Previous track"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg><span>Previous</span></button></form>
-{% set playing = now_playing and now_playing.is_playing %}{% set return_to = "/figures" %}{% set form_class = "" %}{% include "play_control.html" %}
-<form action="/play/next" method="post"><input type="hidden" name="return" value="/figures"><button class="seek" type="submit" aria-label="Next track"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6v12l8.5-6zm10 0h2v12h-2z"/></svg><span>Next</span></button></form>
-<form action="/play/restart" method="post"><input type="hidden" name="return" value="/figures"><button class="seek" type="submit" aria-label="Play this story again"><svg class="seek-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg><span>Repeat</span></button></form>
-{% endif %}
-</div>
+<p class="hint"><a href="/">Play, pause, and volume are on Live Player.</a></p>
 <div class="deck-side">
-{% if mixer %}
-<form class="deck-volume" action="/volume" method="post">
-<input type="hidden" name="return" value="/figures">
-<label class="visually-hidden" for="deck-level">Volume</label>
-<input id="deck-level" name="level" type="range" min="0" max="{{ volume_ceiling }}" value="{{ volume_level }}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="this.form.requestSubmit()">
-<span>{{ volume_level }}%</span>
-</form>
-{% endif %}
 <a class="edit-mapping" href="{% if now_playing and now_playing.uid %}/library?uid={{ now_playing.uid }}#assign{% else %}/library#assign{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>Edit Mapping</a>
 </div>
 </div>
@@ -136,30 +121,37 @@
 {% if tags %}
 <div class="figure-toolbar">
 <div class="figure-search-row">
-<label class="search figure-search" for="figure-q"><span class="figure-search-label">Search</span>
+<form class="search figure-search" action="/figures" method="get">
+<span class="figure-search-label">Search</span>
 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
-<input id="figure-q" type="search" placeholder="Search figures, stories, tags">
-</label>
+<input type="hidden" name="view" value="{{ figure_view }}">
+<input type="hidden" name="filter" value="{{ figure_filter }}">
+<label class="visually-hidden" for="figure-q">Search</label>
+<input id="figure-q" name="q" type="search" value="{{ figure_query }}" placeholder="Search figures, stories, tags">
+</form>
 <div class="display-mode">
 <span>Display Mode</span>
 <div class="view-switch" role="group" aria-label="Display mode">
-<button type="button" class="chip-btn" id="figure-view-list" aria-pressed="false" aria-label="List view">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>
-</button>
-<button type="button" class="chip-btn" id="figure-view-grid" aria-pressed="true" aria-label="Grid view">
+<a class="chip-btn" id="figure-view-list" href="/figures?view=list&amp;filter={{ figure_filter }}{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_view == 'list' else 'false' }}" aria-label="List view">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><circle cx="4.5" cy="7" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="17" r="1"/></svg>
+</a>
+<a class="chip-btn" id="figure-view-grid" href="/figures?view=grid&amp;filter={{ figure_filter }}{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_view == 'grid' else 'false' }}" aria-label="Grid view">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z"/></svg>
-</button>
+</a>
 </div>
 </div>
 </div>
 <div class="filters" role="group" aria-label="Figure filters">
-<button type="button" class="chip-btn" data-figure-filter="all" aria-pressed="true">All ({{ tags|length }})</button>
-<button type="button" class="chip-btn unmapped-filter" data-figure-filter="open" aria-pressed="false">Unmapped ({{ unbound_tags|length }})</button>
+<a class="chip-btn" href="/figures?view={{ figure_view }}&amp;filter=all{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_filter == 'all' else 'false' }}">All ({{ tags|length }})</a>
+<a class="chip-btn unmapped-filter" href="/figures?view={{ figure_view }}&amp;filter=open{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_filter == 'open' else 'false' }}">Unmapped ({{ unbound_tags|length }})</a>
 </div>
 </div>
-<ul class="figures" id="figure-list">
+<ul class="figures{% if figure_view == 'list' %} is-list{% endif %}" id="figure-list">
 {% for tag in tags %}
 {% set bound = tracks|selectattr("uid", "equalto", tag.uid)|list %}
+{% set figure_label = (tag.name or tag.uid_label or tag.uid)|lower %}
+{% set figure_story = (bound[0].title if bound else '')|lower %}
+{% if (figure_filter == 'all' or not bound) and (not figure_query or figure_query|lower in figure_label or figure_query|lower in figure_story or figure_query|lower in tag.uid|lower) %}
 <li class="figure" data-bound="{% if bound %}yes{% else %}no{% endif %}"{% if now_playing and now_playing.uid == tag.uid %} data-on-deck="yes"{% endif %}>
 <div class="figure-top">
 <div class="figure-avatar">
@@ -220,44 +212,9 @@
 </form>
 </details>
 </li>
+{% endif %}
 {% endfor %}
 </ul>
-<script>
-(function () {
-  var list = document.getElementById("figure-list");
-  var search = document.getElementById("figure-q");
-  var buttons = document.querySelectorAll("[data-figure-filter]");
-  var filter = "all";
-  function apply() {
-    var query = (search.value || "").toLowerCase();
-    list.querySelectorAll(".figure").forEach(function (card) {
-      var text = card.textContent.toLowerCase();
-      var open = card.getAttribute("data-bound") !== "yes";
-      var show = text.indexOf(query) !== -1 && (filter === "all" || open);
-      card.hidden = !show;
-    });
-  }
-  buttons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      filter = button.getAttribute("data-figure-filter");
-      buttons.forEach(function (other) {
-        other.setAttribute("aria-pressed", other === button ? "true" : "false");
-      });
-      apply();
-    });
-  });
-  search.addEventListener("input", apply);
-  var listView = document.getElementById("figure-view-list");
-  var gridView = document.getElementById("figure-view-grid");
-  function show(mode) {
-    list.classList.toggle("is-list", mode === "list");
-    listView.setAttribute("aria-pressed", mode === "list" ? "true" : "false");
-    gridView.setAttribute("aria-pressed", mode === "grid" ? "true" : "false");
-  }
-  listView.addEventListener("click", function () { show("list"); });
-  gridView.addEventListener("click", function () { show("grid"); });
-})();
-</script>
 {% else %}
 <p class="empty">No figures yet. Turn register on, then place a figure on the box.</p>
 {% endif %}
@@ -282,7 +239,7 @@
 <p class="hint">{{ host.hostname }}{% if host.address != "Not reported" %} · {{ host.address }}{% endif %}</p>
 <p class="hint">CPU {{ host.cpu_temp }} · Load {{ host.load }}</p>
 <p class="hint">Memory {{ host.memory }} · Up {{ host.uptime }}</p>
-<p class="hint">PN532 on the plate · HiFiBerry DAC · Wi-Fi {{ host.wifi }}</p>
+<p class="hint">Reader on the plate · Player · Wi-Fi {{ host.wifi }}</p>
 </section>
 </aside>
 </div>

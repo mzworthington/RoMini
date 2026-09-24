@@ -35,4 +35,11 @@ h2.page-title {
   color: #C26247;
   border: 1px solid rgba(194, 98, 71, 0.22);
 }
-button.soft-pill:disabled, button.danger-pill:disabled { opacity: 1; cursor: default; }
+button.soft-pill:disabled, button.danger-pill:disabled { opacity: 0.45; cursor: default; }
+.skip {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  transform: translateY(-150%);
+}
+.skip:focus { transform: none; }

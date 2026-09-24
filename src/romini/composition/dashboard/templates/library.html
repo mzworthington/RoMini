@@ -57,20 +57,15 @@
 <h2>Drag audio files directly onto this panel</h2>
 <p>Supports MP3, M4A, AAC, and uncompressed audio. Files land in the library on this box.</p>
 <form action="/tracks" method="post" enctype="multipart/form-data">
-<label class="browse" for="file">Browse Laptop Disk</label>
-<span class="or">or</span>
+<label class="browse" for="file">Choose audio files</label>
 <label class="checkline" for="bind-after"><input id="bind-after" type="checkbox" name="bind" value="1"> Prompt physical tag binding immediately after transfer</label>
-<label for="file">Audio file</label>
 <input id="file" type="file" name="file" accept="audio/*" multiple>
-<label for="folder">Folder of tracks</label>
-<input id="folder" type="file" name="file" webkitdirectory multiple>
 </form>
 </div>
 <script>
 (function () {
   var well = document.getElementById("upload-well");
   var input = document.getElementById("file");
-  var folder = document.getElementById("folder");
   ["dragenter", "dragover"].forEach(function (name) {
     well.addEventListener(name, function (event) {
       event.preventDefault();
@@ -90,9 +85,6 @@
   });
   input.addEventListener("change", function () {
     if (input.files.length) enqueue(input.files);
-  });
-  folder.addEventListener("change", function () {
-    if (folder.files.length) enqueue(folder.files);
   });
   function enqueue(fileList) {
     var files = Array.prototype.slice.call(fileList);
@@ -117,15 +109,33 @@
         status.textContent = (index + 1) + " of " + files.length + " · " + file.name;
       });
       xhr.addEventListener("load", function () {
+        if (xhr.status >= 400) {
+          if (status) status.textContent = "Could not transfer " + file.name;
+          showRetry();
+          return;
+        }
         index += 1;
         if (index >= files.length) {
-          window.location = xhr.responseURL || "/library";
+          var next = document.createElement("a");
+          next.href = xhr.responseURL || "/library";
+          document.body.appendChild(next);
+          next.click();
           return;
         }
         sendNext();
       });
+      function showRetry() {
+        var retry = document.getElementById("sync-retry");
+        if (!retry) return;
+        retry.hidden = false;
+        retry.onclick = function () {
+          retry.hidden = true;
+          sendNext();
+        };
+      }
       xhr.addEventListener("error", function () {
         if (status) status.textContent = "Could not transfer " + file.name;
+        showRetry();
       });
       if (status) status.textContent = (index + 1) + " of " + files.length + " · " + file.name;
       xhr.send(body);
@@ -140,6 +150,7 @@
 <p class="quota-label sync-label">Active Sync Queue</p>
 </div>
 <p class="quota-note" id="sync-status">Nothing transferring</p>
+<button type="button" id="sync-retry" hidden>Retry</button>
 <p class="quota-note">Local Wi-Fi</p>
 <div class="meter" id="sync-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Transfer progress"><span style="width: 0%"></span></div>
 </section>
@@ -151,33 +162,37 @@
 <form class="search" action="/library" method="get">
 <label for="q">Search</label>
 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+<input type="hidden" name="view" value="{{ library_view }}">
+{% if unassigned %}<input type="hidden" name="unassigned" value="1">{% endif %}
 <input id="q" name="q" type="search" value="{{ query }}" placeholder="Search audio titles, authors, narrators, or figure links">
 </form>
 <div class="display-mode">
 <span>Display Mode</span>
 <div class="view-switch" role="group" aria-label="Display mode">
-<button type="button" class="chip-btn" id="view-list" aria-pressed="true" aria-label="List view">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>
-</button>
-<button type="button" class="chip-btn" id="view-grid" aria-pressed="false" aria-label="Grid view">
+<a class="chip-btn" id="view-list" href="/library?view=list{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if unassigned %}&amp;unassigned=1{% endif %}" aria-pressed="{{ 'false' if library_view == 'grid' else 'true' }}" aria-label="List view">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><circle cx="4.5" cy="7" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="17" r="1"/></svg>
+</a>
+<a class="chip-btn" id="view-grid" href="/library?view=grid{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if unassigned %}&amp;unassigned=1{% endif %}" aria-pressed="{{ 'true' if library_view == 'grid' else 'false' }}" aria-label="Grid view">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z"/></svg>
-</button>
+</a>
 </div>
 </div>
 </div>
 <p class="filters">
-<a href="/library"{% if not unassigned %} aria-current="page"{% endif %}>All Tracks ({{ tracks|length }})</a>
-<a href="/library?unassigned=1"{% if unassigned %} aria-current="page"{% endif %}><span class="filter-dot" aria-hidden="true"></span>Unassigned to Figures ({{ tracks|rejectattr("uid")|list|length }})</a>
+<a href="/library?view={{ library_view }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if not unassigned %} aria-current="page"{% endif %}>All Tracks ({{ tracks|length }})</a>
+<a href="/library?view={{ library_view }}&amp;unassigned=1{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if unassigned %} aria-current="page"{% endif %}><span class="filter-dot" aria-hidden="true"></span>Unassigned to Figures ({{ tracks|rejectattr("uid")|list|length }})</a>
 </p>
 </div>
 <div class="catalog-sheet">
 <div class="table-wrap" id="library-table">
-<table>
+<table{% if library_view == 'grid' %} class="is-grid"{% endif %}>
 <caption>Library</caption>
 <thead><tr><th>#</th><th>Story Title</th><th>Author / Narrator</th><th>Duration</th><th>File Spec</th><th>Figure</th><th>Actions</th></tr></thead>
 <tbody>
+{% set shown = namespace(count=0) %}
 {% if tracks %}
 {% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower or query|lower in track.artist|lower) and (not unassigned or not track.figure) %}
+{% set shown.count = shown.count + 1 %}
 {% set preview = track.uid and playing_uid == track.uid %}
 <tr class="{{ 'is-preview' if preview else '' }} {{ 'unlinked' if not track.figure else '' }}">
 <td>
@@ -210,10 +225,30 @@
 </td>
 <td>{{ track.length }}</td>
 <td><span class="spec">{{ track.size }}</span>{% if track.suffix %}<span class="spec-kind">{{ track.suffix }}</span>{% endif %}</td>
-<td>{% if track.figure %}<span class="chip linked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M12 12.5v.01"/><circle cx="12" cy="16.5" r="1.2"/></svg>{{ track.figure }}</span>{% else %}<span class="chip missing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>No figure linked</span> <a class="link-tag" href="#assign">Link figure</a>{% endif %}</td>
+<td>{% if track.figure %}<span class="chip linked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M12 12.5v.01"/><circle cx="12" cy="16.5" r="1.2"/></svg>{{ track.figure }}</span>{% else %}<span class="chip missing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>No figure linked</span> <a class="link-tag" href="#assign-{{ loop.index }}">Link figure</a>{% endif %}</td>
 <td>
 <div class="row-actions">
-<button type="button" data-path="{{ track.path }}" data-title="{{ track.title }}" onclick="fillAssign(this)">Edit</button>
+<details class="row-assign" id="{% if focus_uid and track.uid == focus_uid %}assign{% else %}assign-{{ loop.index }}{% endif %}"{% if (focus_uid and track.uid == focus_uid) or (bind_prompt and not track.figure) %} open{% endif %}>
+<summary>Edit</summary>
+<form action="/assign" method="post">
+<input type="hidden" name="path" value="{{ track.path }}" data-path="{{ track.path }}" required>
+<label for="title-{{ loop.index }}">Title</label>
+<input id="title-{{ loop.index }}" name="title" data-title="{{ track.title }}" type="text" required value="{{ track.title }}">
+<fieldset class="figure-tiles">
+<legend>Figure</legend>
+{% for tag in tags %}
+<label class="figure-tile">
+<input type="radio" name="uid" value="{{ tag.uid }}"{% if tag.uid == track.uid or (not track.uid and tag.uid == focus_uid) %} checked{% endif %} required>
+{% if tag.image %}<img src="{{ tag.image }}" alt="">{% else %}<img src="/mark.svg" alt="">{% endif %}
+<span>{{ tag.name or tag.uid }}</span>
+</label>
+{% endfor %}
+</fieldset>
+{% if not tags %}<p class="hint">Register a figure first</p>{% endif %}
+{% if bind_prompt and not track.figure %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
+<button>Assign</button>
+</form>
+</details>
 </div>
 </td>
 </tr>
@@ -225,56 +260,9 @@
 </table>
 </div>
 </div>
-<p class="hint catalog-count">Showing {{ tracks|length }} registered audio files</p>
-<section class="inset" id="assign">
-<h2>Assign a figure</h2>
+<p class="hint catalog-count">Showing {{ shown.count }}{% if shown.count != tracks|length %} of {{ tracks|length }}{% endif %} registered audio files</p>
 {% if bind_prompt %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
-<form action="/assign" method="post">
-<fieldset class="figure-tiles">
-<legend>Figure</legend>
-{% for tag in tags %}
-<label class="figure-tile">
-<input type="radio" name="uid" value="{{ tag.uid }}"{% if tag.uid == focus_uid %} checked{% endif %} required>
-{% if tag.image %}<img src="{{ tag.image }}" alt="">{% else %}<img src="/mark.svg" alt="">{% endif %}
-<span>{{ tag.name or tag.uid }}</span>
-</label>
-{% endfor %}
-</fieldset>
-{% if not tags %}
-<p class="hint">Register a figure first</p>
-{% endif %}
-<label for="title">Title</label>
-<input id="title" name="title" type="text" required>
-<label for="path">File in library</label>
-<select id="path" name="path" required>
-{% for file in library_files %}
-<option value="{{ file.path }}">{{ file.label }}</option>
-{% endfor %}
-</select>
-{% if not library_paths %}
-<p class="hint">Upload a track first</p>
-{% endif %}
-<button>Assign</button>
-</form>
-</section>
 <script>
-var figureForPath = {
-{% for track in tracks %}
-  {{ track.path|tojson }}: {{ track.uid|tojson }}{% if not loop.last %},{% endif %}
-{% endfor %}
-};
-function fillAssign(button) {
-  var title = document.getElementById("title");
-  var path = document.getElementById("path");
-  if (title) title.value = button.getAttribute("data-title") || "";
-  if (path) path.value = button.getAttribute("data-path") || "";
-  var uid = figureForPath[button.getAttribute("data-path") || ""] || "";
-  document.querySelectorAll('.figure-tiles input[name="uid"]').forEach(function (radio) {
-    radio.checked = radio.value === uid;
-  });
-  var assign = document.getElementById("assign");
-  if (assign && assign.scrollIntoView) assign.scrollIntoView();
-}
 (function () {
   var table = document.querySelector("#library-table table");
   var list = document.getElementById("view-list");

@@ -789,6 +789,39 @@ td button, td a.button { margin: 0; min-height: 2.25rem; }
   font-weight: 500;
   overflow-wrap: anywhere;
 }
+.play-modes fieldset {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.play-modes legend {
+  grid-column: 1 / -1;
+  padding: 0;
+  font-weight: 700;
+}
+.play-mode {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.85rem 0.9rem;
+  border: 2px solid var(--line);
+  border-radius: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+.play-mode input {
+  position: absolute;
+  opacity: 0;
+}
+.play-mode span { font-weight: 700; }
+.play-mode small { color: var(--muted); font-size: 0.82rem; line-height: 1.35; }
+.play-mode:has(input:checked) { border-color: #b15f00; background: #fff8f1; }
+.play-mode:has(input:focus-visible) { outline: 2px solid #b15f00; outline-offset: 2px; }
 .hint a, .lede a {
   color: var(--midnight-navy);
   font-weight: 700;
