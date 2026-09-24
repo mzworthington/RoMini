@@ -1780,38 +1780,43 @@ td button, td a.button { margin: 0; min-height: 2.25rem; }
 }
 .dock-facts strong { display: block; margin-top: 0.2rem; }
 .waveform {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   height: 4.75rem;
   margin: 1rem 0 0.35rem;
-  padding: 0 0.85rem 0.7rem;
   border-radius: 0.75rem;
-  background: #F2EEE7;
+  background: #F7F1EA;
   box-shadow: inset 0 1px 3px rgba(43, 40, 37, 0.06);
   position: relative;
   overflow: hidden;
 }
 .waveform > .scrub {
   position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+.waveform .bars {
+  position: absolute;
   left: 0.85rem;
   right: 0.85rem;
-  bottom: 0.35rem;
-  height: 0.28rem;
-  margin: 0;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
 }
-.waveform span {
-  flex: 1 1 0;
-  height: 1.15rem;
-  align-self: center;
+.waveform .bars span {
+  flex: 0 0 2px;
+  width: 2px;
   border-radius: 999px;
-  background: #D97706;
-  opacity: 0.35;
+  background: #E4D5C6;
 }
-.waveform span:nth-child(3n) { height: 2rem; }
-.waveform span:nth-child(4n) { height: 2.8rem; }
-.waveform span:nth-child(5n) { height: 1.5rem; }
-.waveform > .scrub span { height: 100%; align-self: stretch; opacity: 1; flex: none; }
+.waveform .bars.played {
+  clip-path: inset(0 calc(100% - var(--play, 0%)) 0 0);
+}
+.waveform .bars.played span { background: #8A5A32; }
 .deck form.scrub-form { display: block; width: 100%; margin: 0; }
 .waveform input[type="range"] {
   position: absolute;
@@ -1828,12 +1833,13 @@ td button, td a.button { margin: 0; min-height: 2.25rem; }
 .waveform::after {
   content: "";
   position: absolute;
-  left: calc(0.85rem + (100% - 1.7rem - 3px) * var(--play, 0%) / 100%);
-  top: 12%;
-  bottom: 12%;
-  width: 3px;
-  border-radius: 2px;
-  background: #C26247;
+  z-index: 1;
+  left: calc(0.85rem + (100% - 1.7rem - 2px) * var(--play, 0%) / 100%);
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 2px;
+  border-radius: 999px;
+  background: #C48978;
   pointer-events: none;
 }
 .transport {

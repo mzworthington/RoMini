@@ -16,6 +16,17 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from romini.adapters.sqlite.settings import SqliteSettings
+from romini.composition.dashboard.packs import (
+    current_pack,
+    load_story_notes,
+    story_slug,
+)
+from romini.composition.dashboard.packs import (
+    open_story_pack as open_story_pack,
+)
+from romini.composition.dashboard.packs import (
+    write_story_notes as write_story_notes,
+)
 from romini.composition.story_audio import Speech, load_voices
 from romini.composition.story_draft import listen_length_label, parse_duration_seconds
 from romini.composition.update import describe_update_center
@@ -166,6 +177,7 @@ def read_host_facts() -> dict[str, str]:
         else:
             uptime = f"{minutes}m"
     missing = "Not reported"
+    model = _read_text("/proc/device-tree/model").replace("\x00", "").strip()
     return {
         "hostname": hostname,
         "address": address or missing,
@@ -174,6 +186,7 @@ def read_host_facts() -> dict[str, str]:
         "memory": memory or missing,
         "uptime": uptime or missing,
         "wifi": _wifi_name() or missing,
+        "model": model or missing,
     }
 
 
@@ -196,6 +209,9 @@ class ScriptDraft(Protocol):
         duration_seconds: int = 10,
     ) -> str: ...
 
+
+DRAFT_MODEL = "Gemini 3.6 Flash"
+VOICE_MODEL = "ElevenLabs v3"
 
 HOME_NOTICES = {
     "assigned": "Figure assigned",
@@ -298,17 +314,6 @@ def has_required(*values: str) -> bool:
 
 
 AUDIO_SUFFIXES = {".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"}
-STORY_NOTE_KEYS = ("title", "characters", "interests", "outline", "script", "character_slugs", "duration_seconds")
-
-
-def story_slug(title: str) -> str:
-    parts: list[str] = []
-    for ch in title.lower():
-        if ch.isalnum():
-            parts.append(ch)
-        elif parts and parts[-1] != "-":
-            parts.append("-")
-    return "".join(parts).strip("-")
 
 
 def unique_track_filename(*, slug: str, taken: set[str], keep: str = "") -> str:
@@ -325,41 +330,6 @@ def unique_track_filename(*, slug: str, taken: set[str], keep: str = "") -> str:
         name = f"{stem}-{n}{suffix}"
         n += 1
     return name
-
-
-def open_story_pack(root: Path, slug: str) -> None:
-    if not slug or slug in {".", ".."} or "/" in slug or "\\" in slug:
-        return
-    if not (root / slug / "story.yaml").is_file():
-        return
-    (root / "current").write_text(f"{slug}\n")
-
-
-def current_pack(root: Path) -> Path:
-    pointer = root / "current"
-    if pointer.is_file():
-        slug = pointer.read_text().strip()
-        pack = root / slug
-        if slug and pack.is_dir():
-            return pack
-    return root
-
-
-def load_story_notes(root: Path | None) -> dict[str, str]:
-    notes = {key: "" for key in STORY_NOTE_KEYS}
-    if root is None:
-        return notes
-    path = current_pack(root) / "story.yaml"
-    if not path.is_file():
-        return notes
-    data = yaml.safe_load(path.read_text()) or {}
-    for key in STORY_NOTE_KEYS:
-        value = data.get(key)
-        if key == "character_slugs" and isinstance(value, list):
-            notes[key] = ",".join(str(item) for item in value if str(item).strip())
-        else:
-            notes[key] = str(value or "")
-    return notes
 
 
 def character_slug_list(notes: dict[str, str]) -> list[str]:
@@ -389,45 +359,6 @@ def draft_character_text(notes: dict[str, str], catalog: Path | None) -> str:
         background = item["background"].strip()
         parts.append(f"{item['name']}: {background}" if background else item["name"])
     return "\n".join(parts)
-
-
-def write_story_notes(
-    root: Path,
-    *,
-    title: str,
-    characters: str,
-    interests: str,
-    outline: str,
-    script: str,
-    character_slugs: list[str] | None = None,
-    duration_seconds: int | None = None,
-) -> Path:
-    slug = story_slug(title)
-    pack = root / slug if slug else root
-    pack.mkdir(parents=True, exist_ok=True)
-    if slug:
-        (root / "current").write_text(f"{slug}\n")
-    existing = {}
-    yaml_path = pack / "story.yaml"
-    if yaml_path.is_file():
-        existing = yaml.safe_load(yaml_path.read_text()) or {}
-    payload = {
-        "title": title,
-        "characters": characters,
-        "character_slugs": character_slugs or [],
-        "interests": interests,
-        "outline": outline,
-        "script": script,
-        "duration_seconds": parse_duration_seconds(
-            duration_seconds if duration_seconds is not None else existing.get("duration_seconds")
-        ),
-    }
-    for key in ("spoken_file", "library_path", "image"):
-        value = existing.get(key)
-        if value:
-            payload[key] = value
-    yaml_path.write_text(yaml.safe_dump(payload, sort_keys=True))
-    return pack
 
 
 def record_spoken_track(pack: Path, *, filename: str, library_path: str) -> None:
@@ -821,6 +752,8 @@ def render_page(
         {
             "page": page,
             "page_title": page_title,
+            "draft_model": DRAFT_MODEL,
+            "voice_model": VOICE_MODEL,
             "free_space": format_free_space(storage.free_bytes),
             "version": installed_version(),
             "charge": battery.percent if battery is not None else None,

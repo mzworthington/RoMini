@@ -243,13 +243,25 @@ def test_disk_storage_lists_nested_library_files(tmp_path: Path) -> None:
     assert storage.paths() == ["frog.mp3", "stories/frog-prince.mp3"]
 
 
+def test_dashboard_page_titles_match_the_nav_labels() -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
+
+    assert '<h2 class="page-title">Live Player</h2>' in client.get("/").text
+    assert '<h2 class="page-title">Figures &amp; Tags</h2>' in client.get("/figures").text
+    assert '<h2 class="page-title">Audio Library</h2>' in client.get("/library").text
+    assert '<h2 class="page-title">Story Studio</h2>' in client.get("/stories").text
+    assert '<h2 class="page-title">System &amp; Hardware</h2>' in client.get("/settings").text
+
+
 def test_dashboard_live_player_is_playback_without_the_old_jump_list() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
 
     assert 'class="page-title"' in html
-    assert "Audio Deck &amp; Playback Stream" in html.split("<main", 1)[1]
+    assert '<h2 class="page-title">Live Player</h2>' in html.split("<main", 1)[1]
     assert "Nothing is playing" in html
     assert 'class="jumps"' not in html
     assert "Toys" not in html
@@ -405,6 +417,17 @@ def test_dashboard_live_player_matches_the_nordic_audio_deck() -> None:
     assert 'aria-label="Night light"' in html
     assert "Screen-free domestic audio for growing minds." in html
     assert "Nothing is playing" in html
+
+
+def test_dashboard_scrubber_draws_many_thin_strokes() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    wave = html.split('class="waveform"', 1)[1].split('class="transport"', 1)[0]
+    css = (Path(__file__).parent / "dashboard" / "templates" / "dashboard.css").read_text()
+
+    assert wave.count('<span style="height:') >= 48
+    assert "flex: 0 0 2px" in css
 
 
 def test_dashboard_home_shows_free_space() -> None:
@@ -577,7 +600,7 @@ def test_dashboard_library_page_matches_the_audio_library_layout() -> None:
     assert "DAC Configuration" in html
     assert "Drag audio files directly onto this panel" in html
     assert "Active Sync Queue" in html
-    assert "Physical Figurine Link" in html
+    assert "Figure" in html
     assert "Browse Laptop Disk" in html
     assert 'class="card deck' not in html
     assert 'class="card scan-dock"' not in html
@@ -865,7 +888,7 @@ def test_dashboard_home_lists_catalog_table(tmp_path: Path) -> None:
     response = TestClient(app).get("/library")
 
     assert "<table>" in response.text
-    assert "<th>Physical Figurine Link</th>" in response.text
+    assert "<th>Figure</th>" in response.text
     assert "<th>Story Title</th>" in response.text
     assert "<th>Author / Narrator</th>" in response.text
     assert "stories/frog-prince.mp3" in response.text
@@ -898,7 +921,7 @@ def test_dashboard_library_table_shows_figure_name_not_uid(tmp_path: Path) -> No
     )
     table = html[html.index("<caption>Library</caption>") : html.index("</table>")]
 
-    assert "<th>Physical Figurine Link</th>" in table
+    assert "<th>Figure</th>" in table
     assert "<th>UID</th>" not in table
     assert "Banana" in table
     assert "04aabbccddeeff" not in table
@@ -933,7 +956,7 @@ def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> Non
     head = table.split("</thead>", 1)[0]
     row = table.split("<tbody>", 1)[1]
 
-    assert head.index("<th>Story Title</th>") < head.index("<th>Physical Figurine Link</th>")
+    assert head.index("<th>Story Title</th>") < head.index("<th>Figure</th>")
     assert row.index('class="track-title"') < row.index('class="chip linked"')
     assert ">Romy and the banana<" in row
     assert ">Banana<" in row
@@ -1008,9 +1031,9 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     assert 'aria-label="Upload cover"' not in playing
     assert "unlinked" in catalog.split(">The Very Hungry Caterpillar<", 1)[0].rsplit("<tr", 1)[1]
     assert 'class="chip missing"' in waiting
-    assert "No Figurine Linked" in waiting
+    assert "No figure linked" in waiting
     assert 'class="link-tag"' in waiting
-    assert "Link Tag" in waiting
+    assert "Link figure" in waiting
 
 
 def test_dashboard_active_preview_badge_stays_on_one_line() -> None:
@@ -1186,7 +1209,7 @@ def test_dashboard_library_row_says_when_no_figure_is_linked(tmp_path: Path) -> 
     row = html.split("<tbody>", 1)[1].split("</tr>", 1)[0]
 
     assert 'class="chip missing"' in row
-    assert "No Figurine Linked" in row
+    assert "No figure linked" in row
 
 
 def test_dashboard_library_studio_counts_tracks(tmp_path: Path) -> None:
@@ -1651,7 +1674,7 @@ def test_dashboard_home_has_register_form() -> None:
     scan = html.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
     assert 'action="/register-mode"' in scan
     assert 'name="register" value="on"' in scan
-    assert "Register Detected Token" in scan
+    assert "Register this figure" in scan
     assert "<h2>Register figures</h2>" not in html
 
 
@@ -1668,7 +1691,7 @@ def test_dashboard_scan_dock_matches_reader_card_and_pulses_only_while_registeri
     idle_scan = idle.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
     assert 'class="scan-target"' in idle_scan
     assert "Reader is Listening" in idle_scan
-    assert "Place figurine on RoMini box" in idle_scan
+    assert "Place a figure on the box" in idle_scan
     assert 'class="scan-live"' in idle_scan
     assert "is-registering" not in idle_scan
 
@@ -2227,6 +2250,7 @@ def test_dashboard_settings_shows_host_load_memory_and_disk(monkeypatch) -> None
             "memory": "612 MB / 3891 MB",
             "uptime": "4d 12h",
             "wifi": "Not reported",
+            "model": "Not reported",
         },
     )
     html = (
@@ -2264,6 +2288,7 @@ def test_dashboard_host_card_draws_ram_and_disk_meters(monkeypatch) -> None:
             "memory": "612 MB / 3891 MB",
             "uptime": "4d 12h",
             "wifi": "Not reported",
+            "model": "Not reported",
         },
     )
     html = (
@@ -2373,6 +2398,32 @@ def test_dashboard_hardware_keeps_labels_clear_of_their_values() -> None:
     assert "Audit log" not in pair
 
 
+def test_dashboard_settings_names_the_board_the_host_reports(monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setattr(
+        "romini.composition.dashboard.shared.read_host_facts",
+        lambda: {
+            "hostname": "storybox",
+            "address": "10.0.0.8",
+            "cpu_temp": "Not reported",
+            "load": "Not reported",
+            "memory": "Not reported",
+            "uptime": "1h 2m",
+            "wifi": "Not reported",
+            "model": "Raspberry Pi 5 Model B Rev 1.0",
+        },
+    )
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    head = html.split('class="page-head"', 1)[1].split('class="page-actions"', 1)[0]
+    host = html.split("<h2>Host</h2>", 1)[1].split("<h2>Reader</h2>", 1)[0]
+
+    assert "Raspberry Pi 5 Model B Rev 1.0" in head
+    assert "Raspberry Pi 5 Model B Rev 1.0" in host
+    assert "Raspberry Pi 4 Model B" not in html
+    assert "4GB RAM" not in head
+
+
 def test_dashboard_settings_names_the_box_on_the_title_line(monkeypatch) -> None:
     from fastapi.testclient import TestClient
 
@@ -2386,6 +2437,7 @@ def test_dashboard_settings_names_the_box_on_the_title_line(monkeypatch) -> None
             "memory": "612 MB / 3891 MB",
             "uptime": "4d 12h",
             "wifi": "Not reported",
+            "model": "Not reported",
         },
     )
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
@@ -2394,8 +2446,6 @@ def test_dashboard_settings_names_the_box_on_the_title_line(monkeypatch) -> None
     assert "romini.local" in head
     assert "192.168.1.140" in head
     assert "4d 12h" in head
-    assert "Raspberry Pi 4 Model B" in head
-    assert "4GB" in head
     assert "System Healthy" not in html
 
 
@@ -2412,6 +2462,7 @@ def test_dashboard_mdns_name_keeps_a_single_local_suffix(monkeypatch) -> None:
             "memory": "Not reported",
             "uptime": "Not reported",
             "wifi": "Not reported",
+            "model": "Not reported",
         },
     )
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
@@ -3141,7 +3192,7 @@ def test_story_studio_is_one_page_for_writing_and_characters() -> None:
 
     for path in ("/stories", "/characters"):
         html = client.get(path).text
-        assert '<h2 class="page-title">Bedtime Story Studio &amp; Characters</h2>' in html
+        assert '<h2 class="page-title">Story Studio</h2>' in html
         assert 'class="story-studio"' in html
         assert 'for="story-title"' in html
         assert 'for="character-name"' in html
@@ -3243,7 +3294,7 @@ def test_dashboard_story_pages_name_themselves_like_the_other_destinations() -> 
 
     client = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024)))
 
-    title = '<h2 class="page-title">Bedtime Story Studio &amp; Characters</h2>'
+    title = '<h2 class="page-title">Story Studio</h2>'
     assert title in client.get("/stories").text
     assert title in client.get("/characters").text
 
@@ -5063,7 +5114,7 @@ def test_dashboard_figures_page_puts_actions_above_the_figure_list() -> None:
     )
 
     scan = html.index('aria-label="Quick reader sensor"')
-    figures = html.index("Figurine &amp; Tag Library")
+    figures = html.index("<h2>Figures</h2>")
     assert scan < figures
     assert "<h2>Present a figure</h2>" not in html
     assert "<h2>Register figures</h2>" not in html
@@ -5103,7 +5154,7 @@ def test_dashboard_figure_library_uses_tag_cards(tmp_path: Path) -> None:
         .get("/figures")
         .text
     )
-    library = html.split("Figurine &amp; Tag Library", 1)[1].split('class="activity-stream"', 1)[0]
+    library = html.split("<h2>Figures</h2>", 1)[1].split('class="activity-stream"', 1)[0]
     gruffalo = library.split('data-bound="yes"', 1)[1].split("</li>", 1)[0]
     unbound = library.split('data-bound="no"', 1)[1].split("</li>", 1)[0]
 
@@ -5327,7 +5378,7 @@ def test_dashboard_figures_panels_control_playback_and_register(tmp_path: Path) 
     assert 'name="level"' in deck
     assert 'href="/library?uid=04aabbccddeeff"' in deck
     assert "Edit Mapping" in deck
-    assert "Register Detected Token" in scan
+    assert "Register this figure" in scan
     assert 'name="register" value="on"' in scan
 
     paused = client.post("/play", data={"return": "/figures"}, follow_redirects=False)
@@ -5481,7 +5532,7 @@ def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
     )
     studio = html.split('class="studio"', 1)[1]
     cards = studio.split('class="summary-cards"', 1)[1].split('class="studio-main"', 1)[0]
-    mapped = cards.split("Mapped Figurines", 1)[1].split("Audio Track Library", 1)[0]
+    mapped = cards.split("Mapped figures", 1)[1].split("Audio Track Library", 1)[0]
     library = cards.split("Audio Track Library", 1)[1]
 
     assert ">1<" in mapped
@@ -7090,6 +7141,23 @@ def test_dashboard_sleep_arms_a_thirty_minute_bedtime(tmp_path: Path) -> None:
     assert deadline is not None
     assert timedelta(minutes=29, seconds=50) <= deadline - before <= timedelta(minutes=30, seconds=10)
     assert "Sleeping in 30m" in client.get("/settings").text
+
+
+def test_story_pack_saves_and_reloads_the_script(tmp_path: Path) -> None:
+    from romini.composition.dashboard.packs import load_story_notes, write_story_notes
+
+    write_story_notes(
+        tmp_path,
+        title="Frog",
+        characters="Romy",
+        interests="",
+        outline="",
+        script="Once upon a time",
+    )
+    notes = load_story_notes(tmp_path)
+
+    assert notes["title"] == "Frog"
+    assert notes["script"] == "Once upon a time"
 
 
 def test_dashboard_sleep_can_be_cancelled(tmp_path: Path) -> None:

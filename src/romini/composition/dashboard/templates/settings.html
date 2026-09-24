@@ -1,11 +1,29 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="page-head">
+<div>
+<p class="page-kicker">Hardware telemetry</p>
+<h2 class="page-title">System &amp; Hardware</h2>
+<p class="lede">{% set mdns = host.hostname if host.hostname.endswith('.local') else host.hostname ~ '.local' %}{{ mdns }} ({{ host.address }}) · Uptime {{ host.uptime }} · {{ host.model }}</p>
+</div>
+<div class="page-actions">
+{% if can_power %}
+<form action="/system/power" method="post"><input type="hidden" name="action" value="restart"><button class="soft-pill" type="submit">Restart daemon</button></form>
+<form action="/system/power" method="post"><input type="hidden" name="action" value="reboot"><button class="soft-pill" type="submit">Reboot</button></form>
+<form action="/system/power" method="post" onsubmit="return confirm('Power the Storybox down?')"><input type="hidden" name="action" value="poweroff"><button class="danger-pill" type="submit">Safe power down</button></form>
+{% else %}
+<button type="button" class="soft-pill" disabled>Restart daemon</button>
+<button type="button" class="soft-pill" disabled>Reboot</button>
+<button type="button" class="danger-pill" disabled>Safe power down</button>
+{% endif %}
+</div>
+</div>
 <div class="studio">
 <div class="telemetry">
 <section class="card subsystem">
 <p class="kicker">Host node <span class="badge">{{ host.cpu_temp }}</span></p>
 <h2>Host</h2>
-<p class="hint">Raspberry Pi 4 Model B</p>
+<p class="hint">{{ host.model }}</p>
 <div class="gauge"><span>Free on the box</span><strong>{{ free_space }}</strong></div>
 <div class="gauge"><span>CPU load</span><strong>Load {{ host.load }}</strong></div>
 <div class="gauge"><span>RAM</span><strong>{{ host.memory }}</strong></div>

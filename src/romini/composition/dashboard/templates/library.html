@@ -1,5 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="page-head">
+<div>
+<p class="page-kicker">Storage &amp; audio assets{% if library_root %} <span class="path-note">{{ library_root }}</span>{% endif %}</p>
+<h2 class="page-title">Audio Library</h2>
+<p class="lede">Upload audio stories and assign each story to a figure.</p>
+</div>
+</div>
 <div class="studio">
 <ul class="quota-cards" id="storage">
 <li class="quota-card">
@@ -29,7 +36,7 @@
 <p class="quota-note">Physical NFC tags bound</p>
 {% set awaiting = tracks|rejectattr("uid")|list|length %}
 {% if awaiting %}
-<p class="quota-warn">{% if awaiting == 1 %}1 story awaiting an NFC token{% else %}{{ awaiting }} stories awaiting an NFC token{% endif %}</p>
+<p class="quota-warn">{% if awaiting == 1 %}1 story awaiting a figure{% else %}{{ awaiting }} stories awaiting a figure{% endif %}</p>
 {% endif %}
 </li>
 <li class="quota-card">
@@ -130,7 +137,7 @@
 <div class="table-wrap" id="library-table">
 <table>
 <caption>Library</caption>
-<thead><tr><th>#</th><th>Story Title</th><th>Author / Narrator</th><th>Duration</th><th>File Spec</th><th>Physical Figurine Link</th><th>Actions</th></tr></thead>
+<thead><tr><th>#</th><th>Story Title</th><th>Author / Narrator</th><th>Duration</th><th>File Spec</th><th>Figure</th><th>Actions</th></tr></thead>
 <tbody>
 {% if tracks %}
 {% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower or query|lower in track.artist|lower) and (not unassigned or not track.figure) %}
@@ -166,7 +173,7 @@
 </td>
 <td>{{ track.length }}</td>
 <td><span class="spec">{{ track.size }}</span>{% if track.suffix %}<span class="spec-kind">{{ track.suffix }}</span>{% endif %}</td>
-<td>{% if track.figure %}<span class="chip linked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M12 12.5v.01"/><circle cx="12" cy="16.5" r="1.2"/></svg>{{ track.figure }}</span>{% else %}<span class="chip missing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>No Figurine Linked</span> <a class="link-tag" href="#assign">Link Tag</a>{% endif %}</td>
+<td>{% if track.figure %}<span class="chip linked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M12 12.5v.01"/><circle cx="12" cy="16.5" r="1.2"/></svg>{{ track.figure }}</span>{% else %}<span class="chip missing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>No figure linked</span> <a class="link-tag" href="#assign">Link figure</a>{% endif %}</td>
 <td>
 <div class="row-actions">
 <button type="button" data-path="{{ track.path }}" data-title="{{ track.title }}" onclick="fillAssign(this)">Edit</button>

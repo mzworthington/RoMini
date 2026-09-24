@@ -1,5 +1,18 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="page-head">
+<div>
+<p class="page-kicker">Story studio{% if stories_root %} <span class="path-note">{{ stories_root }}</span>{% endif %}</p>
+<h2 class="page-title">Story Studio</h2>
+<p class="lede">Craft a bedtime tale with the family, draft and narrate the script.</p>
+</div>
+<div class="page-actions studio-toolbar">
+<div class="model-row">
+<p class="model-pill"><span class="status-dot" aria-hidden="true"></span>{{ draft_model }}<span class="model-sep" aria-hidden="true">·</span>{{ voice_model }}</p>
+<a class="soft-pill" href="/settings#studio-keys"><svg class="key-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="3.2"/><path d="m10.2 12.8 8.3-8.3M15.2 7.8l2 2M13.2 9.8l2 2"/></svg>API Keys</a>
+</div>
+</div>
+</div>
 <div class="studio">
 <div class="story-studio">
 <ul class="metrics">
