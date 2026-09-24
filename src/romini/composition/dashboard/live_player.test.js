@@ -90,3 +90,40 @@ test("the deck refreshes from now-playing without reloading the page", async () 
   assert.equal(page.window.document.querySelector(".studio").id, "next");
   assert.equal(page.window.document.getElementById("old"), null);
 });
+
+test("dragging the scrubber holds the deck still", async () => {
+  const page = boot(`
+    <div class="studio">
+      <form class="scrub-form"><div class="waveform"><input type="range" name="at" value="1"></div></form>
+    </div>
+  `);
+  const input = page.window.document.querySelector(".waveform input");
+  input.dispatchEvent(new page.window.Event("pointerdown", { bubbles: true }));
+
+  await page.time.tick(2000);
+
+  assert.deepEqual(page.fetches, []);
+  assert.equal(page.window.document.querySelector(".studio").isConnected, true);
+});
+
+test("moving the scrubber seeks in place", () => {
+  const page = boot(`
+    <div class="studio">
+      <form class="scrub-form" action="/play/seek" method="post">
+        <div class="waveform"><input type="range" name="at" value="4"></div>
+      </form>
+    </div>
+  `);
+  const form = page.window.document.querySelector(".scrub-form");
+  const submit = new page.window.Event("submit", { bubbles: true, cancelable: true });
+  form.dispatchEvent(submit);
+  const input = form.querySelector("input");
+  input.value = "9";
+  input.dispatchEvent(new page.window.Event("change", { bubbles: true }));
+
+  assert.equal(submit.defaultPrevented, true);
+  assert.equal(page.fetches.length, 1);
+  assert.equal(page.fetches[0].url, "/play/seek");
+  assert.equal(page.fetches[0].init.method, "POST");
+  assert.equal(page.fetches[0].init.body.get("at"), "9");
+});
