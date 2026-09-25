@@ -3,6 +3,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_install_pi_script_sets_pcm_volume_to_full_and_stores_it() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "alsa-utils" in script
+    assert "amixer -c Headphones sset PCM 100%" in script
+    assert "alsactl store" in script
+
+
 def test_install_pi_script_remaps_analogue_audio_once_then_reboots() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "dtparam=audio=on" in script

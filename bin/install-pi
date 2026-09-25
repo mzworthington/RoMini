@@ -14,7 +14,7 @@ VENV="${DATA}/install/venv"
 API="https://api.github.com/repos/${REPO}/releases/latest"
 
 sudo apt-get update
-sudo apt-get install -y python3-venv python3-pip python3-dev swig liblgpio-dev avahi-daemon mpv curl
+sudo apt-get install -y python3-venv python3-pip python3-dev swig liblgpio-dev avahi-daemon mpv alsa-utils curl
 
 sudo mkdir -p "${DATA}/library" "${DATA}/install" /etc/romini /var/log/romini
 sudo chmod 700 /etc/romini
@@ -88,6 +88,10 @@ ensure_boot_line "dtparam=i2c_arm=on"
 ensure_boot_line "dtparam=spi=on"
 ensure_boot_line "dtparam=audio=on"
 ensure_boot_line "dtoverlay=audremap,pins_18_19"
+if amixer -c Headphones scontents 2>/dev/null | grep -q "Simple mixer control 'PCM'"; then
+  amixer -c Headphones sset PCM 100%
+  sudo alsactl store
+fi
 if [ "${BOOT_CHANGED}" = 1 ]; then
   printf 'Analogue audio now uses GPIO 18 and 19. Rebooting so the overlay loads.\n'
   sudo reboot
