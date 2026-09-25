@@ -2,6 +2,8 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import pytest
+
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.dashboard import create_dashboard
 
@@ -1060,6 +1062,43 @@ def test_dashboard_figures_volume_stays_on_the_figures_page() -> None:
 
     assert response.status_code == 303
     assert response.headers["location"] == "/figures?notice=volume"
+
+
+def test_dashboard_player_log_starts_with_ten_lines_under_the_audit(monkeypatch: pytest.MonkeyPatch) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import shared
+
+    lines = [f"line {index}" for index in range(1, 13)]
+
+    def read_player_log() -> str:
+        return "\n".join(lines)
+
+    monkeypatch.setattr(shared, "read_player_log", read_player_log)
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+
+    assert html.index('id="audit"') < html.index('id="player-log"')
+    log = html.split('id="player-log"', 1)[1].split("</section>", 1)[0]
+    preview, _, full = log.partition("<details")
+    assert "line 10" in preview
+    assert "line 11" not in preview
+    assert "line 12" in full
+
+
+def test_dashboard_hardware_shows_the_player_journal(monkeypatch: pytest.MonkeyPatch) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import shared
+
+    def read_player_log() -> str:
+        return "Sep 25 15:38:11 RoMini romini-core[1724]: command failed: Operation not permitted (-1)"
+
+    monkeypatch.setattr(shared, "read_player_log", read_player_log)
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    log = html.split('id="player-log"', 1)[1].split("</section>", 1)[0]
+
+    assert "<h2>Player log</h2>" in log
+    assert "Operation not permitted" in log
 
 
 def test_dashboard_hardware_shows_live_host_facts_without_inventing_wifi() -> None:

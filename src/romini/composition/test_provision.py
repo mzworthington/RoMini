@@ -48,6 +48,12 @@ def test_romini_core_service_prepares_the_governor_and_wifi_sleep() -> None:
     assert "iw dev wlan0 set power_save on" in ROMINI_CORE_SERVICE
 
 
+def test_romini_core_service_can_read_the_system_journal() -> None:
+    from romini.composition.provision import ROMINI_CORE_SERVICE
+
+    assert "SupplementaryGroups=systemd-journal" in ROMINI_CORE_SERVICE
+
+
 def test_romini_core_service_starts_on_boot() -> None:
     from romini.composition.provision import ROMINI_CORE_SERVICE
 

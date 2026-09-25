@@ -166,6 +166,34 @@ def _read_text(path: str) -> str:
         return ""
 
 
+def read_player_log() -> str:
+    try:
+        shown = subprocess.run(
+            [
+                "journalctl",
+                "-u",
+                "romini-core.service",
+                "-u",
+                "romini-update.service",
+                "-n",
+                "40",
+                "--no-pager",
+                "-o",
+                "short-iso",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    text = shown.stdout.strip()
+    if text:
+        return text
+    return shown.stderr.strip()
+
+
 def _wifi_name() -> str:
     try:
         shown = subprocess.run(
@@ -611,6 +639,7 @@ def render_page(
             "audit_entries": audit_entries,
             "update": update,
             "host": host,
+            "player_log": read_player_log() if page == "settings" else "",
             "memory_fill": memory_fill(host["memory"]),
             "unbound_tags": unbound_tags,
             "active_figures": active_figures,

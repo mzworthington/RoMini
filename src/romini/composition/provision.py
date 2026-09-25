@@ -53,6 +53,7 @@ Wants=network-online.target
 Type=simple
 User=pi
 Group=pi
+SupplementaryGroups=systemd-journal
 WorkingDirectory=/var/lib/romini
 Environment=ROMINI_PROFILE=pi
 Environment=ROMINI_DATA=/var/lib/romini
