@@ -38,7 +38,7 @@ GPIO press handlers are tested; `run_core_ticks` currently polls **NFC and catal
 
 ## 4. Speaker
 
-AV jack → powered speaker **aux**. `speaker-test -c 2` or `mpv` at low volume. Software ceiling still applies.
+BCM 18 (pin 12) and BCM 19 (pin 35) → filter → powered speaker **aux**. The AV jack is not the output once `audremap` is loaded. `speaker-test -c 2` or `mpv` at low volume. Software ceiling still applies.
 
 ## 5. Disk (before yank-risk)
 

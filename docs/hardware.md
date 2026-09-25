@@ -34,7 +34,7 @@ flowchart TB
   halt["Halt NO + LED"] --> pi
   vol["Vol+ Vol- (later)"] --> pi
   play["Play/pause (later)"] --> pi
-  pi -->|"PWM AV jack"| spk["Powered speaker aux"]
+  pi -->|"PWM GPIO 18 and 19"| spk["Powered speaker aux"]
 ```
 
 ### PN532: SPI
@@ -48,13 +48,14 @@ Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU al
 
 ### Audio
 
-Pi 4 analogue AV → powered speaker **aux/amp** input. Avoid I2S while RSTPDN is GPIO 20 ([ADR-0005](./ADRs/0005-pn532-spi-analogue-audio.md)).
+Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **BCM 19** (header pin 35) with `dtoverlay=audremap,pins_18_19`. Those pins need the usual filter into the powered speaker aux input. Avoid I2S while RSTPDN is GPIO 20 ([ADR-0005](./ADRs/0005-pn532-spi-analogue-audio.md)).
 
 ### GPIO (BCM)
 
 | Function | BCM | Board pin | Notes |
 |----------|-----|-----------|--------|
 | Halt (NO to pin, COM GND) | 17 | 11 | Short-press halt; `gpio-shutdown` wake |
+| Analogue audio left/right | 18 / 19 | 12 / 35 | `audremap` PWM. Not free GPIO |
 | Status LED + | 27 | 13 | LED − to GND; 3.3V OK with built-in resistor |
 | Volume down | 22 | 15 | Internal pull-up. Wired later; v1 volume is the dashboard |
 | Volume up | 23 | 16 | Wired later |

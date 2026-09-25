@@ -108,6 +108,11 @@ def run_cli(
     )
 
 
+def boot_follow_up(result: str, *, boot_changed: bool, reboot: Callable[[], None]) -> None:
+    if result in {"current", "updated"} and boot_changed:
+        reboot()
+
+
 def restart_player() -> None:
     subprocess.run(["sudo", "-n", "systemctl", "restart", "romini-core"], check=False)
 
@@ -159,6 +164,23 @@ def main() -> int:
             install=install,
             restart=restart,
         )
+        if result in {"current", "updated"}:
+            applied = subprocess.run(
+                [
+                    "sudo",
+                    "-n",
+                    "/var/lib/romini/install/venv/bin/python",
+                    "-m",
+                    "romini.composition.provision",
+                    "--apply-boot",
+                ],
+                check=False,
+            )
+            boot_follow_up(
+                result,
+                boot_changed=applied.returncode == 10,
+                reboot=lambda: subprocess.run(["sudo", "-n", "systemctl", "reboot"], check=False),
+            )
     except Exception:
         traceback.print_exc()
         result = "failed"

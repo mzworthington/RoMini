@@ -6,6 +6,19 @@ class Playing:
         return True
 
 
+def test_boot_follow_up_reboots_only_when_the_idle_check_changed_config() -> None:
+    from romini.composition.update import boot_follow_up
+
+    reboots: list[str] = []
+
+    boot_follow_up("current", boot_changed=True, reboot=lambda: reboots.append("reboot"))
+    boot_follow_up("updated", boot_changed=True, reboot=lambda: reboots.append("reboot"))
+    boot_follow_up("skipped", boot_changed=True, reboot=lambda: reboots.append("skipped"))
+    boot_follow_up("current", boot_changed=False, reboot=lambda: reboots.append("unchanged"))
+
+    assert reboots == ["reboot", "reboot"]
+
+
 def test_update_skips_while_a_track_is_playing() -> None:
     installed: list[str] = []
 
@@ -189,6 +202,55 @@ def test_update_main_records_a_skip_in_plain_language(monkeypatch, tmp_path) -> 
     assert "skipped the install because a story was playing" in spoken
     assert "romini-update" not in spoken
     assert "systemctl" not in spoken
+
+
+def test_update_main_reboots_when_an_idle_check_adds_the_audio_overlay(monkeypatch, tmp_path) -> None:
+    from romini.composition.update import main as update_main
+
+    calls: list[list[str]] = []
+
+    def urlopen(request, timeout: int = 30):
+        class Resp:
+            def read(self) -> bytes:
+                return b'{"tag_name":"v0.2.0","assets":[{"name":"romini-0.2.0-py3-none-any.whl","browser_download_url":"https://example.test/romini.whl"}]}'
+
+            def __enter__(self) -> object:
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        return Resp()
+
+    def run(cmd: list[str], check: bool = False):
+        calls.append(cmd)
+
+        class Proc:
+            returncode = 10
+
+        return Proc()
+
+    monkeypatch.setenv("ROMINI_UPDATE_STATUS", str(tmp_path / "update-check.json"))
+    monkeypatch.setattr("romini.composition.update.run_cli", lambda **kwargs: "current")
+    monkeypatch.setattr("romini.composition.update.subprocess.run", run)
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+
+    try:
+        update_main()
+    except SystemExit as exc:
+        assert exc.code == 0
+
+    assert calls == [
+        [
+            "sudo",
+            "-n",
+            "/var/lib/romini/install/venv/bin/python",
+            "-m",
+            "romini.composition.provision",
+            "--apply-boot",
+        ],
+        ["sudo", "-n", "systemctl", "reboot"],
+    ]
 
 
 def test_update_restart_uses_passwordless_sudo(monkeypatch) -> None:

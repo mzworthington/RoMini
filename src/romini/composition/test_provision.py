@@ -48,6 +48,16 @@ def test_romini_core_service_lets_sudo_become_root() -> None:
     assert "CapabilityBoundingSet" not in ROMINI_CORE_SERVICE
 
 
+def test_provision_lets_the_updater_apply_boot_config_without_a_password(tmp_path: Path) -> None:
+    from romini.composition.provision import write_provision_files
+
+    dest = tmp_path / "etc"
+    write_provision_files(dest)
+    sudoers = (dest / "sudoers.d" / "romini").read_text()
+
+    assert "NOPASSWD: /var/lib/romini/install/venv/bin/python -m romini.composition.provision --apply-boot" in sudoers
+
+
 def test_provision_lets_the_dashboard_systemctl_without_a_password(tmp_path: Path) -> None:
     from romini.composition.provision import write_provision_files
 
@@ -75,6 +85,65 @@ def test_avahi_http_service_advertises_parent_dashboard() -> None:
 
     assert "_http._tcp" in AVAHI_HTTP_SERVICE
     assert "<port>80</port>" in AVAHI_HTTP_SERVICE
+
+
+def test_apply_boot_cli_exits_10_until_the_overlay_is_present(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.provision import main
+
+    path = tmp_path / "config.txt"
+    path.write_text("dtparam=audio=on\n")
+    monkeypatch.setattr("sys.argv", ["provision", "--apply-boot", str(path)])
+
+    try:
+        main()
+    except SystemExit as exc:
+        assert exc.code == 10
+    else:
+        raise AssertionError("expected reboot exit")
+
+    try:
+        main()
+    except SystemExit as exc:
+        assert exc.code == 0
+
+    assert path.read_text().count("dtoverlay=audremap,pins_18_19") == 1
+
+
+def test_apply_boot_config_writes_audremap_once(tmp_path: Path) -> None:
+    from romini.composition.provision import apply_boot_config
+
+    path = tmp_path / "config.txt"
+    path.write_text("dtparam=audio=on\n")
+
+    assert apply_boot_config(path) is True
+    assert apply_boot_config(path) is False
+    text = path.read_text()
+    assert text.count("dtoverlay=audremap,pins_18_19") == 1
+    assert text.count("dtparam=audio=on") == 1
+
+
+def test_merge_boot_config_appends_audremap_once() -> None:
+    from romini.composition.provision import merge_boot_config
+
+    existing = "dtparam=audio=on\ndtoverlay=gpio-shutdown,gpio_pin=17\n"
+    once = merge_boot_config(existing)
+    twice = merge_boot_config(once)
+
+    assert once.count("dtoverlay=audremap,pins_18_19") == 1
+    assert once.count("dtparam=audio=on") == 1
+    assert "dtoverlay=gpio-shutdown,gpio_pin=17" in once
+    assert twice == once
+
+
+def test_provision_config_routes_analogue_audio_to_gpio_18_and_19(tmp_path: Path) -> None:
+    from romini.composition.provision import write_provision_files
+
+    dest = tmp_path / "etc"
+    write_provision_files(dest)
+    cfg = (dest / "config.txt.romini").read_text()
+
+    assert "dtparam=audio=on" in cfg
+    assert "dtoverlay=audremap,pins_18_19" in cfg
 
 
 def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:

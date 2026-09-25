@@ -70,6 +70,29 @@ if [ -e "${DATA}/repo/.git" ]; then
   echo "Keep ${DATA}/library. Then: sudo rm -rf ${DATA}/repo"
 fi
 
+BOOT="/boot/firmware/config.txt"
+if [ ! -f "${BOOT}" ]; then
+  BOOT="/boot/config.txt"
+fi
+BOOT_CHANGED=0
+ensure_boot_line() {
+  local line="$1"
+  if [ -f "${BOOT}" ] && grep -qxF "${line}" "${BOOT}"; then
+    return 0
+  fi
+  printf '%s\n' "${line}" | sudo tee -a "${BOOT}" >/dev/null
+  BOOT_CHANGED=1
+}
+ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=17"
+ensure_boot_line "dtparam=i2c_arm=on"
+ensure_boot_line "dtparam=spi=on"
+ensure_boot_line "dtparam=audio=on"
+ensure_boot_line "dtoverlay=audremap,pins_18_19"
+if [ "${BOOT_CHANGED}" = 1 ]; then
+  printf 'Analogue audio now uses GPIO 18 and 19. Rebooting so the overlay loads.\n'
+  sudo reboot
+fi
+
 printf '\n\033[1;32mRoMini install complete.\033[0m\n'
 printf '\033[1mNothing left for this script to do.\033[0m Player and OTA timer are enabled.\n'
 printf 'Dashboard: http://%s.local\n' "$(hostname)"

@@ -3,6 +3,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_install_pi_script_remaps_analogue_audio_once_then_reboots() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "dtparam=audio=on" in script
+    assert "dtoverlay=audremap,pins_18_19" in script
+    assert "grep -qxF" in script
+    assert "/boot/firmware/config.txt" in script
+    assert "/boot/config.txt" in script
+    assert "sudo reboot" in script
+
+
 def test_install_pi_script_installs_github_wheel_without_git_clone() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "git clone" not in script

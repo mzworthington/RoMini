@@ -4,6 +4,38 @@ ROMINI_DATA_FSTAB = "LABEL=romini-data /var/lib/romini ext4 defaults 0 2"
 GPIO_SHUTDOWN_OVERLAY = "dtoverlay=gpio-shutdown,gpio_pin=17"
 I2C_ARM = "dtparam=i2c_arm=on"
 SPI_ARM = "dtparam=spi=on"
+ANALOGUE_AUDIO = "dtparam=audio=on"
+AUDREMAP_GPIO_18_19 = "dtoverlay=audremap,pins_18_19"
+BOOT_CONFIG_LINES = (
+    GPIO_SHUTDOWN_OVERLAY,
+    I2C_ARM,
+    SPI_ARM,
+    ANALOGUE_AUDIO,
+    AUDREMAP_GPIO_18_19,
+)
+
+
+def apply_boot_config(path: Path, lines: tuple[str, ...] = BOOT_CONFIG_LINES) -> bool:
+    original = path.read_text() if path.is_file() else ""
+    merged = merge_boot_config(original, lines)
+    if merged == original:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(merged)
+    return True
+
+
+def merge_boot_config(config_text: str, lines: tuple[str, ...] = BOOT_CONFIG_LINES) -> str:
+    present = {line.strip() for line in config_text.splitlines() if line.strip()}
+    missing = [line for line in lines if line not in present]
+    if not missing:
+        return config_text
+    body = config_text
+    if body and not body.endswith("\n"):
+        body += "\n"
+    return body + "\n".join(missing) + "\n"
+
+
 ROMINI_CORE_SERVICE = """[Unit]
 Description=RoMini player
 After=network-online.target
@@ -32,6 +64,7 @@ ROMINI_SUDOERS = """%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl restart romini
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl start --no-block romini-update.service
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl reboot
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff
+%sudo ALL=(root) NOPASSWD: /var/lib/romini/install/venv/bin/python -m romini.composition.provision --apply-boot
 """
 ROMINI_UPDATE_SERVICE = """[Unit]
 Description=RoMini GitHub Release updater
@@ -91,12 +124,22 @@ def write_provision_files(dest: Path) -> None:
     sudoers.mkdir(parents=True, exist_ok=True)
     (sudoers / "romini").write_text(ROMINI_SUDOERS)
     (dest / "fstab.romini-data").write_text(ROMINI_DATA_FSTAB + "\n")
-    (dest / "config.txt.romini").write_text(GPIO_SHUTDOWN_OVERLAY + "\n" + I2C_ARM + "\n" + SPI_ARM + "\n")
+    (dest / "config.txt.romini").write_text(merge_boot_config(""))
+
+
+def boot_config_path() -> Path:
+    firmware = Path("/boot/firmware/config.txt")
+    if firmware.is_file():
+        return firmware
+    return Path("/boot/config.txt")
 
 
 def main() -> None:
     import sys
 
+    if len(sys.argv) > 1 and sys.argv[1] == "--apply-boot":
+        path = Path(sys.argv[2]) if len(sys.argv) > 2 else boot_config_path()
+        raise SystemExit(10 if apply_boot_config(path) else 0)
     dest = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("provision")
     write_provision_files(dest)
 

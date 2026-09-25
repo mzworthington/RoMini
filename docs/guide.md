@@ -211,7 +211,7 @@ sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
-That is `dtoverlay=gpio-shutdown,gpio_pin=17` so halt can wake.
+That snippet is halt wake on BCM 17, SPI, I2C, and `dtoverlay=audremap,pins_18_19` so analogue audio leaves the AV jack and comes out on BCM 18 and 19. `bin/install-pi` appends any missing lines and reboots. A later idle update does the same.
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 
