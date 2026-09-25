@@ -423,7 +423,7 @@ def render_page(
             tags.append(
                 {
                     "uid": uid,
-                    "name": str(tag.get("name") or ""),
+                    "name": unquote(str(tag.get("name") or "")),
                     "uid_label": format_tag_uid(uid),
                     "image": figure_cover_url(uid) if key and locate_track_cover(covers, key) else "",
                 }

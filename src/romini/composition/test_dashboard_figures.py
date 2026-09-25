@@ -324,6 +324,36 @@ def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
     assert ">Frog Prince<" in assign
 
 
+def test_dashboard_assign_menu_shows_a_percent_encoded_figure_name_with_spaces(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Another%20Toy\n"
+        "tracks:\n"
+        "  - path: stories/pond.mp3\n"
+        "    title: Pond\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+
+    assign = html.split('action="/assign"', 1)[1].split("</form>", 1)[0]
+    assert ">Another Toy<" in assign
+    assert "Another%20Toy" not in assign
+
+
 def test_dashboard_assign_shows_each_figure_as_a_picture_tile(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
