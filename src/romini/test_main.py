@@ -145,6 +145,23 @@ def test_romini_core_main_starts_dashboard(tmp_path: Path, monkeypatch) -> None:
     assert "free_bytes" in body
 
 
+def test_pi_dashboard_arms_host_power(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.host_power import HostPower
+    from romini.features.power.host import DashboardTraffic
+
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    box = main(player=FakePlayer(), led=FakeLed())
+    try:
+        assert isinstance(box.host_power, HostPower)
+        assert isinstance(box.traffic, DashboardTraffic)
+    finally:
+        box.dashboard.close()
+
+
 def test_romini_core_dashboard_place_starts_the_track(tmp_path: Path, monkeypatch) -> None:
     from urllib.request import Request, urlopen
 

@@ -88,6 +88,10 @@ ensure_boot_line "dtparam=i2c_arm=on"
 ensure_boot_line "dtparam=spi=on"
 ensure_boot_line "dtparam=audio=on"
 ensure_boot_line "dtoverlay=audremap,pins_18_19"
+ensure_boot_line "hdmi_blanking=2"
+ensure_boot_line "dtoverlay=disable-bt"
+ensure_boot_line "dtparam=act_led_trigger=none"
+ensure_boot_line "dtparam=pwr_led_trigger=none"
 if amixer -c Headphones scontents 2>/dev/null | grep -q "Simple mixer control 'PCM'"; then
   amixer -c Headphones sset PCM 100%
   sudo alsactl store

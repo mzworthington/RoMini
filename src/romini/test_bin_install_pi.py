@@ -10,6 +10,14 @@ def test_install_pi_script_sets_pcm_volume_to_full_and_stores_it() -> None:
     assert "alsactl store" in script
 
 
+def test_install_pi_script_blanks_unused_peripherals() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "hdmi_blanking=2" in script
+    assert "dtoverlay=disable-bt" in script
+    assert "dtparam=act_led_trigger=none" in script
+    assert "dtparam=pwr_led_trigger=none" in script
+
+
 def test_install_pi_script_remaps_analogue_audio_once_then_reboots() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "dtparam=audio=on" in script

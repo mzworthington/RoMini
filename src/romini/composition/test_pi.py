@@ -130,6 +130,21 @@ def test_mpv_chime_releases_the_headphones_before_the_story_starts(monkeypatch) 
     assert order.index("chime-done") < order.index("story-start")
 
 
+def test_pn532_nfc_rests_by_powering_the_chip_down() -> None:
+    class Reader:
+        def __init__(self) -> None:
+            self.down = 0
+
+        def power_down(self) -> bool:
+            self.down += 1
+            return True
+
+    reader = Reader()
+    Pn532Nfc(reader).rest()
+
+    assert reader.down == 1
+
+
 def test_pn532_nfc_reads_uid_as_lowercase_hex() -> None:
     class Reader:
         def read_passive_target(self) -> bytes:

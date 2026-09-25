@@ -850,6 +850,54 @@ def test_gpio_led_pulses_on_pin_27() -> None:
     assert driver.pins == [27]
 
 
+def test_core_ticks_rest_the_reader_when_the_lid_is_empty(tmp_path: Path) -> None:
+    class RestingNfc(FakeNfc):
+        def __init__(self) -> None:
+            super().__init__()
+            self.rests = 0
+
+        def rest(self) -> None:
+            self.rests += 1
+
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    nfc = RestingNfc()
+
+    run_core_ticks(box, nfc, data_dir=data, ticks=[None, None], sleep=lambda _: None)
+
+    assert nfc.rests == 2
+
+
+def test_core_ticks_idle_the_cpu_and_radio_when_the_shelf_is_quiet(tmp_path: Path) -> None:
+    class Power:
+        def __init__(self) -> None:
+            self.calls: list[tuple[bool, bool]] = []
+
+        def apply(self, *, playing: bool, radio_sleep: bool) -> None:
+            self.calls.append((playing, radio_sleep))
+
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    power = Power()
+    box.host_power = power
+
+    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None], sleep=lambda _: None)
+
+    assert power.calls == [(False, True)]
+
+
+def test_core_ticks_poll_nfc_slowly_when_the_lid_is_empty(tmp_path: Path) -> None:
+    from romini.composition.nfc import IDLE_NFC_POLL_SEC
+
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    sleeps: list[float] = []
+
+    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None, None], sleep=sleeps.append)
+
+    assert sleeps == [IDLE_NFC_POLL_SEC, IDLE_NFC_POLL_SEC]
+
+
 def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
     data = write_empty_data(tmp_path)
     box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
@@ -857,13 +905,39 @@ def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
 
     run_core_ticks(
         box,
-        FakeNfc(),
+        FakeNfc(uid="04idlefast"),
         data_dir=data,
         ticks=[None, None],
         sleep=sleeps.append,
     )
 
     assert sleeps == [NFC_POLL_SEC, NFC_POLL_SEC]
+
+
+def test_core_ticks_power_off_when_the_shelf_has_been_idle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("romini.composition.loop.SHELF_HALT_SEC", 3.0)
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    halt = FakeHalt()
+    box.halt = halt
+
+    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None, None], sleep=lambda _: None)
+
+    assert halt.poweroffs == 1
+
+
+def test_core_ticks_keep_the_shelf_awake_while_a_story_plays(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("romini.composition.loop.SHELF_HALT_SEC", 0.5)
+    data = write_empty_data(tmp_path)
+    player = FakePlayer()
+    player.play("story.mp3", position_sec=0.0, uid="04aabbccddeeff")
+    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
+    halt = FakeHalt()
+    box.halt = halt
+
+    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None, None, None], sleep=lambda _: None)
+
+    assert halt.poweroffs == 0
 
 
 def test_core_ticks_power_off_when_bedtime_is_due(tmp_path: Path) -> None:

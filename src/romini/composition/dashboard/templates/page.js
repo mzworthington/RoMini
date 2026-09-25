@@ -143,10 +143,11 @@
   function syncPoll() {
     var polling = document.querySelector("[data-poll]");
     if (polling && !pollTimer) {
+      var live = document.querySelector("[data-playing='on']");
       pollTimer = window.setInterval(function () {
         if (!document.querySelector("[data-poll]") || editing() || navigating) return;
         visit(location.href, false);
-      }, 2000);
+      }, live ? 2000 : 10000);
     }
     if (!polling && pollTimer) {
       window.clearInterval(pollTimer);

@@ -9,6 +9,7 @@ from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
 from romini.composition.dashboard.power import LocalPower, LocalUpdate
 from romini.composition.gpio import GpioLed, RpiGpioLedDriver
+from romini.composition.host_power import HostPower
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
 from romini.composition.loop import run_core_ticks
@@ -17,6 +18,7 @@ from romini.composition.pi import MpvPlayer, Pn532Nfc
 from romini.composition.sim import SimBox, load_sim_box_from_env
 from romini.composition.ups_hat import open_ups_hat
 from romini.features.play_by_tag.place_figure import Player, StatusLed
+from romini.features.power.host import DashboardTraffic
 
 
 class SilentPlayer:
@@ -146,6 +148,10 @@ def main(
     dash_port = os.environ.get("ROMINI_DASHBOARD_PORT")
     if dash_port is not None:
         data = Path(os.environ["ROMINI_DATA"])
+        traffic = DashboardTraffic()
+        box.traffic = traffic
+        if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
+            box.host_power = HostPower()
         app = create_dashboard(
             storage=DiskStorage(data / "library"),
             assign_catalog=PathCatalog(data / "catalog.yaml"),
@@ -165,6 +171,7 @@ def main(
             update_status=data / "update-check.json",
             power=LocalPower(halt=box.halt, profile=os.environ.get("ROMINI_PROFILE", "sim")),
             updates=LocalUpdate(profile=os.environ.get("ROMINI_PROFILE", "sim")),
+            traffic=traffic,
         )
         box.dashboard = start_dashboard(
             app,

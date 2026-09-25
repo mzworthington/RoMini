@@ -44,19 +44,30 @@
       fetch("/play/seek", { method: "POST", body: new FormData(form) });
     });
   }
-  state.timer = window.setInterval(function () {
-    if (state.scrubbing || !state.deck || !state.deck.parentNode) return;
-    fetch("/now-playing")
-      .then(function (response) {
-        return response.text();
-      })
-      .then(function (html) {
-        var holder = document.createElement("template");
-        holder.innerHTML = html.trim();
-        var next = holder.content.querySelector(".studio");
-        if (!next || !state.deck || !state.deck.parentNode) return;
-        state.deck.parentNode.replaceChild(next, state.deck);
-        state.deck = next;
-      });
-  }, 2000);
+  function wait() {
+    return state.deck && state.deck.getAttribute("data-playing") === "on" ? 2000 : 10000;
+  }
+  function schedule() {
+    state.timer = window.setTimeout(function () {
+      state.timer = 0;
+      if (state.scrubbing || !state.deck || !state.deck.parentNode) {
+        schedule();
+        return;
+      }
+      fetch("/now-playing")
+        .then(function (response) {
+          return response.text();
+        })
+        .then(function (html) {
+          var holder = document.createElement("template");
+          holder.innerHTML = html.trim();
+          var next = holder.content.querySelector(".studio");
+          if (!next || !state.deck || !state.deck.parentNode) return;
+          state.deck.parentNode.replaceChild(next, state.deck);
+          state.deck = next;
+        })
+        .then(schedule, schedule);
+    }, wait());
+  }
+  schedule();
 })();

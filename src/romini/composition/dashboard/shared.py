@@ -169,7 +169,7 @@ def _read_text(path: str) -> str:
 def _wifi_name() -> str:
     try:
         shown = subprocess.run(
-            ["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"],
+            ["iw", "dev", "wlan0", "link"],
             check=False,
             capture_output=True,
             text=True,
@@ -178,8 +178,8 @@ def _wifi_name() -> str:
     except (OSError, subprocess.TimeoutExpired):
         return ""
     for line in shown.stdout.splitlines():
-        active, _, ssid = line.partition(":")
-        if active == "yes" and ssid.strip():
+        label, _, ssid = line.strip().partition(":")
+        if label == "SSID" and ssid.strip():
             return ssid.strip()
     return ""
 

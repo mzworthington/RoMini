@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from time import monotonic
 
 from fastapi import FastAPI
 
@@ -13,6 +14,7 @@ from romini.features.library.assign import CatalogFile
 from romini.features.listening.log import PlayLog, sync_playback
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer
 from romini.features.play_by_tag.place_figure import Mixer
+from romini.features.power.host import DashboardTraffic
 
 from . import characters as characters_page
 from . import figures, home, library
@@ -65,8 +67,15 @@ def create_dashboard(
     update_status: Path | None = None,
     power: object | None = None,
     updates: object | None = None,
+    traffic: DashboardTraffic | None = None,
 ) -> FastAPI:
     app = FastAPI()
+    if traffic is not None:
+
+        @app.middleware("http")
+        async def note_dashboard_traffic(_request: object, call_next: Callable) -> object:
+            traffic.note(monotonic())
+            return await call_next(_request)
 
     def note(action: str, summary: str, *, headline: str = "") -> None:
         if audit is None:

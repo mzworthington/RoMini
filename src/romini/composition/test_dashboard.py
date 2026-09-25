@@ -1856,6 +1856,37 @@ def test_dashboard_home_hides_now_playing_when_the_box_is_quiet() -> None:
     assert ">Story<" not in html
 
 
+def test_dashboard_request_notes_recent_traffic() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.features.power.host import DashboardTraffic
+
+    traffic = DashboardTraffic()
+    TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), traffic=traffic)).get("/")
+
+    assert traffic.seen_at is not None
+
+
+def test_dashboard_deck_marks_live_playback_for_a_short_refresh() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.fakes import FakePlayer
+
+    playing = FakePlayer()
+    playing.play("story.mp3", position_sec=1.0, uid="04aabbccddeeff")
+    live = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=playing)).get("/now-playing").text
+    quiet_player = FakePlayer()
+    quiet = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=quiet_player)).get("/now-playing").text
+    )
+
+    assert 'class="studio" data-playing="on"' in live
+    assert "data-playing" not in quiet
+    home = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), player=playing)).get("/").text
+    shell = home.split("<header>", 1)[0]
+    assert 'data-playing="on"' in shell
+
+
 def test_dashboard_quiet_deck_play_submits_when_a_player_is_connected() -> None:
     from fastapi.testclient import TestClient
 
@@ -1998,10 +2029,10 @@ def test_dashboard_shows_the_connected_wifi_name(monkeypatch: pytest.MonkeyPatch
     from romini.composition.dashboard import shared
 
     def run(args: list[str], **_kwargs: object) -> object:
-        assert args == ["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"]
+        assert args == ["iw", "dev", "wlan0", "link"]
 
         class Completed:
-            stdout = "no:Neighbour\nyes:House\n"
+            stdout = "Connected to aa:bb:cc:dd:ee:ff (on wlan0)\n\tSSID: House\n\tfreq: 2412\n"
 
         return Completed()
 

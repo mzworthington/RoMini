@@ -74,8 +74,25 @@ function boot(html) {
   };
 }
 
+test("a paused deck waits before refreshing now-playing", async () => {
+  const page = boot(`<div class="studio" id="old">Paused</div>`);
+  page.respond(async () => ({
+    text: async () => `<div class="studio" id="next">Next</div>`,
+    url: "http://romini.local/now-playing",
+  }));
+
+  await page.time.tick(2000);
+  assert.deepEqual(page.fetches, []);
+
+  await page.time.tick(8000);
+  assert.deepEqual(
+    page.fetches.map((call) => call.url),
+    ["/now-playing"],
+  );
+});
+
 test("the deck refreshes from now-playing without reloading the page", async () => {
-  const page = boot(`<div class="studio" id="old">Playing</div>`);
+  const page = boot(`<div class="studio" id="old" data-playing="on">Playing</div>`);
   page.respond(async () => ({
     text: async () => `<div class="studio" id="next">Next</div>`,
     url: "http://romini.local/now-playing",

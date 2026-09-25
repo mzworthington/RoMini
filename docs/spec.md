@@ -35,7 +35,8 @@ flowchart LR
 
 | Setting | Value |
 |--------|--------|
-| NFC poll | 250 ms |
+| NFC poll | 250 ms with a figure or Assign; 2 s when the lid is empty, reader asleep between polls |
+| Shelf halt | 10 min with no figure and no playback, then power off |
 | Presence grace | 2 s |
 | Play start | within 500 ms of a mapped Tag |
 | Cold boot to ready (LED + earcon) | within 20 s |

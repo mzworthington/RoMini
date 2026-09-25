@@ -215,7 +215,7 @@ That snippet is halt wake on BCM 17, SPI, I2C, and `dtoverlay=audremap,pins_18_1
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 
-**Core loop today** polls NFC + catalog every 250 ms. GPIO pin handlers exist (`apply_gpio_press`) and are covered in tests; they are not yet wired into `run_core_ticks`. On the bench, use sim HTTP/TTY against a laptop or wait for that poll to land. LED pulse uses `RPi.GPIO` on pin 27 when `ROMINI_PROFILE=pi`.
+**Core loop today** polls NFC + catalog every 250 ms while a figure is present or Assign is on, and every 2 s when the lid is empty. An empty, quiet shelf powers off after 10 minutes. GPIO pin handlers exist (`apply_gpio_press`) and are covered in tests; they are not yet wired into `run_core_ticks`. On the bench, use sim HTTP/TTY against a laptop or wait for that poll to land. LED pulse uses `RPi.GPIO` on pin 27 when `ROMINI_PROFILE=pi`.
 
 ### 3.5 Disk (before yank-risk)
 

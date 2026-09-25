@@ -22,11 +22,30 @@ def test_romini_data_fstab_line_has_label_and_no_nofail() -> None:
     assert "nofail" not in ROMINI_DATA_FSTAB
 
 
+def test_boot_config_blanks_hdmi_bluetooth_and_leds() -> None:
+    from romini.composition.provision import merge_boot_config
+
+    text = merge_boot_config("")
+
+    assert "hdmi_blanking=2" in text
+    assert "dtoverlay=disable-bt" in text
+    assert "dtparam=act_led_trigger=none" in text
+    assert "dtparam=pwr_led_trigger=none" in text
+
+
 def test_gpio_shutdown_overlay_uses_bcm_17() -> None:
     from romini.composition.provision import GPIO_SHUTDOWN_OVERLAY
 
     assert "gpio-shutdown" in GPIO_SHUTDOWN_OVERLAY
     assert "gpio_pin=17" in GPIO_SHUTDOWN_OVERLAY
+
+
+def test_romini_core_service_prepares_the_governor_and_wifi_sleep() -> None:
+    from romini.composition.provision import ROMINI_CORE_SERVICE
+
+    assert "ExecStartPre=+" in ROMINI_CORE_SERVICE
+    assert "scaling_governor" in ROMINI_CORE_SERVICE
+    assert "iw dev wlan0 set power_save on" in ROMINI_CORE_SERVICE
 
 
 def test_romini_core_service_starts_on_boot() -> None:

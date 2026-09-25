@@ -192,3 +192,8 @@ class Pn532Nfc:
         if uid is None:
             return None
         return bytes(uid).hex()
+
+    def rest(self) -> None:
+        power_down = getattr(self._reader, "power_down", None)
+        if callable(power_down):
+            power_down()

@@ -166,11 +166,25 @@ test("a notice on the next page becomes a toast that can be dismissed", async ()
   assert.equal(page.window.document.querySelector("[data-toast-stack] [data-toast]"), null);
 });
 
-test("a polling page refreshes until the form is dirty or polling stops", async () => {
-  const page = boot(`<div class="shell" data-poll><input name="title" value="Frog"><p id="now">1</p></div>`);
+test("a quiet polling page waits before refreshing", async () => {
+  const page = boot(`<div class="shell" data-poll><p id="now">1</p></div>`);
   page.respond(async () => ({
     text: async () =>
-      `<!DOCTYPE html><html><body><div class="shell" data-poll><input name="title" value="Frog"><p id="now">2</p></div></body></html>`,
+      `<!DOCTYPE html><html><body><div class="shell" data-poll><p id="now">2</p></div></body></html>`,
+    url: "http://romini.local/",
+  }));
+
+  await page.time.tick(2000);
+  assert.equal(page.fetches.length, 0);
+  await page.time.tick(8000);
+  assert.equal(page.window.document.getElementById("now").textContent, "2");
+});
+
+test("a polling page refreshes until the form is dirty or polling stops", async () => {
+  const page = boot(`<div class="shell" data-poll data-playing="on"><input name="title" value="Frog"><p id="now">1</p></div>`);
+  page.respond(async () => ({
+    text: async () =>
+      `<!DOCTYPE html><html><body><div class="shell" data-poll data-playing="on"><input name="title" value="Frog"><p id="now">2</p></div></body></html>`,
     url: "http://romini.local/",
   }));
 

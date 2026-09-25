@@ -6,12 +6,20 @@ I2C_ARM = "dtparam=i2c_arm=on"
 SPI_ARM = "dtparam=spi=on"
 ANALOGUE_AUDIO = "dtparam=audio=on"
 AUDREMAP_GPIO_18_19 = "dtoverlay=audremap,pins_18_19"
+HDMI_BLANKING = "hdmi_blanking=2"
+DISABLE_BT = "dtoverlay=disable-bt"
+ACT_LED_OFF = "dtparam=act_led_trigger=none"
+PWR_LED_OFF = "dtparam=pwr_led_trigger=none"
 BOOT_CONFIG_LINES = (
     GPIO_SHUTDOWN_OVERLAY,
     I2C_ARM,
     SPI_ARM,
     ANALOGUE_AUDIO,
     AUDREMAP_GPIO_18_19,
+    HDMI_BLANKING,
+    DISABLE_BT,
+    ACT_LED_OFF,
+    PWR_LED_OFF,
 )
 
 
@@ -53,6 +61,8 @@ EnvironmentFile=-/etc/romini/env
 RuntimeDirectory=romini
 RuntimeDirectoryMode=0700
 AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStartPre=+/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do chmod a+w "$f"; done'
+ExecStartPre=+/usr/sbin/iw dev wlan0 set power_save on
 ExecStart=/var/lib/romini/install/venv/bin/romini-core
 Restart=always
 RestartSec=10
