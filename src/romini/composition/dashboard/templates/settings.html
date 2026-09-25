@@ -232,11 +232,11 @@ sudo nmtui</pre>
 <p class="hint">Newest lines from the player and the updater.</p>
 {% if player_log %}
 {% set log_lines = player_log.splitlines() %}
-<pre class="player-log">{{ log_lines[:10]|join('\n') }}</pre>
+<pre class="player-log">{{ log_lines[-10:]|join('\n') }}</pre>
 {% if log_lines|length > 10 %}
 <details>
-<summary>Show the full log</summary>
-<pre class="player-log">{{ player_log }}</pre>
+<summary>Show earlier lines</summary>
+<pre class="player-log player-log-earlier">{{ log_lines[:-10]|join('\n') }}</pre>
 </details>
 {% endif %}
 {% else %}

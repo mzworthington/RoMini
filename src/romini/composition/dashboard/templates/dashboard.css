@@ -1,2 +1,4 @@
 {% include "css/base.css" %}{% include "css/deck.css" %}{% include "css/chrome.css" %}{% include "css/figures.css" %}{% include "css/studio.css" %}{% include "css/toast.css" %}{% include "css/player.css" %}{% include "css/library.css" %}{% include "css/stories.css" %}
-.player-log { margin: 0; max-height: 16rem; overflow: auto; white-space: pre-wrap; font-size: 0.8rem; line-height: 1.4; }
+.player-log { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; line-height: 1.45; }
+.player-log-earlier { margin-top: 0.75rem; max-height: 24rem; overflow: auto; }
+#player-log summary { cursor: pointer; margin-top: 0.75rem; }

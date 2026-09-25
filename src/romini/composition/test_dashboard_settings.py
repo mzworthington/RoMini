@@ -1064,6 +1064,33 @@ def test_dashboard_figures_volume_stays_on_the_figures_page() -> None:
     assert response.headers["location"] == "/figures?notice=volume"
 
 
+def test_dashboard_player_log_previews_the_newest_lines_without_repeating_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import shared
+
+    lines = [f"line {index}" for index in range(1, 13)]
+
+    def read_player_log() -> str:
+        return "\n".join(lines)
+
+    monkeypatch.setattr(shared, "read_player_log", read_player_log)
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
+    log = html.split('id="player-log"', 1)[1].split("</section>", 1)[0]
+    preview, _, earlier = log.partition("<details")
+
+    assert "line 3" in preview
+    assert "line 12" in preview
+    assert "line 2" not in preview
+    assert "Show earlier lines" in earlier
+    assert "line 1" in earlier
+    assert "line 2" in earlier
+    assert "line 3" not in earlier
+    assert "line 12" not in earlier
+
+
 def test_dashboard_player_log_starts_with_ten_lines_under_the_audit(monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
@@ -1078,11 +1105,6 @@ def test_dashboard_player_log_starts_with_ten_lines_under_the_audit(monkeypatch:
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
 
     assert html.index('id="audit"') < html.index('id="player-log"')
-    log = html.split('id="player-log"', 1)[1].split("</section>", 1)[0]
-    preview, _, full = log.partition("<details")
-    assert "line 10" in preview
-    assert "line 11" not in preview
-    assert "line 12" in full
 
 
 def test_dashboard_hardware_shows_the_player_journal(monkeypatch: pytest.MonkeyPatch) -> None:
