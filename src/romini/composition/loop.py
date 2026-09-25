@@ -5,7 +5,7 @@ from time import monotonic
 from time import sleep as wall_sleep
 
 from romini.composition.catalog import poll_catalog
-from romini.composition.nfc import IDLE_NFC_POLL_SEC, NFC_POLL_SEC, Nfc, poll_nfc
+from romini.composition.nfc import NFC_POLL_SEC, Nfc, poll_nfc
 from romini.composition.sim import SimBox
 from romini.features.play_by_tag.place_figure import next_assign_mode
 from romini.features.power.host import radio_should_sleep
@@ -52,10 +52,7 @@ def run_core_ticks(
         previous_uid = seen
         previous_mtime = poll_catalog(box, data_dir=data_dir, previous_mtime=previous_mtime)
         release_armed_bedtime(box)
-        step = NFC_POLL_SEC if seen is not None or box.assign_mode else IDLE_NFC_POLL_SEC
-        rest = getattr(nfc, "rest", None)
-        if seen is None and not box.assign_mode and callable(rest):
-            rest()
+        step = NFC_POLL_SEC
         if seen is None and not box.assign_mode and not box.player.is_playing():
             shelf_idle += step
             if shelf_idle >= SHELF_HALT_SEC:

@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-from romini.composition.pi import MpvPlayer, Pn532Nfc, SystemdHalt
+from romini.composition.pi import NFC_READ_TIMEOUT, MpvPlayer, Pn532Nfc, SystemdHalt
 
 
 def test_systemd_halt_runs_systemctl_poweroff(monkeypatch) -> None:
@@ -145,9 +145,21 @@ def test_pn532_nfc_rests_by_powering_the_chip_down() -> None:
     assert reader.down == 1
 
 
+def test_pn532_nfc_scans_briefly_so_an_empty_lid_does_not_block() -> None:
+    seen: dict[str, float] = {}
+
+    class Reader:
+        def read_passive_target(self, timeout: float = 1) -> None:
+            seen["timeout"] = timeout
+            return None
+
+    assert Pn532Nfc(Reader()).read_uid() is None
+    assert seen["timeout"] == NFC_READ_TIMEOUT
+
+
 def test_pn532_nfc_reads_uid_as_lowercase_hex() -> None:
     class Reader:
-        def read_passive_target(self) -> bytes:
+        def read_passive_target(self, timeout: float = 1) -> bytes:
             return bytes.fromhex("04aabbccddeeff")
 
     assert Pn532Nfc(Reader()).read_uid() == "04aabbccddeeff"

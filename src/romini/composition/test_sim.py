@@ -850,7 +850,7 @@ def test_gpio_led_pulses_on_pin_27() -> None:
     assert driver.pins == [27]
 
 
-def test_core_ticks_rest_the_reader_when_the_lid_is_empty(tmp_path: Path) -> None:
+def test_core_ticks_keep_the_field_up_while_waiting_for_a_figure(tmp_path: Path) -> None:
     class RestingNfc(FakeNfc):
         def __init__(self) -> None:
             super().__init__()
@@ -862,10 +862,12 @@ def test_core_ticks_rest_the_reader_when_the_lid_is_empty(tmp_path: Path) -> Non
     data = write_empty_data(tmp_path)
     box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
     nfc = RestingNfc()
+    sleeps: list[float] = []
 
-    run_core_ticks(box, nfc, data_dir=data, ticks=[None, None], sleep=lambda _: None)
+    run_core_ticks(box, nfc, data_dir=data, ticks=[None, None], sleep=sleeps.append)
 
-    assert nfc.rests == 2
+    assert sleeps == [NFC_POLL_SEC, NFC_POLL_SEC]
+    assert nfc.rests == 0
 
 
 def test_core_ticks_idle_the_cpu_and_radio_when_the_shelf_is_quiet(tmp_path: Path) -> None:
@@ -886,18 +888,6 @@ def test_core_ticks_idle_the_cpu_and_radio_when_the_shelf_is_quiet(tmp_path: Pat
     assert power.calls == [(False, True)]
 
 
-def test_core_ticks_poll_nfc_slowly_when_the_lid_is_empty(tmp_path: Path) -> None:
-    from romini.composition.nfc import IDLE_NFC_POLL_SEC
-
-    data = write_empty_data(tmp_path)
-    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
-    sleeps: list[float] = []
-
-    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None, None], sleep=sleeps.append)
-
-    assert sleeps == [IDLE_NFC_POLL_SEC, IDLE_NFC_POLL_SEC]
-
-
 def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
     data = write_empty_data(tmp_path)
     box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
@@ -915,7 +905,7 @@ def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
 
 
 def test_core_ticks_power_off_when_the_shelf_has_been_idle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("romini.composition.loop.SHELF_HALT_SEC", 3.0)
+    monkeypatch.setattr("romini.composition.loop.SHELF_HALT_SEC", 0.5)
     data = write_empty_data(tmp_path)
     box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
     halt = FakeHalt()

@@ -4,7 +4,6 @@ from typing import Protocol
 from romini.composition.sim import SimBox
 
 NFC_POLL_SEC = 0.25
-IDLE_NFC_POLL_SEC = 2.0
 NFC_ABSENT_TICKS = 3
 
 

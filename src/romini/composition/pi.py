@@ -6,6 +6,8 @@ from importlib.resources import files
 from os import environ
 from pathlib import Path
 
+NFC_READ_TIMEOUT = 0.2
+
 
 def mpv_ipc_socket() -> str:
     runtime = environ.get("RUNTIME_DIRECTORY") or environ.get("XDG_RUNTIME_DIR")
@@ -188,7 +190,7 @@ class Pn532Nfc:
         self._reader = reader
 
     def read_uid(self) -> str | None:
-        uid = self._reader.read_passive_target()
+        uid = self._reader.read_passive_target(timeout=NFC_READ_TIMEOUT)
         if uid is None:
             return None
         return bytes(uid).hex()
