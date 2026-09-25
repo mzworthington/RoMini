@@ -2029,12 +2029,15 @@ def test_dashboard_shows_the_connected_wifi_name(monkeypatch: pytest.MonkeyPatch
     from romini.composition.dashboard import shared
 
     def run(args: list[str], **_kwargs: object) -> object:
-        assert args == ["iw", "dev", "wlan0", "link"]
-
         class Completed:
-            stdout = "Connected to aa:bb:cc:dd:ee:ff (on wlan0)\n\tSSID: House\n\tfreq: 2412\n"
+            def __init__(self, stdout: str) -> None:
+                self.stdout = stdout
+                self.stderr = ""
 
-        return Completed()
+        if args[:1] == ["journalctl"]:
+            return Completed("")
+        assert args == ["iw", "dev", "wlan0", "link"]
+        return Completed("Connected to aa:bb:cc:dd:ee:ff (on wlan0)\n\tSSID: House\n\tfreq: 2412\n")
 
     monkeypatch.setattr(shared, "subprocess", SimpleNamespace(run=run), raising=False)
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/settings").text
