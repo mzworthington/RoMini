@@ -1,5 +1,6 @@
-dtoverlay=gpio-shutdown,gpio_pin=3
+dtoverlay=gpio-shutdown,gpio_pin=17
 dtparam=i2c_arm=on
 dtparam=spi=on
 dtparam=audio=on
+disable_audio_dither=1
 dtoverlay=audremap,pins_18_19

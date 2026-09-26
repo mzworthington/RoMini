@@ -28,7 +28,7 @@ def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
         return object()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    MpvPlayer().play("/var/lib/romini/library/frog.mp3", position_sec=14.5, uid="04AABBCC")
+    MpvPlayer(alsa=lambda cmd: None).play("/var/lib/romini/library/frog.mp3", position_sec=14.5, uid="04AABBCC")
 
     sock = runtime / "mpv.sock"
     assert calls == [
@@ -68,11 +68,21 @@ def test_mpv_player_set_volume_sends_ipc() -> None:
     assert sent == ['{"command":["set_property","volume",42]}']
 
 
+def test_mpv_player_mutes_headphones_as_soon_as_it_starts() -> None:
+    sent: list[list[str]] = []
+    MpvPlayer(alsa=sent.append)
+
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"]]
+
+
 def test_mpv_player_set_volume_sets_alsa_headphone() -> None:
     sent: list[list[str]] = []
     MpvPlayer(alsa=sent.append).set_volume(42)
 
-    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"]]
+    assert sent == [
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"],
+    ]
 
 
 def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch) -> None:
@@ -89,13 +99,13 @@ def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch
     sent.clear()
 
     assert player.is_playing() is False
-    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"]]
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"]]
 
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%", "unmute"],
     ]
 
 
@@ -106,7 +116,10 @@ def test_mpv_player_pause_silences_headphones(monkeypatch) -> None:
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
     player.pause()
 
-    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"]]
+    assert sent == [
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+    ]
 
 
 def test_mpv_player_stop_silences_headphones(monkeypatch) -> None:
@@ -116,7 +129,10 @@ def test_mpv_player_stop_silences_headphones(monkeypatch) -> None:
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
     player.stop()
 
-    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"]]
+    assert sent == [
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+    ]
 
 
 def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
@@ -128,7 +144,10 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
         "/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC"
     )
 
-    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"]]
+    assert sent == [
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%", "unmute"],
+    ]
 
 
 def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
@@ -165,8 +184,9 @@ def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) ->
     MpvPlayer(mixer=MemoryMixer(level=42), alsa=sent.append).play_earcon("romini/connect.wav")
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
     ]
 
 
@@ -252,7 +272,7 @@ def test_mpv_player_play_does_not_wait_for_the_track_to_end(monkeypatch) -> None
         return Proc()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    player = MpvPlayer()
+    player = MpvPlayer(alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
 
     assert started[0][0] == "mpv"
@@ -275,7 +295,7 @@ def test_mpv_player_play_terminates_the_previous_track(monkeypatch) -> None:
         return proc
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    player = MpvPlayer()
+    player = MpvPlayer(alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
     player.play("/var/lib/romini/library/helmet.mp3", position_sec=0.0, uid="bbb")
 
@@ -304,7 +324,7 @@ def test_mpv_player_play_waits_for_the_previous_track_to_exit(monkeypatch) -> No
         return proc
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    player = MpvPlayer()
+    player = MpvPlayer(alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
     player.play("/var/lib/romini/library/helmet.mp3", position_sec=0.0, uid="bbb")
 
@@ -336,7 +356,7 @@ def test_mpv_player_kills_the_previous_track_if_terminate_is_ignored(monkeypatch
         return proc
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    player = MpvPlayer()
+    player = MpvPlayer(alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
     player.play("/var/lib/romini/library/helmet.mp3", position_sec=0.0, uid="bbb")
 
@@ -365,7 +385,7 @@ def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
     from datetime import datetime
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
-    player = MpvPlayer(clock=lambda: datetime(2026, 9, 19, 22, 33))
+    player = MpvPlayer(clock=lambda: datetime(2026, 9, 19, 22, 33), alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
 
     assert player.started_at() == datetime(2026, 9, 19, 22, 33)
@@ -513,7 +533,7 @@ def test_mpv_player_position_sec_reads_time_pos(monkeypatch) -> None:
         def close(self) -> None:
             return
 
-    player = MpvPlayer(connect=lambda path: Sock())
+    player = MpvPlayer(connect=lambda path: Sock(), alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
 
     assert player.position_sec() == 74.2

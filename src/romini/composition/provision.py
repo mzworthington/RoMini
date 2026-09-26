@@ -1,10 +1,11 @@
 from pathlib import Path
 
 ROMINI_DATA_FSTAB = "LABEL=romini-data /var/lib/romini ext4 defaults 0 2"
-GPIO_SHUTDOWN_OVERLAY = "dtoverlay=gpio-shutdown,gpio_pin=3"
+GPIO_SHUTDOWN_OVERLAY = "dtoverlay=gpio-shutdown,gpio_pin=17"
 I2C_ARM = "dtparam=i2c_arm=on"
 SPI_ARM = "dtparam=spi=on"
 ANALOGUE_AUDIO = "dtparam=audio=on"
+DISABLE_AUDIO_DITHER = "disable_audio_dither=1"
 AUDREMAP_GPIO_18_19 = "dtoverlay=audremap,pins_18_19"
 HDMI_BLANKING = "hdmi_blanking=2"
 DISABLE_BT = "dtoverlay=disable-bt"
@@ -15,6 +16,7 @@ BOOT_CONFIG_LINES = (
     I2C_ARM,
     SPI_ARM,
     ANALOGUE_AUDIO,
+    DISABLE_AUDIO_DITHER,
     AUDREMAP_GPIO_18_19,
     HDMI_BLANKING,
     DISABLE_BT,

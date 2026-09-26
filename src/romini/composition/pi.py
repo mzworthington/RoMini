@@ -38,6 +38,7 @@ class MpvPlayer:
         self._selected: tuple[str, str] | None = None
         self._started_at: datetime | None = None
         self._proc: object | None = None
+        self._silence_headphones()
 
     def _end_mpv(self) -> None:
         previous = self._proc
@@ -67,7 +68,7 @@ class MpvPlayer:
         ]
         if self.mixer is not None:
             cmd.append(f"--volume={self.mixer.level}")
-            self._apply_alsa(self.mixer.level)
+            self._apply_alsa(self.mixer.level, unmute=True)
         cmd.append(path)
         self._end_mpv()
         self._proc = subprocess.Popen(cmd)
@@ -132,7 +133,7 @@ class MpvPlayer:
         return 0.0
 
     def set_volume(self, level: int) -> None:
-        self._apply_alsa(level)
+        self._apply_alsa(level, unmute=self._playing)
         payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))
         if self._ipc is not None:
             self._ipc(payload)
@@ -144,11 +145,14 @@ class MpvPlayer:
         except OSError:
             return
 
-    def _apply_alsa(self, level: int) -> None:
-        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", f"{level}%"])
+    def _apply_alsa(self, level: int, *, unmute: bool) -> None:
+        cmd = ["amixer", "-c", "Headphones", "--", "sset", "Headphone", f"{level}%"]
+        if unmute:
+            cmd.append("unmute")
+        self._alsa_cmd(cmd)
 
     def _silence_headphones(self) -> None:
-        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"])
+        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"])
 
     def _alsa_cmd(self, cmd: list[str]) -> None:
         apply_alsa = self._alsa if self._alsa is not None else _alsa_run
@@ -162,7 +166,7 @@ class MpvPlayer:
         wav = files("romini").joinpath(name)
         audio = str(wav) if wav.is_file() else path
         if self.mixer is not None:
-            self._apply_alsa(self.mixer.level)
+            self._apply_alsa(self.mixer.level, unmute=True)
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
         try:
             proc.wait(timeout=3)

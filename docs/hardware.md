@@ -54,7 +54,7 @@ Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **B
 
 | Function | BCM | Board pin | Notes |
 |----------|-----|-----------|--------|
-| Halt (NO to pin, COM GND) | 3 | 5 | Short-press halt and wake. Pi 4 wakes only from this pin |
+| Halt (NO to pin 11 and pin 5, COM GND) | 17 and 3 | 11 and 5 | Pin 11 sleeps the box. Pin 5 wakes a Pi 4. Same switch, both pins |
 | Analogue audio left/right | 18 / 19 | 12 / 35 | `audremap` PWM. Not free GPIO |
 | Status LED + | 27 | 13 | LED − to GND; 3.3V OK with built-in resistor |
 | Volume down | 22 | 15 | Internal pull-up. Wired later; v1 volume is the dashboard |
@@ -87,4 +87,4 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 | Battery | UPS HAT (D) INA219 `0x43`; `sim` omits the reading |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |
-| Halt | GPIO 3 (pin 5) + gpio-shutdown; `systemctl poweroff`. Pi 4 cannot wake from GPIO 17 |
+| Halt | GPIO 17 (pin 11) sleeps; GPIO 3 (pin 5) wakes. Same switch to both, COM to GND |

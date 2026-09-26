@@ -21,6 +21,7 @@ def test_install_pi_script_blanks_unused_peripherals() -> None:
 def test_install_pi_script_remaps_analogue_audio_once_then_reboots() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "dtparam=audio=on" in script
+    assert "disable_audio_dither=1" in script
     assert "dtoverlay=audremap,pins_18_19" in script
     assert "grep -qxF" in script
     assert "/boot/firmware/config.txt" in script
