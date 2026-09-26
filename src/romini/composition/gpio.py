@@ -38,7 +38,6 @@ class RpiGpioLedDriver:
         signal.signal(signal.SIGTERM, self._stop)
 
     def _stop(self, _signum: int, _frame: object) -> None:
-        self.off()
         raise SystemExit(0)
 
     def pulse(self, pin: int) -> None:

@@ -1,7 +1,5 @@
 [Unit]
 Description=RoMini player
-After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=simple

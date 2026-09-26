@@ -904,7 +904,9 @@ def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:
     assert sleeps == [NFC_POLL_SEC, NFC_POLL_SEC]
 
 
-def test_core_ticks_turn_the_lamp_off_before_the_shelf_sleeps(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_core_ticks_leave_the_status_light_on_when_the_shelf_sleeps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr("romini.composition.loop.SHELF_HALT_SEC", 0.5)
     order: list[str] = []
 
@@ -923,7 +925,7 @@ def test_core_ticks_turn_the_lamp_off_before_the_shelf_sleeps(tmp_path: Path, mo
 
     run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None, None], sleep=lambda _: None)
 
-    assert order == ["off", "poweroff"]
+    assert order == ["poweroff"]
 
 
 def test_core_ticks_power_off_when_the_shelf_has_been_idle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -100,7 +100,34 @@ def test_romini_core_main_plays_a_chime_when_the_process_is_stopped(tmp_path: Pa
         signal.signal(signal.SIGTERM, previous)
 
     assert player.chirps == ["romini/halt.wav"]
-    assert led.went_out is True
+    assert led.went_out is False
+
+
+def test_romini_core_keeps_the_status_light_on_through_the_halt_chime(tmp_path: Path, monkeypatch) -> None:
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+
+    class Lamp(FakeLed):
+        def __init__(self) -> None:
+            super().__init__()
+            self.went_out = False
+
+        def off(self) -> None:
+            self.went_out = True
+
+    led = Lamp()
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        main(player=FakePlayer(), led=led)
+        handler = signal.getsignal(signal.SIGTERM)
+        assert callable(handler)
+        with pytest.raises(SystemExit):
+            handler(signal.SIGTERM, None)
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+    assert led.went_out is False
 
 
 def test_romini_core_main_plays_the_shutdown_chime_once(tmp_path: Path, monkeypatch) -> None:

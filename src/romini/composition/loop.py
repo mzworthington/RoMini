@@ -56,9 +56,6 @@ def run_core_ticks(
         if seen is None and not box.assign_mode and not box.player.is_playing():
             shelf_idle += step
             if shelf_idle >= SHELF_HALT_SEC:
-                lamp_off = getattr(box.led, "off", None)
-                if callable(lamp_off):
-                    lamp_off()
                 box.halt.poweroff()
         else:
             shelf_idle = 0.0

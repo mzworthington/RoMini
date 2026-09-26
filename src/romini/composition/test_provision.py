@@ -53,6 +53,15 @@ def test_romini_core_service_can_read_the_system_journal() -> None:
     assert "SupplementaryGroups=systemd-journal" in ROMINI_CORE_SERVICE
 
 
+def test_romini_core_starts_before_the_network_is_online() -> None:
+    from romini.composition.provision import ROMINI_CORE_SERVICE, ROMINI_UPDATE_SERVICE
+
+    unit = Path(__file__).resolve().parents[3] / "deploy" / "systemd" / "system" / "romini-core.service"
+    assert "network-online.target" not in ROMINI_CORE_SERVICE
+    assert "network-online.target" not in unit.read_text()
+    assert "network-online.target" in ROMINI_UPDATE_SERVICE
+
+
 def test_romini_core_service_starts_on_boot() -> None:
     from romini.composition.provision import ROMINI_CORE_SERVICE
 

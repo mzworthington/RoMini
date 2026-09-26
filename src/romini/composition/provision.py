@@ -53,8 +53,6 @@ def merge_boot_config(config_text: str, lines: tuple[str, ...] = BOOT_CONFIG_LIN
 
 ROMINI_CORE_SERVICE = """[Unit]
 Description=RoMini player
-After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=simple

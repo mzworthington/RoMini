@@ -126,9 +126,6 @@ class _ChimeHalt:
 def listen_for_poweroff(box: SimBox) -> None:
     def _stop(_signum: int, _frame: object) -> None:
         play_power_chime(box, HALT_EARCON_PATH)
-        lamp_off = getattr(box.led, "off", None)
-        if callable(lamp_off):
-            lamp_off()
         raise SystemExit(0)
 
     try:

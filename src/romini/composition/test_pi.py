@@ -482,10 +482,10 @@ def test_rpi_gpio_led_stays_on_while_awake_and_turns_off_for_sleep() -> None:
     assert gpio.outputs[-1] == (GPIO_LED, Gpio.LOW)
 
 
-def test_rpi_gpio_led_turns_off_when_the_process_is_stopped() -> None:
+def test_rpi_gpio_led_stays_on_when_the_process_is_stopped() -> None:
     import signal
 
-    from romini.composition.gpio import GPIO_LED, RpiGpioLedDriver
+    from romini.composition.gpio import RpiGpioLedDriver
 
     class Gpio:
         BCM = 11
@@ -514,7 +514,7 @@ def test_rpi_gpio_led_turns_off_when_the_process_is_stopped() -> None:
     finally:
         signal.signal(signal.SIGTERM, previous)
 
-    assert gpio.outputs == [(GPIO_LED, Gpio.LOW)]
+    assert gpio.outputs == []
 
 
 def test_rpi_gpio_led_driver_pulses_pin_high_then_low() -> None:
