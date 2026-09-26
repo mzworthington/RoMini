@@ -1,7 +1,10 @@
+import signal
 import sys
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
+
+import pytest
 
 from romini.__main__ import main, run
 from romini.composition.nfc import FakeNfc
@@ -19,6 +22,114 @@ from romini.fakes import (
 @dataclass
 class FakeBattery:
     percent: int
+
+
+def test_romini_core_main_plays_a_chime_when_the_box_turns_on(tmp_path: Path, monkeypatch) -> None:
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+
+    class Chime(FakePlayer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.chirps: list[str] = []
+
+        def play_earcon(self, path: str) -> None:
+            self.chirps.append(path)
+
+    player = Chime()
+    main(player=player, led=FakeLed())
+
+    assert player.chirps == ["romini/hello_romy.wav"]
+
+
+def test_romini_core_main_plays_a_chime_when_the_box_turns_off(tmp_path: Path, monkeypatch) -> None:
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+
+    class Chime(FakePlayer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.chirps: list[str] = []
+
+        def play_earcon(self, path: str) -> None:
+            self.chirps.append(path)
+
+    player = Chime()
+    box = main(player=player, led=FakeLed())
+    player.chirps.clear()
+
+    box.halt.poweroff()
+
+    assert player.chirps == ["romini/halt.wav"]
+
+
+def test_romini_core_main_plays_a_chime_when_the_process_is_stopped(tmp_path: Path, monkeypatch) -> None:
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+
+    class Chime(FakePlayer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.chirps: list[str] = []
+
+        def play_earcon(self, path: str) -> None:
+            self.chirps.append(path)
+
+    class Lamp(FakeLed):
+        def __init__(self) -> None:
+            super().__init__()
+            self.went_out = False
+
+        def off(self) -> None:
+            self.went_out = True
+
+    player = Chime()
+    led = Lamp()
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        main(player=player, led=led)
+        player.chirps.clear()
+        handler = signal.getsignal(signal.SIGTERM)
+        assert callable(handler)
+        with pytest.raises(SystemExit):
+            handler(signal.SIGTERM, None)
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+    assert player.chirps == ["romini/halt.wav"]
+    assert led.went_out is True
+
+
+def test_romini_core_main_plays_the_shutdown_chime_once(tmp_path: Path, monkeypatch) -> None:
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "sim")
+
+    class Chime(FakePlayer):
+        def __init__(self) -> None:
+            super().__init__()
+            self.chirps: list[str] = []
+
+        def play_earcon(self, path: str) -> None:
+            self.chirps.append(path)
+
+    player = Chime()
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        box = main(player=player, led=FakeLed())
+        player.chirps.clear()
+        box.halt.poweroff()
+        handler = signal.getsignal(signal.SIGTERM)
+        assert callable(handler)
+        with pytest.raises(SystemExit):
+            handler(signal.SIGTERM, None)
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+    assert player.chirps == ["romini/halt.wav"]
 
 
 def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, monkeypatch) -> None:

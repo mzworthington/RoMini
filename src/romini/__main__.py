@@ -1,4 +1,5 @@
 import os
+import signal
 import sys
 from collections.abc import Callable, Iterable
 from datetime import datetime
@@ -17,6 +18,7 @@ from romini.composition.nfc import FakeNfc, Nfc
 from romini.composition.pi import MpvPlayer, Pn532Nfc
 from romini.composition.sim import SimBox, load_sim_box_from_env
 from romini.composition.ups_hat import open_ups_hat
+from romini.features.boot.ready import HALT_EARCON_PATH, READY_EARCON_PATH
 from romini.features.play_by_tag.place_figure import Player, StatusLed
 from romini.features.power.host import DashboardTraffic
 
@@ -109,6 +111,46 @@ def default_ticks():
         yield None
 
 
+class _ChimeHalt:
+    def __init__(self, halt: object, box: SimBox) -> None:
+        self._halt = halt
+        self._box = box
+
+    def poweroff(self) -> None:
+        play_power_chime(self._box, HALT_EARCON_PATH)
+        poweroff = getattr(self._halt, "poweroff", None)
+        if callable(poweroff):
+            poweroff()
+
+
+def listen_for_poweroff(box: SimBox) -> None:
+    def _stop(_signum: int, _frame: object) -> None:
+        play_power_chime(box, HALT_EARCON_PATH)
+        lamp_off = getattr(box.led, "off", None)
+        if callable(lamp_off):
+            lamp_off()
+        raise SystemExit(0)
+
+    try:
+        signal.signal(signal.SIGTERM, _stop)
+    except ValueError:
+        return
+
+
+def play_power_chime(box: SimBox, path: str) -> None:
+    if path == HALT_EARCON_PATH:
+        if getattr(box, "halt_chime_played", False):
+            return
+        box.halt_chime_played = True
+    earcon = getattr(box, "earcon", None)
+    if earcon is None:
+        return
+    try:
+        earcon.play_earcon(path)
+    except OSError:
+        return
+
+
 def serve_until_stopped(box: SimBox) -> None:
     http = getattr(box, "http", None)
     if http is not None:
@@ -142,6 +184,9 @@ def main(
         else (MpvPlayer() if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
         led=led if led is not None else default_led(),
     )
+    play_power_chime(box, READY_EARCON_PATH)
+    box.halt = _ChimeHalt(box.halt, box)
+    listen_for_poweroff(box)
     port = os.environ.get("ROMINI_HTTP_PORT")
     if port is not None:
         box.http = start_sim_http(box, host="127.0.0.1", port=int(port))
