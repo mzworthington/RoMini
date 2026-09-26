@@ -1,3 +1,5 @@
+import signal
+
 from romini.composition.sim import SimBox
 from romini.features.play_by_tag.place_figure import (
     on_halt_pressed,
@@ -23,16 +25,29 @@ class GpioLed:
     def flash(self) -> None:
         self._driver.pulse(GPIO_LED)
 
+    def off(self) -> None:
+        self._driver.off()
+
 
 class RpiGpioLedDriver:
     def __init__(self, gpio: object) -> None:
         self._gpio = gpio
         gpio.setmode(gpio.BCM)
         gpio.setup(GPIO_LED, gpio.OUT)
+        gpio.output(GPIO_LED, gpio.HIGH)
+        signal.signal(signal.SIGTERM, self._stop)
+
+    def _stop(self, _signum: int, _frame: object) -> None:
+        self.off()
+        raise SystemExit(0)
 
     def pulse(self, pin: int) -> None:
         self._gpio.output(pin, self._gpio.HIGH)
         self._gpio.output(pin, self._gpio.LOW)
+        self._gpio.output(pin, self._gpio.HIGH)
+
+    def off(self) -> None:
+        self._gpio.output(GPIO_LED, self._gpio.LOW)
 
 
 def apply_gpio_press(box: SimBox, pin: int) -> None:

@@ -87,6 +87,7 @@ class MpvPlayer:
             self._ipc('{"command":["set_property","pause",true]}')
         self._end_mpv()
         self._playing = False
+        self._silence_headphones()
 
     def stop(self) -> None:
         if self._ipc is not None:
@@ -94,8 +95,17 @@ class MpvPlayer:
         self._end_mpv()
         self._playing = False
         self._uid = None
+        self._silence_headphones()
 
     def is_playing(self) -> bool:
+        proc = self._proc
+        if proc is not None:
+            poll = getattr(proc, "poll", None)
+            if callable(poll) and poll() is not None:
+                self._proc = None
+                self._playing = False
+                self._silence_headphones()
+                return False
         return self._playing
 
     def playing_uid(self) -> str | None:
@@ -135,7 +145,12 @@ class MpvPlayer:
             return
 
     def _apply_alsa(self, level: int) -> None:
-        cmd = ["amixer", "-c", "Headphones", "--", "sset", "Headphone", f"{level}%"]
+        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", f"{level}%"])
+
+    def _silence_headphones(self) -> None:
+        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"])
+
+    def _alsa_cmd(self, cmd: list[str]) -> None:
         apply_alsa = self._alsa if self._alsa is not None else _alsa_run
         try:
             apply_alsa(cmd)
@@ -146,12 +161,16 @@ class MpvPlayer:
         name = path.rsplit("/", 1)[-1]
         wav = files("romini").joinpath(name)
         audio = str(wav) if wav.is_file() else path
+        if self.mixer is not None:
+            self._apply_alsa(self.mixer.level)
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
         try:
             proc.wait(timeout=3)
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait(timeout=1)
+        finally:
+            self._silence_headphones()
 
 
 class MpvIpcStatus:

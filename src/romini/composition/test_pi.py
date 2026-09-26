@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from romini.composition.pi import NFC_READ_TIMEOUT, MpvPlayer, Pn532Nfc, SystemdHalt
 
 
@@ -73,6 +75,50 @@ def test_mpv_player_set_volume_sets_alsa_headphone() -> None:
     assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"]]
 
 
+def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch) -> None:
+    from romini.composition.mixer import MemoryMixer
+
+    class Proc:
+        def poll(self) -> int:
+            return 0
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: Proc())
+    sent: list[list[str]] = []
+    player = MpvPlayer(mixer=MemoryMixer(level=42), alsa=sent.append)
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+    sent.clear()
+
+    assert player.is_playing() is False
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"]]
+
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+
+    assert sent == [
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"],
+    ]
+
+
+def test_mpv_player_pause_silences_headphones(monkeypatch) -> None:
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
+    sent: list[list[str]] = []
+    player = MpvPlayer(alsa=sent.append)
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+    player.pause()
+
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"]]
+
+
+def test_mpv_player_stop_silences_headphones(monkeypatch) -> None:
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
+    sent: list[list[str]] = []
+    player = MpvPlayer(alsa=sent.append)
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+    player.stop()
+
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"]]
+
+
 def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
     from romini.composition.mixer import MemoryMixer
 
@@ -97,7 +143,7 @@ def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
         return Proc()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    MpvPlayer().play_earcon("romini/connect.wav")
+    MpvPlayer(alsa=lambda cmd: None).play_earcon("romini/connect.wav")
 
     assert calls[0][:3] == [
         "mpv",
@@ -105,6 +151,23 @@ def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
         "--audio-device=alsa/sysdefault:CARD=Headphones",
     ]
     assert calls[0][-1].endswith("connect.wav")
+
+
+def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) -> None:
+    from romini.composition.mixer import MemoryMixer
+
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: Proc())
+    sent: list[list[str]] = []
+    MpvPlayer(mixer=MemoryMixer(level=42), alsa=sent.append).play_earcon("romini/connect.wav")
+
+    assert sent == [
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"],
+        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "0%"],
+    ]
 
 
 def test_mpv_chime_releases_the_headphones_before_the_story_starts(monkeypatch) -> None:
@@ -123,7 +186,7 @@ def test_mpv_chime_releases_the_headphones_before_the_story_starts(monkeypatch) 
         return object()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    player = MpvPlayer()
+    player = MpvPlayer(alsa=lambda cmd: None)
     player.play_earcon("romini/connect.wav")
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
 
@@ -168,7 +231,7 @@ def test_pn532_nfc_reads_uid_as_lowercase_hex() -> None:
 def test_mpv_player_pause_sends_ipc_command(monkeypatch) -> None:
     sent: list[str] = []
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
-    player = MpvPlayer(ipc=sent.append)
+    player = MpvPlayer(ipc=sent.append, alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
     player.pause()
 
@@ -290,7 +353,7 @@ def test_mpv_player_pause_terminates_the_running_track(monkeypatch) -> None:
 
     proc = Proc()
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: proc)
-    player = MpvPlayer()
+    player = MpvPlayer(alsa=lambda cmd: None)
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="aaa")
     player.pause()
 
@@ -306,6 +369,70 @@ def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
 
     assert player.started_at() == datetime(2026, 9, 19, 22, 33)
+
+
+def test_rpi_gpio_led_stays_on_while_awake_and_turns_off_for_sleep() -> None:
+    from romini.composition.gpio import GPIO_LED, RpiGpioLedDriver
+
+    class Gpio:
+        BCM = 11
+        OUT = 0
+        HIGH = 1
+        LOW = 0
+        outputs: list[tuple[int, int]] = []
+
+        def setmode(self, mode: int) -> None:
+            return
+
+        def setup(self, pin: int, mode: int) -> None:
+            return
+
+        def output(self, pin: int, value: int) -> None:
+            self.outputs.append((pin, value))
+
+    gpio = Gpio()
+    driver = RpiGpioLedDriver(gpio)
+
+    assert gpio.outputs == [(GPIO_LED, Gpio.HIGH)]
+
+    driver.off()
+
+    assert gpio.outputs[-1] == (GPIO_LED, Gpio.LOW)
+
+
+def test_rpi_gpio_led_turns_off_when_the_process_is_stopped() -> None:
+    import signal
+
+    from romini.composition.gpio import GPIO_LED, RpiGpioLedDriver
+
+    class Gpio:
+        BCM = 11
+        OUT = 0
+        HIGH = 1
+        LOW = 0
+        outputs: list[tuple[int, int]] = []
+
+        def setmode(self, mode: int) -> None:
+            return
+
+        def setup(self, pin: int, mode: int) -> None:
+            return
+
+        def output(self, pin: int, value: int) -> None:
+            self.outputs.append((pin, value))
+
+    previous = signal.getsignal(signal.SIGTERM)
+    gpio = Gpio()
+    try:
+        RpiGpioLedDriver(gpio)
+        gpio.outputs.clear()
+        handler = signal.getsignal(signal.SIGTERM)
+        with pytest.raises(SystemExit):
+            handler(signal.SIGTERM, None)
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+    assert gpio.outputs == [(GPIO_LED, Gpio.LOW)]
 
 
 def test_rpi_gpio_led_driver_pulses_pin_high_then_low() -> None:
@@ -334,7 +461,12 @@ def test_rpi_gpio_led_driver_pulses_pin_high_then_low() -> None:
 
     assert gpio.modes == [Gpio.BCM]
     assert gpio.setups == [(GPIO_LED, Gpio.OUT)]
-    assert gpio.outputs == [(GPIO_LED, Gpio.HIGH), (GPIO_LED, Gpio.LOW)]
+    assert gpio.outputs == [
+        (GPIO_LED, Gpio.HIGH),
+        (GPIO_LED, Gpio.HIGH),
+        (GPIO_LED, Gpio.LOW),
+        (GPIO_LED, Gpio.HIGH),
+    ]
 
 
 def test_mpv_ipc_status_is_playing_when_pause_is_false() -> None:
