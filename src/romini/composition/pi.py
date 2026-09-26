@@ -70,6 +70,7 @@ class MpvPlayer:
             cmd.append(f"--volume={self.mixer.level}")
             self._apply_alsa(self.mixer.level, unmute=True)
         cmd.append(path)
+        self._restore_pwm_pins()
         self._end_mpv()
         self._proc = subprocess.Popen(cmd)
         self._playing = True
@@ -153,6 +154,15 @@ class MpvPlayer:
 
     def _silence_headphones(self) -> None:
         self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"])
+        self._park_pwm_pins()
+
+    def _park_pwm_pins(self) -> None:
+        for pin in (18, 19):
+            self._alsa_cmd(["pinctrl", "set", str(pin), "op", "dl"])
+
+    def _restore_pwm_pins(self) -> None:
+        for pin in (18, 19):
+            self._alsa_cmd(["pinctrl", "set", str(pin), "a5"])
 
     def _alsa_cmd(self, cmd: list[str]) -> None:
         apply_alsa = self._alsa if self._alsa is not None else _alsa_run
@@ -167,6 +177,7 @@ class MpvPlayer:
         audio = str(wav) if wav.is_file() else path
         if self.mixer is not None:
             self._apply_alsa(self.mixer.level, unmute=True)
+        self._restore_pwm_pins()
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
         try:
             proc.wait(timeout=3)
