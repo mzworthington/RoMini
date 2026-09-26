@@ -158,7 +158,7 @@ Screenshots: [dashboard.md](./dashboard.md). `http://<hostname>.local` on house 
 |------|------|
 | `romini-core.service` | NFC, mpv, GPIO, FastAPI; `enable`d so 5V always starts the player |
 | `romini-update.timer` | oneshot `python -m romini.composition.update` |
-| dtoverlay gpio-shutdown | Halt BCM 17 can wake without yanking |
+| dtoverlay gpio-shutdown | Halt BCM 3 (pin 5) can wake without yanking |
 
 Profiles `sim` / `pi`: [ADR-0004](./ADRs/0004-composition-root-profiles.md), [development.md](./development.md).
 

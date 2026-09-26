@@ -83,7 +83,10 @@ ensure_boot_line() {
   printf '%s\n' "${line}" | sudo tee -a "${BOOT}" >/dev/null
   BOOT_CHANGED=1
 }
-ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=17"
+if [ -f "${BOOT}" ]; then
+  sudo sed -i '/^dtoverlay=gpio-shutdown,gpio_pin=17$/d' "${BOOT}"
+fi
+ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=3"
 ensure_boot_line "dtparam=i2c_arm=on"
 ensure_boot_line "dtparam=spi=on"
 ensure_boot_line "dtparam=audio=on"

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROMINI_DATA_FSTAB = "LABEL=romini-data /var/lib/romini ext4 defaults 0 2"
-GPIO_SHUTDOWN_OVERLAY = "dtoverlay=gpio-shutdown,gpio_pin=17"
+GPIO_SHUTDOWN_OVERLAY = "dtoverlay=gpio-shutdown,gpio_pin=3"
 I2C_ARM = "dtparam=i2c_arm=on"
 SPI_ARM = "dtparam=spi=on"
 ANALOGUE_AUDIO = "dtparam=audio=on"
@@ -34,13 +34,18 @@ def apply_boot_config(path: Path, lines: tuple[str, ...] = BOOT_CONFIG_LINES) ->
 
 
 def merge_boot_config(config_text: str, lines: tuple[str, ...] = BOOT_CONFIG_LINES) -> str:
-    present = {line.strip() for line in config_text.splitlines() if line.strip()}
+    kept = [
+        line
+        for line in config_text.splitlines()
+        if not (line.strip().startswith("dtoverlay=gpio-shutdown") and line.strip() != GPIO_SHUTDOWN_OVERLAY)
+    ]
+    body = "\n".join(kept)
+    if body:
+        body += "\n"
+    present = {line.strip() for line in body.splitlines() if line.strip()}
     missing = [line for line in lines if line not in present]
     if not missing:
-        return config_text
-    body = config_text
-    if body and not body.endswith("\n"):
-        body += "\n"
+        return body
     return body + "\n".join(missing) + "\n"
 
 

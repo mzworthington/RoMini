@@ -26,13 +26,13 @@ sudo reboot
 
 ## 3. Buttons
 
-Power off. Halt: COM GND, NO BCM 17, LED − GND, LED + BCM 27. Vol− BCM 22, vol+ BCM 23, play BCM 24 (NO to pin, COM GND).
+Power off. Halt: COM GND, NO BCM 3 (physical pin 5), LED − GND, LED + BCM 27. Vol− BCM 22, vol+ BCM 23, play BCM 24 (NO to pin, COM GND). Pin 5 is also I2C clock for the UPS HAT; a short press is the wake the Pi 4 supports.
 
 ```bash
 sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 ```
 
-`gpio-shutdown` on BCM 17 so the halt button can wake.
+`gpio-shutdown` on BCM 3 (physical pin 5) so the halt button can wake. A Pi 4 does not wake from BCM 17.
 
 GPIO press handlers are tested; `run_core_ticks` currently polls **NFC and catalog only**. See [guide.md](./guide.md) §3.4.
 
@@ -77,7 +77,7 @@ Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=
 | Brown-out | PSU ≥3A |
 | No sound | Aux cable, ALSA not HDMI-only, speaker powered |
 | Uploads vanish | Overlay on without `romini-data` |
-| Halt / no wake | BCM 17, gpio-shutdown, NO vs NC |
+| Halt / no wake | BCM 3 on physical pin 5, gpio-shutdown, NO vs NC. GPIO 17 cannot wake a Pi 4 |
 | Catalog ignored | `catalog.yaml` on `romini-data`, UID hex, MP3 under `library/` |
 | OTA skipped | Track is playing (mpv IPC) |
 | `Permission denied` on venv | Tree still root-owned |

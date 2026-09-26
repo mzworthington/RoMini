@@ -33,11 +33,10 @@ def test_boot_config_blanks_hdmi_bluetooth_and_leds() -> None:
     assert "dtparam=pwr_led_trigger=none" in text
 
 
-def test_gpio_shutdown_overlay_uses_bcm_17() -> None:
+def test_gpio_shutdown_overlay_uses_the_pi4_wake_pin() -> None:
     from romini.composition.provision import GPIO_SHUTDOWN_OVERLAY
 
-    assert "gpio-shutdown" in GPIO_SHUTDOWN_OVERLAY
-    assert "gpio_pin=17" in GPIO_SHUTDOWN_OVERLAY
+    assert GPIO_SHUTDOWN_OVERLAY == "dtoverlay=gpio-shutdown,gpio_pin=3"
 
 
 def test_romini_core_service_prepares_the_governor_and_wifi_sleep() -> None:
@@ -147,16 +146,25 @@ def test_apply_boot_config_writes_audremap_once(tmp_path: Path) -> None:
     assert text.count("dtparam=audio=on") == 1
 
 
+def test_merge_boot_config_replaces_a_shutdown_pin_that_cannot_wake() -> None:
+    from romini.composition.provision import merge_boot_config
+
+    merged = merge_boot_config("dtoverlay=gpio-shutdown,gpio_pin=17\n")
+
+    assert merged.count("gpio-shutdown") == 1
+    assert "dtoverlay=gpio-shutdown,gpio_pin=3" in merged
+
+
 def test_merge_boot_config_appends_audremap_once() -> None:
     from romini.composition.provision import merge_boot_config
 
-    existing = "dtparam=audio=on\ndtoverlay=gpio-shutdown,gpio_pin=17\n"
+    existing = "dtparam=audio=on\ndtoverlay=gpio-shutdown,gpio_pin=3\n"
     once = merge_boot_config(existing)
     twice = merge_boot_config(once)
 
     assert once.count("dtoverlay=audremap,pins_18_19") == 1
     assert once.count("dtparam=audio=on") == 1
-    assert "dtoverlay=gpio-shutdown,gpio_pin=17" in once
+    assert once.count("dtoverlay=gpio-shutdown,gpio_pin=3") == 1
     assert twice == once
 
 

@@ -203,7 +203,7 @@ sudo reboot
 
 ### 3.4 Buttons and speaker
 
-Power off. Halt: COM GND, NO **BCM 17**, LED − GND, LED + **BCM 27**. Vol− **22**, vol+ **23**, play **24** (NO to pin, COM GND).
+Power off. Halt: COM GND, NO **BCM 3** (physical pin 5), LED − GND, LED + **BCM 27**. Vol− **22**, vol+ **23**, play **24** (NO to pin, COM GND). Pin 5 is also I2C clock for the UPS HAT. A Pi 4 wakes from that pin only.
 
 ```bash
 sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
@@ -211,7 +211,7 @@ sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
-That snippet is halt wake on BCM 17, SPI, I2C, and `dtoverlay=audremap,pins_18_19` so analogue audio leaves the AV jack and comes out on BCM 18 and 19. `bin/install-pi` appends any missing lines and reboots. A later idle update does the same.
+That snippet is halt wake on BCM 3 (physical pin 5), SPI, I2C, and `dtoverlay=audremap,pins_18_19` so analogue audio leaves the AV jack and comes out on BCM 18 and 19. `bin/install-pi` appends any missing lines and reboots. A later idle update does the same.
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 
@@ -298,7 +298,7 @@ sudo systemctl restart romini-core.service
 | `Permission denied` on venv | `chown` `/var/lib/romini` to the SSH user before `install-pi` |
 | bind `0.0.0.0:80` errno 13 | Recopy `romini-core.service` (needs `AmbientCapabilities`) and `daemon-reload` |
 | Uploads vanish | Overlay on without `romini-data` |
-| Halt / no wake | BCM 17, gpio-shutdown, NO vs NC |
+| Halt / no wake | BCM 3 on physical pin 5, gpio-shutdown, NO vs NC. GPIO 17 cannot wake a Pi 4 |
 | Catalog ignored | `catalog.yaml` on the data volume, UID hex, file under `library/` |
 | OTA while a story plays | Expected skip until idle |
 | GPIO buttons silent | Not in `run_core_ticks` yet; NFC still works |

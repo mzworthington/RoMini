@@ -652,6 +652,53 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     assert "Link figure" in waiting
 
 
+def test_dashboard_library_play_stays_disabled_when_no_figure_is_linked(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Idle:
+        def is_playing(self) -> bool:
+            return False
+
+        def playing_uid(self) -> str:
+            return ""
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Frog"\n'
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/picnic.mp3"\n'
+        '    title: "A picnic"\n'
+        '  - path: "stories/romy.mp3"\n'
+        '    title: "Romy"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Idle(),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    linked = html.split(">A picnic<", 1)[0].rsplit("<tr", 1)[1] + html.split(">A picnic<", 1)[1].split("</tr>", 1)[0]
+    unlinked = html.split(">Romy<", 1)[0].rsplit("<tr", 1)[1] + html.split(">Romy<", 1)[1].split("</tr>", 1)[0]
+
+    assert 'action="/library/play/04aabbccddeeff"' in linked
+    assert "disabled" not in linked.split("<td>", 1)[1].split("</td>", 1)[0]
+    assert 'action="/library/play/"' not in unlinked
+    assert 'action="/library/play/romy' not in unlinked
+    play = unlinked.split("<td>", 1)[1].split("</td>", 1)[0]
+    assert "disabled" in play
+    assert ">Play<" in play
+
+
 def test_dashboard_library_file_spec_column_keeps_the_size_on_one_line() -> None:
     from fastapi.testclient import TestClient
 
