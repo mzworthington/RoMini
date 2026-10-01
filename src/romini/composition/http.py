@@ -19,11 +19,12 @@ SIM_ASSETS = {
 }
 
 
+def template_env() -> Environment:
+    return Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=True)
+
+
 def sim_home_page() -> bytes:
-    css = (
-        Environment(loader=FileSystemLoader(TEMPLATES_DIR)).get_template("dashboard.css").render()
-        + (TEMPLATES_DIR / "sim.css").read_text()
-    )
+    css = template_env().get_template("dashboard.css").render() + (TEMPLATES_DIR / "sim.css").read_text()
     return (TEMPLATES_DIR / "sim.html").read_text().replace("{{ css }}", css).encode()
 
 

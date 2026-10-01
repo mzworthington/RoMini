@@ -120,6 +120,19 @@ def test_avahi_http_service_advertises_parent_dashboard() -> None:
     assert "<port>80</port>" in AVAHI_HTTP_SERVICE
 
 
+def test_apply_boot_cli_refuses_a_config_path_outside_temp_and_boot(monkeypatch) -> None:
+    from romini.composition.provision import main
+
+    monkeypatch.setattr("sys.argv", ["provision", "--apply-boot", "/etc/config.txt"])
+
+    try:
+        main()
+    except ValueError as exc:
+        assert "refusing" in str(exc)
+        return
+    raise AssertionError("expected boot config writes to stay inside temp or /boot")
+
+
 def test_apply_boot_cli_exits_10_until_the_overlay_is_present(tmp_path: Path, monkeypatch) -> None:
     from romini.composition.provision import main
 
@@ -214,6 +227,19 @@ def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:
     assert "gpio-shutdown" in cfg
     assert "dtparam=i2c_arm=on" in cfg
     assert "dtparam=spi=on" in cfg
+
+
+def test_provision_cli_refuses_a_destination_outside_temp_and_the_working_directory(monkeypatch) -> None:
+    from romini.composition.provision import main
+
+    monkeypatch.setattr("sys.argv", ["provision", "/etc/romini-provision-denied"])
+
+    try:
+        main()
+    except ValueError as exc:
+        assert "refusing" in str(exc)
+        return
+    raise AssertionError("expected the provision CLI to refuse a path outside temp and the working directory")
 
 
 def test_provision_module_writes_units_from_argv(tmp_path: Path, monkeypatch) -> None:

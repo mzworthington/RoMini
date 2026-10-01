@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 ROMINI_DATA_FSTAB = "LABEL=romini-data /var/lib/romini ext4 defaults 0 2"
@@ -25,7 +26,25 @@ BOOT_CONFIG_LINES = (
 )
 
 
+def confined_path(candidate: Path) -> Path:
+    root = Path.cwd().resolve()
+    target = candidate.resolve() if candidate.is_absolute() else (root / candidate).resolve()
+    if target.is_relative_to(root):
+        return target
+    temp = Path(tempfile.gettempdir()).resolve()
+    if target.is_relative_to(temp):
+        return target
+    system_tmp = Path("/tmp").resolve()
+    if target.is_relative_to(system_tmp):
+        return target
+    boot = Path("/boot").resolve()
+    if target.is_relative_to(boot):
+        return target
+    raise ValueError(f"refusing to touch {target}")
+
+
 def apply_boot_config(path: Path, lines: tuple[str, ...] = BOOT_CONFIG_LINES) -> bool:
+    path = confined_path(path)
     original = path.read_text() if path.is_file() else ""
     merged = merge_boot_config(original, lines)
     if merged == original:
@@ -128,6 +147,7 @@ def ensure_data_tree(root: Path) -> None:
 
 
 def write_provision_files(dest: Path) -> None:
+    dest = confined_path(dest)
     systemd = dest / "systemd" / "system"
     systemd.mkdir(parents=True, exist_ok=True)
     (systemd / "romini-core.service").write_text(ROMINI_CORE_SERVICE)

@@ -1093,3 +1093,11 @@ def test_core_ticks_leave_register_mode_after_idle(tmp_path: Path) -> None:
     )
 
     assert box.assign_mode is False
+
+
+def test_sim_templates_escape_html_in_interpolated_values() -> None:
+    from romini.composition.http import template_env
+
+    page = template_env().from_string("<p>{{ name }}</p>").render(name="<script>")
+
+    assert page == "<p>&lt;script&gt;</p>"
