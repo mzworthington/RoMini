@@ -34,9 +34,6 @@ def confined_path(candidate: Path) -> Path:
     temp = Path(tempfile.gettempdir()).resolve()
     if target.is_relative_to(temp):
         return target
-    system_tmp = Path("/tmp").resolve()
-    if target.is_relative_to(system_tmp):
-        return target
     boot = Path("/boot").resolve()
     if target.is_relative_to(boot):
         return target
@@ -174,8 +171,9 @@ def main() -> None:
     import sys
 
     if len(sys.argv) > 1 and sys.argv[1] == "--apply-boot":
-        path = Path(sys.argv[2]) if len(sys.argv) > 2 else boot_config_path()
-        raise SystemExit(10 if apply_boot_config(path) else 0)
+        if len(sys.argv) > 2:
+            raise ValueError("refusing a boot config path from the command line")
+        raise SystemExit(10 if apply_boot_config(boot_config_path()) else 0)
     dest = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("provision")
     write_provision_files(dest)
 

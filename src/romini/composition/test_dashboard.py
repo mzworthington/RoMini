@@ -2199,6 +2199,38 @@ def test_dashboard_stop_and_eject_stops_playback() -> None:
     assert player.is_playing() is False
 
 
+def test_host_facts_probe_uses_the_default_gateway_from_the_route_table(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.dashboard.shared import read_host_facts
+
+    route = tmp_path / "route"
+    route.write_text(
+        "Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\tMask\tMTU\tWindow\tIRTT\n"
+        "wlan0\t00000000\t0100000A\t0003\t0\t0\t0\t00000000\t0\t0\t0\n"
+    )
+    monkeypatch.setattr("romini.composition.dashboard.shared._ROUTE_TABLE", route)
+    seen: dict[str, tuple[str, int]] = {}
+
+    class Probe:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def connect(self, address):
+            seen["address"] = address
+
+        def getsockname(self):
+            return ("10.0.0.8", 40000)
+
+    monkeypatch.setattr("romini.composition.dashboard.shared.socket.socket", lambda *_args, **_kwargs: Probe())
+
+    facts = read_host_facts()
+
+    assert seen["address"] == ("10.0.0.1", 80)
+    assert facts["address"] == "10.0.0.8"
+
+
 def test_dashboard_safety_card_reboots_and_shows_the_address() -> None:
     from fastapi.testclient import TestClient
 

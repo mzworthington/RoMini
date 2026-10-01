@@ -212,15 +212,44 @@ def _wifi_name() -> str:
     return ""
 
 
-def read_host_facts() -> dict[str, str]:
-    hostname = socket.gethostname().strip() or "romini"
-    address = ""
+_ROUTE_TABLE = Path("/proc/net/route")
+
+
+def _default_gateway(route_text: str) -> str:
+    for line in route_text.splitlines()[1:]:
+        fields = line.split()
+        if len(fields) < 3 or fields[1] != "00000000":
+            continue
+        raw = fields[2]
+        if len(raw) != 8 or raw == "00000000":
+            continue
+        try:
+            octets = [int(raw[index : index + 2], 16) for index in (6, 4, 2, 0)]
+        except ValueError:
+            continue
+        return ".".join(str(part) for part in octets)
+    return ""
+
+
+def _local_address() -> str:
+    try:
+        route_text = _ROUTE_TABLE.read_text()
+    except OSError:
+        return ""
+    gateway = _default_gateway(route_text)
+    if not gateway:
+        return ""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.connect(("192.168.1.1", 80))
-            address = sock.getsockname()[0]
+            sock.connect((gateway, 80))
+            return sock.getsockname()[0]
     except OSError:
-        address = ""
+        return ""
+
+
+def read_host_facts() -> dict[str, str]:
+    hostname = socket.gethostname().strip() or "romini"
+    address = _local_address()
     if address.startswith("127."):
         address = ""
     temp_raw = _read_text("/sys/class/thermal/thermal_zone0/temp").strip()

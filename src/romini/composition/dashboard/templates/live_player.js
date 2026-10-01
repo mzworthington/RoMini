@@ -41,7 +41,7 @@
       if (!input || !input.closest || !input.closest(".scrub-form")) return;
       var form = input.form;
       if (!form) return;
-      fetch("/play/seek", { method: "POST", body: new FormData(form) });
+      fetch("/play/seek", { method: "POST", body: new FormData(form) }).catch(function () {});
     });
   }
   function wait() {

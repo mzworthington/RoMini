@@ -123,6 +123,25 @@ test("dragging the scrubber holds the deck still", async () => {
   assert.equal(page.window.document.querySelector(".studio").isConnected, true);
 });
 
+test("a failed seek does not become an unhandled rejection", async () => {
+  const page = boot(`
+    <div class="studio">
+      <form class="scrub-form" action="/play/seek" method="post">
+        <div class="waveform"><input type="range" name="at" value="4"></div>
+      </form>
+    </div>
+  `);
+  const reasons = [];
+  page.window.addEventListener("unhandledrejection", (event) => {
+    reasons.push(String(event.reason));
+  });
+  page.window.fetch = () => Promise.reject(new Error("offline"));
+  page.window.document.querySelector("input").dispatchEvent(new page.window.Event("change", { bubbles: true }));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(reasons, []);
+});
+
 test("moving the scrubber seeks in place", () => {
   const page = boot(`
     <div class="studio">

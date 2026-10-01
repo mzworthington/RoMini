@@ -120,6 +120,21 @@ def test_avahi_http_service_advertises_parent_dashboard() -> None:
     assert "<port>80</port>" in AVAHI_HTTP_SERVICE
 
 
+def test_provision_refuses_the_public_tmp_directory_when_temp_is_private(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    private = tmp_path / "private"
+    private.mkdir()
+    monkeypatch.setattr("romini.composition.provision.tempfile.gettempdir", lambda: str(private))
+    from romini.composition.provision import confined_path
+
+    try:
+        confined_path(Path("/tmp/romini-provision"))
+    except ValueError as exc:
+        assert "refusing" in str(exc)
+        return
+    raise AssertionError("expected the public /tmp directory to be refused")
+
+
 def test_apply_boot_cli_refuses_a_config_path_outside_temp_and_boot(monkeypatch) -> None:
     from romini.composition.provision import main
 
@@ -133,12 +148,28 @@ def test_apply_boot_cli_refuses_a_config_path_outside_temp_and_boot(monkeypatch)
     raise AssertionError("expected boot config writes to stay inside temp or /boot")
 
 
+def test_apply_boot_cli_does_not_write_a_path_from_the_command_line(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.provision import main
+
+    decoy = tmp_path / "config.txt"
+    decoy.write_text("dtparam=audio=on\n")
+    monkeypatch.setattr("sys.argv", ["provision", "--apply-boot", str(decoy)])
+
+    try:
+        main()
+    except (SystemExit, ValueError):
+        pass
+
+    assert "audremap" not in decoy.read_text()
+
+
 def test_apply_boot_cli_exits_10_until_the_overlay_is_present(tmp_path: Path, monkeypatch) -> None:
     from romini.composition.provision import main
 
     path = tmp_path / "config.txt"
     path.write_text("dtparam=audio=on\n")
-    monkeypatch.setattr("sys.argv", ["provision", "--apply-boot", str(path)])
+    monkeypatch.setattr("romini.composition.provision.boot_config_path", lambda: path)
+    monkeypatch.setattr("sys.argv", ["provision", "--apply-boot"])
 
     try:
         main()

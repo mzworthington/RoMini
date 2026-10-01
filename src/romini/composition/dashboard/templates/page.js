@@ -146,7 +146,7 @@
       var live = document.querySelector("[data-playing='on']");
       pollTimer = window.setInterval(function () {
         if (!document.querySelector("[data-poll]") || editing() || navigating) return;
-        visit(location.href, false);
+        void visit(location.href, false);
       }, live ? 2000 : 10000);
     }
     if (!polling && pollTimer) {
@@ -187,7 +187,7 @@
       return;
     }
     event.preventDefault();
-    visit(link.href, true);
+    void visit(link.href, true);
   });
 
   document.addEventListener(
@@ -206,7 +206,7 @@
       if (method === "GET") {
         var params = new URLSearchParams(submitter ? new FormData(form, submitter) : new FormData(form));
         target.search = params.toString();
-        visit(target.pathname + target.search, true);
+        void visit(target.pathname + target.search, true);
         return;
       }
       if (status) {
@@ -216,7 +216,7 @@
       if (submitter) submitter.disabled = true;
       var body = submitter ? new FormData(form, submitter) : new FormData(form);
       navigating = true;
-      fetch(target.href, { method: "POST", body: body, credentials: "same-origin" })
+      void fetch(target.href, { method: "POST", body: body, credentials: "same-origin" })
         .then(function (response) {
           return response.text().then(function (html) {
             apply(html, response.url || target.href, true);
@@ -234,7 +234,7 @@
   );
 
   window.addEventListener("popstate", function () {
-    visit(location.href, false);
+    void visit(location.href, false);
   });
 
   window.addEventListener("beforeunload", function (event) {
