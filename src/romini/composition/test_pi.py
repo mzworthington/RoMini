@@ -206,6 +206,27 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
     ]
 
 
+def test_ready_chime_returns_before_mpv_exits(monkeypatch) -> None:
+    from threading import Event
+
+    from romini.features.boot.ready import READY_EARCON_PATH
+
+    release = Event()
+    waited: list[str] = []
+
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            release.wait(timeout=0.2)
+            waited.append("wait")
+            return 0
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: Proc())
+    MpvPlayer(alsa=lambda cmd: None).play_earcon(READY_EARCON_PATH)
+
+    assert waited == []
+    release.set()
+
+
 def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
     calls: list[list[str]] = []
 

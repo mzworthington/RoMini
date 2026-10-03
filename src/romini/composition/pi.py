@@ -5,6 +5,9 @@ from datetime import datetime
 from importlib.resources import files
 from os import environ
 from pathlib import Path
+from threading import Thread
+
+from romini.features.boot.ready import READY_EARCON_PATH
 
 NFC_READ_TIMEOUT = 0.2
 
@@ -179,10 +182,18 @@ class MpvPlayer:
             self._apply_alsa(self.mixer.level, unmute=True)
         self._restore_pwm_pins()
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
+        if path == READY_EARCON_PATH:
+            Thread(target=self._finish_earcon, args=(proc,), daemon=True).start()
+            return
+        self._finish_earcon(proc)
+
+    def _finish_earcon(self, proc: object) -> None:
         try:
             proc.wait(timeout=3)
         except subprocess.TimeoutExpired:
-            proc.kill()
+            kill = getattr(proc, "kill", None)
+            if callable(kill):
+                kill()
             proc.wait(timeout=1)
         finally:
             self._silence_headphones()

@@ -691,6 +691,105 @@ def test_default_nfc_on_pi_uses_pn532_hat_spi(monkeypatch) -> None:
     assert nfc.read_uid() is None
 
 
+def test_default_nfc_uses_a_fake_reader_when_the_hat_does_not_answer(monkeypatch) -> None:
+    from time import sleep
+    from types import ModuleType
+
+    from romini.__main__ import default_nfc
+    from romini.composition.nfc import FakeNfc
+
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setattr("romini.__main__.NFC_OPEN_TIMEOUT", 0.05, raising=False)
+    hat = ModuleType("romini.composition.pn532_hat")
+
+    class PN532_SPI:
+        def __init__(self, *, reset: int = 20, cs: int = 4, debug: bool = False) -> None:
+            sleep(0.4)
+
+    hat.PN532_SPI = PN532_SPI
+    monkeypatch.setitem(sys.modules, "romini.composition.pn532_hat", hat)
+
+    assert isinstance(default_nfc(), FakeNfc)
+
+
+def test_pi_boot_serves_the_dashboard_before_opening_the_nfc_reader(tmp_path: Path, monkeypatch) -> None:
+    import romini.__main__ as core
+
+    order: list[str] = []
+    listener: list[object] = []
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    def open_reader() -> FakeNfc:
+        order.append("nfc")
+        return FakeNfc()
+
+    real_start = core.start_dashboard
+
+    def start_dashboard(app: object, *, host: str, port: int) -> object:
+        order.append("dashboard")
+        started = real_start(app, host=host, port=port)
+        listener.append(started)
+        return started
+
+    monkeypatch.setattr(core, "default_nfc", open_reader)
+    monkeypatch.setattr(core, "default_ticks", lambda: [None])
+    monkeypatch.setattr(core, "start_dashboard", start_dashboard)
+    monkeypatch.setattr(core, "open_ups_hat", lambda: None)
+    monkeypatch.setattr(core.HostPower, "apply", lambda self, **kwargs: None)
+
+    try:
+        core.entry(player=FakePlayer(), led=FakeLed())
+    finally:
+        for started in listener:
+            close = getattr(started, "close", None)
+            if callable(close):
+                close()
+
+    assert order.index("dashboard") < order.index("nfc")
+
+
+def test_pi_boot_starts_the_ready_chime_after_the_dashboard_is_listening(tmp_path: Path, monkeypatch) -> None:
+    import romini.__main__ as core
+
+    order: list[str] = []
+    listener: list[object] = []
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    class Chime(FakePlayer):
+        def play_earcon(self, path: str) -> None:
+            order.append(path)
+
+    real_start = core.start_dashboard
+
+    def start_dashboard(app: object, *, host: str, port: int) -> object:
+        order.append("dashboard")
+        started = real_start(app, host=host, port=port)
+        listener.append(started)
+        return started
+
+    monkeypatch.setattr(core, "default_nfc", lambda: FakeNfc())
+    monkeypatch.setattr(core, "default_ticks", lambda: [None])
+    monkeypatch.setattr(core, "start_dashboard", start_dashboard)
+    monkeypatch.setattr(core, "open_ups_hat", lambda: None)
+    monkeypatch.setattr(core.HostPower, "apply", lambda self, **kwargs: None)
+
+    try:
+        core.entry(player=Chime(), led=FakeLed())
+    finally:
+        for started in listener:
+            close = getattr(started, "close", None)
+            if callable(close):
+                close()
+
+    assert order.index("dashboard") < order.index("romini/hello_romy.wav")
+
+
 def test_sim_silent_player_reports_playing_after_play() -> None:
     from romini.__main__ import SilentPlayer
 

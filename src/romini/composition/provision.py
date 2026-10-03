@@ -84,7 +84,6 @@ RuntimeDirectory=romini
 RuntimeDirectoryMode=0700
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 ExecStartPre=+/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do chmod a+w "$f"; done'
-ExecStartPre=+/usr/sbin/iw dev wlan0 set power_save on
 ExecStart=/var/lib/romini/install/venv/bin/romini-core
 Restart=always
 RestartSec=10

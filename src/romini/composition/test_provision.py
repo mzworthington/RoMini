@@ -44,7 +44,13 @@ def test_romini_core_service_prepares_the_governor_and_wifi_sleep() -> None:
 
     assert "ExecStartPre=+" in ROMINI_CORE_SERVICE
     assert "scaling_governor" in ROMINI_CORE_SERVICE
-    assert "iw dev wlan0 set power_save on" in ROMINI_CORE_SERVICE
+
+
+def test_romini_core_service_does_not_wait_on_wifi_before_the_process_starts() -> None:
+    from romini.composition.provision import ROMINI_CORE_SERVICE
+
+    before_start, _, _ = ROMINI_CORE_SERVICE.partition("ExecStart=")
+    assert "iw " not in before_start
 
 
 def test_romini_core_service_can_read_the_system_journal() -> None:

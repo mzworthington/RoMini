@@ -1,9 +1,11 @@
+import logging
 import os
 import signal
 import sys
 from collections.abc import Callable, Iterable
 from datetime import datetime
 from pathlib import Path
+from threading import Thread
 
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.catalog import run_catalog_ticks
@@ -21,6 +23,9 @@ from romini.composition.ups_hat import open_ups_hat
 from romini.features.boot.ready import HALT_EARCON_PATH, READY_EARCON_PATH
 from romini.features.play_by_tag.place_figure import Player, StatusLed
 from romini.features.power.host import DashboardTraffic
+
+log = logging.getLogger(__name__)
+NFC_OPEN_TIMEOUT = 2.0
 
 
 class SilentPlayer:
@@ -100,10 +105,22 @@ def default_nfc() -> Nfc:
         from romini.composition.pn532_hat import PN532_SPI
     except ImportError:
         return FakeNfc()
-    try:
-        return Pn532Nfc(PN532_SPI(reset=20, cs=4))
-    except Exception:
+    opened: list[Nfc] = []
+
+    def open_reader() -> None:
+        try:
+            opened.append(Pn532Nfc(PN532_SPI(reset=20, cs=4)))
+        except Exception:
+            log.warning("nfc reader did not open", exc_info=True)
+            opened.append(FakeNfc())
+
+    thread = Thread(target=open_reader, daemon=True)
+    thread.start()
+    thread.join(NFC_OPEN_TIMEOUT)
+    if not opened:
+        log.warning("nfc reader did not answer within %ss", NFC_OPEN_TIMEOUT)
         return FakeNfc()
+    return opened[0]
 
 
 def default_ticks():
@@ -160,7 +177,7 @@ def serve_until_stopped(box: SimBox) -> None:
 
 def entry(*, player: Player | None = None, led: StatusLed | None = None) -> None:
     if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
-        main(player=player, led=led, nfc=default_nfc(), ticks=default_ticks())
+        main(player=player, led=led, ticks=default_ticks(), nfc_opener=default_nfc)
         return
     box = run(player=player, led=led)
     serve_until_stopped(box)
@@ -174,6 +191,7 @@ def main(
     nfc: Nfc | None = None,
     ticks: Iterable[object] | None = None,
     catalog_ticks: Iterable[object] | None = None,
+    nfc_opener: Callable[[], Nfc] | None = None,
 ) -> SimBox:
     box = load_sim_box_from_env(
         player=player
@@ -181,7 +199,6 @@ def main(
         else (MpvPlayer() if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
         led=led if led is not None else default_led(),
     )
-    play_power_chime(box, READY_EARCON_PATH)
     box.halt = _ChimeHalt(box.halt, box)
     listen_for_poweroff(box)
     port = os.environ.get("ROMINI_HTTP_PORT")
@@ -220,6 +237,9 @@ def main(
             host="0.0.0.0" if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else "127.0.0.1",
             port=int(dash_port),
         )
+    play_power_chime(box, READY_EARCON_PATH)
+    if nfc is None and nfc_opener is not None:
+        nfc = nfc_opener()
     if lines is not None:
         run_sim_lines(box, lines)
     if nfc is not None and ticks is not None:
