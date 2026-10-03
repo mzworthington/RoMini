@@ -192,6 +192,27 @@ def test_apply_boot_cli_exits_10_until_the_overlay_is_present(tmp_path: Path, mo
     assert path.read_text().count("dtoverlay=audremap,pins_18_19") == 1
 
 
+def test_apply_boot_config_refuses_a_file_in_the_working_directory(tmp_path: Path, monkeypatch) -> None:
+    work = tmp_path / "work"
+    work.mkdir()
+    private = tmp_path / "private"
+    private.mkdir()
+    monkeypatch.chdir(work)
+    monkeypatch.setattr("romini.composition.provision.tempfile.gettempdir", lambda: str(private))
+    target = work / "config.txt"
+    target.write_text("keep\n")
+    from romini.composition.provision import apply_boot_config
+
+    try:
+        apply_boot_config(target)
+    except ValueError as exc:
+        assert "refusing" in str(exc)
+    else:
+        raise AssertionError("expected boot config writes to stay on the boot partition or in temp")
+
+    assert target.read_text() == "keep\n"
+
+
 def test_apply_boot_config_writes_audremap_once(tmp_path: Path) -> None:
     from romini.composition.provision import apply_boot_config
 

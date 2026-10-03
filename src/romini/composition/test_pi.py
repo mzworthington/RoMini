@@ -250,6 +250,22 @@ def test_ready_chime_leaves_a_story_playing_when_the_chime_ends(monkeypatch) -> 
     assert sent == []
 
 
+def test_earcon_failure_surfaces_while_a_story_is_playing() -> None:
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            raise RuntimeError("mpv died")
+
+    player = MpvPlayer(alsa=lambda cmd: None)
+    player._playing = True
+
+    try:
+        player._finish_earcon(Proc())
+    except RuntimeError as exc:
+        assert str(exc) == "mpv died"
+        return
+    raise AssertionError("expected the earcon failure to surface")
+
+
 def test_ready_chime_returns_before_mpv_exits(monkeypatch) -> None:
     from threading import Event
 

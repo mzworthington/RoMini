@@ -220,9 +220,8 @@ class MpvPlayer:
                 kill()
             proc.wait(timeout=1)
         finally:
-            if self._playing:
-                return
-            self._silence_headphones()
+            if not self._playing:
+                self._silence_headphones()
 
 
 class MpvIpcStatus:

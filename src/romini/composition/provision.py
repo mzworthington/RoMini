@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 
@@ -41,13 +42,24 @@ def confined_path(candidate: Path) -> Path:
 
 
 def apply_boot_config(path: Path, lines: tuple[str, ...] = BOOT_CONFIG_LINES) -> bool:
-    path = confined_path(path)
-    original = path.read_text() if path.is_file() else ""
+    root = Path.cwd().resolve()
+    candidate = path if path.is_absolute() else root / path
+    normalized = os.path.realpath(candidate)
+    temp_root = os.path.realpath(tempfile.gettempdir())
+    boot_files = {
+        os.path.realpath("/boot/config.txt"),
+        os.path.realpath("/boot/firmware/config.txt"),
+    }
+    inside_temp = normalized.startswith(temp_root + os.sep)
+    if os.path.basename(normalized) != "config.txt" or not (inside_temp or normalized in boot_files):
+        raise ValueError(f"refusing to touch {normalized}")
+    target = Path(normalized)
+    original = target.read_text() if target.is_file() else ""
     merged = merge_boot_config(original, lines)
     if merged == original:
         return False
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(merged)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(merged)
     return True
 
 
