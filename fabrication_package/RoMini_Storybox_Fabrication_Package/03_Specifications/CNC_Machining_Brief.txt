@@ -1,18 +1,19 @@
-Subject: CNC Machining RFQ: RoMini Storybox 130mm cube, one 3mm sheet
+Subject: CNC Machining RFQ: RoMini Storybox 130 mm cube, one 3 mm sheet
 
 Dear CNC Team,
 
-Please machine the enclosure from a single sheet of 3.0 mm Baltic birch. The cut file is RoMini_Storybox_3mm_Cube.svg (units are millimetres). It holds all seven pieces.
+Please machine the enclosure from a single sheet of 3.0 mm Baltic birch. The cut file is RoMini_Storybox_3mm_Cube.svg. Units are millimetres. The sheet holds the cube, the speaker baffle, and the Pi riser. 
 
 Pieces, top row then bottom row:
-- TOP: logo lid. Score the blue rings about 0.2 mm. Engrave the black artwork about 0.5 mm. Do not engrave a background.
-- BOTTOM: base, with four green drill holes for the Pi standoffs.
-- FRONT: speaker grille, 256 holes of 2.8 mm.
-- BACK: 22 mm USB-C hole and 16 mm button hole.
-- LEFT, RIGHT: plain side walls.
-- SPEAKER_BACK: 120 mm square insert with a 72 mm round opening. It sits behind the front grille.
+- TOP: logo lid. Engrave the black artwork about 0.5 mm. Do not engrave a background, and do not cut through the lid.
+- BOTTOM: 123 mm square panel. It unscrews. Four green holes are 3.4 mm clearance for M3 screws, 5.5 mm from each corner.
+- FRONT: speaker grille, 256 holes of 2.8 mm. Straight bottom edge.
+- BACK: 22 mm USB-C hole and 16 mm button hole. Straight bottom edge.
+- LEFT, RIGHT: side walls. Straight bottom edge.
+- SPEAKER_BACK: 102 mm square baffle behind the front grille. It fits between the corner dowels. Two rectangles, 18 x 58 mm. Do not drill speaker screw holes.
+- PI_RISER: 123 mm square shelf.
 
-Finger joints are 3.0 mm deep (nine per edge). Please add R1.6 mm dogbones for a 1/8 in downcut bit.
+Finger joints are 3.0 mm deep, nine per jointed edge. Wall bottoms are straight. Please add R1.6 mm dogbones for a 1/8 in downcut bit.
 
 Sheet2_3mm_BalticBirch_TopLid.svg is the logo master only. Do not cut it as a separate part.
 

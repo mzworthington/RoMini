@@ -73,7 +73,7 @@ Dashboard shows free space. Full Library → fail closed. **No `nofail`** on the
 
 ## Enclosure
 
-HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker magnets off the coil. First enclosure: one 16mm hole for halt + LED. Leave room for three more switches (vol±, play) later.
+HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker magnets off the coil. First enclosure: one 16mm hole for halt + LED. Leave room for three more switches (vol±, play) later. The 130 mm birch cube, the sheet render and the shop letter are in [fabrication.md](fabrication.md).
 
 ## Software mapping
 

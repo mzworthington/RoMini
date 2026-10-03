@@ -12,6 +12,7 @@ Start here: **[guide.md](./guide.md)** (laptop `sim`, what we emulate, Pi bring-
 | [spec.md](./spec.md) | Gherkin, glossary, XFN draft |
 | [architecture.md](./architecture.md) | Hexagon, OTA, overlay |
 | [hardware.md](./hardware.md) | BOM and GPIO |
+| [fabrication.md](./fabrication.md) | 3 mm cube: drawings, renders, shop letter |
 | [pi-setup.md](./pi-setup.md) | Flash and bring-up (detail) |
 | [development.md](./development.md) | Laptop `sim` profile |
 | [library-catalog.md](./library-catalog.md) | YAML Tag → Track drop-in |

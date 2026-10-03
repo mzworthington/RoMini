@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="130mm" height="130mm" viewBox="0 0 130 130">
-  <title>RoMini Storybox 130mm top plate</title>
-  <desc>Units are millimetres. CUT through-cuts the plate. ENGRAVE is the path data from RoMini.svg, copied unchanged and scaled to 90 mm. Black fill is engraved. White fill stays as bare wood.</desc>
-  <g id="CUT" fill="none" stroke="#e10600" stroke-width="0.2">
-    <rect x="0" y="0" width="130" height="130" rx="8"/>
-  </g>
-  <g id="ENGRAVE" stroke="none">
-    <g id="app-logo" transform="translate(18 17.6) scale(0.1536799682)">
-<defs>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 585.63 585.63">
+  <defs>
     <style>
       .cls-1 {
         fill: #231f20;
@@ -50,7 +43,5 @@
     <polygon class="cls-3" points="112.02 133.97 126.09 117.56 126.09 139.18 142.5 153.25 120.88 153.25 106.81 169.66 106.81 148.04 90.4 133.97 112.02 133.97"/>
     <polygon class="cls-3" points="425.24 112.68 428.37 98.45 435.26 111.29 449.49 114.42 436.65 121.31 433.52 135.55 426.63 122.7 412.4 119.58 425.24 112.68"/>
     <polygon class="cls-3" points="471.67 155.96 478.36 146.52 479.43 158.04 488.86 164.72 477.35 165.79 470.66 175.23 469.59 163.71 460.16 157.03 471.67 155.96"/>
-  </g>
-    </g>
   </g>
 </svg>

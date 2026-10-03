@@ -24,21 +24,16 @@ GAP = 6.0
 
 # Clockwise finger phase. True means the first finger on that edge is a tab.
 # Odd finger count so a reversed mating edge still meshes when the phase is flipped.
-FRONT_EDGES = {"top": True, "right": False, "bottom": True, "left": False}
-RIGHT_EDGES = {"top": True, "right": False, "bottom": True, "left": True}
-BACK_EDGES = {"top": False, "right": True, "bottom": False, "left": True}
-LEFT_EDGES = {"top": False, "right": True, "bottom": False, "left": False}
+# None on an edge is a straight cut. The bottom of each wall is straight so the base can drop out.
+FRONT_EDGES = {"top": True, "right": False, "bottom": None, "left": False}
+RIGHT_EDGES = {"top": True, "right": False, "bottom": None, "left": True}
+BACK_EDGES = {"top": False, "right": True, "bottom": None, "left": True}
+LEFT_EDGES = {"top": False, "right": True, "bottom": None, "left": False}
 TOP_EDGES = {
     "top": not BACK_EDGES["top"],
     "right": not RIGHT_EDGES["top"],
     "bottom": not FRONT_EDGES["top"],
     "left": not LEFT_EDGES["top"],
-}
-BOTTOM_EDGES = {
-    "top": not BACK_EDGES["bottom"],
-    "right": not RIGHT_EDGES["bottom"],
-    "bottom": not FRONT_EDGES["bottom"],
-    "left": not LEFT_EDGES["bottom"],
 }
 
 
@@ -78,16 +73,17 @@ def _check_cube_joints() -> None:
     _assert_joint("top-back", BACK_EDGES["top"], _rev, TOP_EDGES["top"], _same)
     _assert_joint("top-right", RIGHT_EDGES["top"], _same, TOP_EDGES["right"], _rev)
     _assert_joint("top-left", LEFT_EDGES["top"], _rev, TOP_EDGES["left"], _same)
-    _assert_joint("bottom-front", FRONT_EDGES["bottom"], _rev, BOTTOM_EDGES["bottom"], _rev)
-    _assert_joint("bottom-back", BACK_EDGES["bottom"], _same, BOTTOM_EDGES["top"], _same)
-    _assert_joint("bottom-right", RIGHT_EDGES["bottom"], _rev, BOTTOM_EDGES["right"], _rev)
-    _assert_joint("bottom-left", LEFT_EDGES["bottom"], _same, BOTTOM_EDGES["left"], _same)
+    for wall in (FRONT_EDGES, RIGHT_EDGES, BACK_EDGES, LEFT_EDGES):
+        if wall["bottom"] is not None:
+            raise SystemExit("wall bottom must stay straight so the base can drop out")
 
 
-def _finger_path(edges: dict[str, bool]) -> str:
+def _finger_path(edges: dict[str, bool | None]) -> str:
     width = SIZE / FINGERS
 
-    def runs(male_first: bool) -> list[tuple[float, float, float]]:
+    def runs(male_first: bool | None) -> list[tuple[float, float, float]]:
+        if male_first is None:
+            return [(0.0, SIZE, 0.0)]
         steps = []
         for index in range(FINGERS):
             tab = (index % 2 == 0) if male_first else (index % 2 == 1)
@@ -119,8 +115,8 @@ def _finger_path(edges: dict[str, bool]) -> str:
 
 def _lid_engrave(lid_path: str) -> str:
     lid = open(lid_path, encoding="utf-8").read()
-    art = lid.split('<g id="SCORE"', 1)[1]
-    art = '<g id="SCORE"' + art.split("</svg>", 1)[0]
+    art = lid.split('<g id="ENGRAVE"', 1)[1]
+    art = '<g id="ENGRAVE"' + art.split("</svg>", 1)[0]
     return art.rstrip() + "\n"
 
 
@@ -144,17 +140,17 @@ lid_art = _lid_engrave(f"{pkg_dir}/01_Vector_CAD_Files/Sheet2_3mm_BalticBirch_To
 
 cube_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{sheet_w:.0f}mm" height="{sheet_h:.0f}mm" viewBox="0 0 {sheet_w:.0f} {sheet_h:.0f}">
   <title>RoMini Storybox cube, 3.0 mm Baltic birch, one sheet</title>
-  <desc>Seven pieces from one 3.0 mm sheet: TOP BOTTOM FRONT BACK LEFT RIGHT and SPEAKER_BACK. Finger joints are 3.0 mm deep. Red is through-cut. SCORE and ENGRAVE are only on TOP. Green circles on BOTTOM are drill holes for the Pi standoffs.</desc>
+  <desc>One 3.0 mm sheet: TOP FRONT BACK LEFT RIGHT SPEAKER_BACK, a 123 mm BOTTOM that unscrews into dowels, and a 123 mm PI_RISER. Finger joints are 3.0 mm deep. Wall bottoms are straight. Red is through-cut. ENGRAVE is only on TOP. Green circles are drills.</desc>
   <g id="TOP" transform="translate({col[0]:.0f} {row1:.0f})">
     <path d="{_finger_path(TOP_EDGES)}" fill="none" stroke="#e10600" stroke-width="0.2"/>
 {lid_art}  </g>
   <g id="BOTTOM" transform="translate({col[1]:.0f} {row1:.0f})">
-    <path d="{_finger_path(BOTTOM_EDGES)}" fill="none" stroke="#e10600" stroke-width="0.2"/>
-    <g id="PI_STANDOFFS" fill="none" stroke="#00aa00" stroke-width="0.2">
-      <circle cx="36.0" cy="40.5" r="1.35"/>
-      <circle cx="94.0" cy="40.5" r="1.35"/>
-      <circle cx="36.0" cy="89.5" r="1.35"/>
-      <circle cx="94.0" cy="89.5" r="1.35"/>
+    <rect x="0" y="0" width="123" height="123" fill="none" stroke="#e10600" stroke-width="0.2"/>
+    <g id="PANEL_SCREWS" fill="none" stroke="#00aa00" stroke-width="0.2">
+      <circle cx="5.5" cy="5.5" r="1.7"/>
+      <circle cx="117.5" cy="5.5" r="1.7"/>
+      <circle cx="5.5" cy="117.5" r="1.7"/>
+      <circle cx="117.5" cy="117.5" r="1.7"/>
     </g>
   </g>
   <g id="FRONT" transform="translate({col[2]:.0f} {row1:.0f})">
@@ -174,9 +170,19 @@ cube_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{sheet_w:.0f}mm" h
   <g id="RIGHT" transform="translate({col[1]:.0f} {row2:.0f})">
     <path d="{_finger_path(RIGHT_EDGES)}" fill="none" stroke="#e10600" stroke-width="0.2"/>
   </g>
-  <g id="SPEAKER_BACK" transform="translate({col[2] + 5:.0f} {row2 + 5:.0f})">
-    <rect x="0" y="0" width="120" height="120" fill="none" stroke="#e10600" stroke-width="0.2"/>
-    <circle cx="60" cy="60" r="36" fill="none" stroke="#e10600" stroke-width="0.2"/>
+  <g id="SPEAKER_BACK" transform="translate({col[2] + 14:.0f} {row2 + 14:.0f})">
+    <rect x="0" y="0" width="102" height="102" fill="none" stroke="#e10600" stroke-width="0.2"/>
+    <rect x="23" y="22" width="18" height="58" fill="none" stroke="#e10600" stroke-width="0.2"/>
+    <rect x="61" y="22" width="18" height="58" fill="none" stroke="#e10600" stroke-width="0.2"/>
+  </g>
+  <g id="PI_RISER" transform="translate({col[3]:.0f} {row2:.0f})">
+    <rect x="0" y="0" width="123" height="123" fill="none" stroke="#e10600" stroke-width="0.2"/>
+    <g id="DOWEL_HOLES" fill="none" stroke="#00aa00" stroke-width="0.2">
+      <circle cx="5.5" cy="5.5" r="4.2"/>
+      <circle cx="117.5" cy="5.5" r="4.2"/>
+      <circle cx="5.5" cy="117.5" r="4.2"/>
+      <circle cx="117.5" cy="117.5" r="4.2"/>
+    </g>
   </g>
 </svg>
 """
@@ -194,27 +200,28 @@ if os.path.exists(old_chassis):
 # 3. TECHNICAL SPECIFICATIONS & PRODUCTION NOTES
 # ==============================================================================
 spec_txt = """================================================================================
-ROMINI STORYBOX (130mm CUBE) — ONE 3.0 mm SHEET
+ROMINI STORYBOX (130 mm CUBE) — ONE 3.0 mm SHEET
 ================================================================================
 
 1. STOCK
    - One sheet of 3.0 mm BB/BB Baltic birch.
    - Cut file: 01_Vector_CAD_Files/RoMini_Storybox_3mm_Cube.svg
    - Finished cube: 130.0 x 130.0 x 130.0 mm outside.
-   - Do not cut Sheet2 on its own. That drawing is the logo master, already placed on TOP.
+   - Sheet2_3mm_BalticBirch_TopLid.svg is the logo master, already placed on TOP. Do not cut it as a separate part.
 
-2. SEVEN PIECES
-   - TOP: finger-jointed lid. SCORE is the three rings (about 0.2 mm). ENGRAVE is the logo (about 0.5 mm). Do not engrave a background. About 2.5 mm of wood remains under the engrave.
-   - BOTTOM: finger-jointed base. Four green circles are 2.7 mm drills for M2.5 Pi standoffs on a 58 x 49 mm grid.
-   - FRONT: finger-jointed speaker face. 16x16 grille, 2.8 mm holes on a 5.0 mm pitch.
-   - BACK: finger-jointed rear. 22 mm USB-C hole (centre 25, 105) and 16 mm button hole (centre 105, 105), measured from the panel's top-left.
-   - LEFT and RIGHT: finger-jointed side walls.
-   - SPEAKER_BACK: 120 x 120 mm insert that sits behind the grille inside the 124 mm cavity. 72 mm round opening in the centre.
+2. PIECES
+   - TOP: finger-jointed lid. Engrave the black artwork about 0.5 mm. Do not engrave a background, and do not cut through the lid. About 2.5 mm of wood remains.
+   - BOTTOM: 123 x 123 mm panel. It drops into the 124 mm cavity and unscrews. Four green 3.4 mm holes, 5.5 mm from each corner, are clearance for M3 screws.
+   - PI_RISER: 123 x 123 mm shelf. Four green 8.4 mm holes, 5.5 mm from each corner, are clearance for the 8 mm dowels. Glue the shelf about halfway up so the Raspberry Pi sits nearer the NFC hat under the lid. Drill the Pi mounting holes by hand.
+   - FRONT: finger joints on the top and sides, straight bottom edge. 16 x 16 grille, 2.8 mm holes on a 5.0 mm pitch.
+   - BACK: finger joints on the top and sides, straight bottom edge. 22 mm USB-C hole (centre 25, 105) and 16 mm button hole (centre 105, 105), measured from the panel's top-left.
+   - LEFT and RIGHT: finger joints on the top and sides, straight bottom edge.
+   - SPEAKER_BACK: 102 x 102 mm baffle behind the grille. Two 18 x 58 mm openings suit the 30 x 70 mm enclosed speakers, with the long side vertical.
 
 3. JOINERY
-   - Nine fingers per edge, 3.0 mm deep, so the joint matches the 3.0 mm stock.
+   - Nine fingers per jointed edge, 3.0 mm deep, matching the stock. The bottom edges of the four walls are straight.
    - Bit: 1/8 in (3.175 mm) downcut. Add R1.6 mm dogbones on the internal finger corners.
-   - Red stroke = through-cut. Blue stroke = score. Black fill = engrave. Green stroke = drill.
+   - Red stroke = through-cut. Black fill = engrave. Green stroke = drill.
 ================================================================================
 """
 
@@ -224,21 +231,22 @@ with open(f"{pkg_dir}/03_Specifications/Technical_Specifications.txt", "w", enco
 # ==============================================================================
 # 4. FABRICATION BRIEF / RFQ LETTER TO THE CNC SHOP
 # ==============================================================================
-rfq_txt = """Subject: CNC Machining RFQ: RoMini Storybox 130mm cube, one 3mm sheet
+rfq_txt = """Subject: CNC Machining RFQ: RoMini Storybox 130 mm cube, one 3 mm sheet
 
 Dear CNC Team,
 
-Please machine the enclosure from a single sheet of 3.0 mm Baltic birch. The cut file is RoMini_Storybox_3mm_Cube.svg (units are millimetres). It holds all seven pieces.
+Please machine the enclosure from a single sheet of 3.0 mm Baltic birch. The cut file is RoMini_Storybox_3mm_Cube.svg. Units are millimetres. The sheet holds the cube, the speaker baffle, and the Pi riser. 
 
 Pieces, top row then bottom row:
-- TOP: logo lid. Score the blue rings about 0.2 mm. Engrave the black artwork about 0.5 mm. Do not engrave a background.
-- BOTTOM: base, with four green drill holes for the Pi standoffs.
-- FRONT: speaker grille, 256 holes of 2.8 mm.
-- BACK: 22 mm USB-C hole and 16 mm button hole.
-- LEFT, RIGHT: plain side walls.
-- SPEAKER_BACK: 120 mm square insert with a 72 mm round opening. It sits behind the front grille.
+- TOP: logo lid. Engrave the black artwork about 0.5 mm. Do not engrave a background, and do not cut through the lid.
+- BOTTOM: 123 mm square panel. It unscrews. Four green holes are 3.4 mm clearance for M3 screws, 5.5 mm from each corner.
+- FRONT: speaker grille, 256 holes of 2.8 mm. Straight bottom edge.
+- BACK: 22 mm USB-C hole and 16 mm button hole. Straight bottom edge.
+- LEFT, RIGHT: side walls. Straight bottom edge.
+- SPEAKER_BACK: 102 mm square baffle behind the front grille. It fits between the corner dowels. Two rectangles, 18 x 58 mm. Do not drill speaker screw holes.
+- PI_RISER: 123 mm square shelf.
 
-Finger joints are 3.0 mm deep (nine per edge). Please add R1.6 mm dogbones for a 1/8 in downcut bit.
+Finger joints are 3.0 mm deep, nine per jointed edge. Wall bottoms are straight. Please add R1.6 mm dogbones for a 1/8 in downcut bit.
 
 Sheet2_3mm_BalticBirch_TopLid.svg is the logo master only. Do not cut it as a separate part.
 
@@ -249,9 +257,6 @@ Design & Engineering Team
 with open(f"{pkg_dir}/03_Specifications/CNC_Machining_Brief.txt", "w", encoding="utf-8") as brief_file:
     brief_file.write(rfq_txt)
 
-# ==============================================================================
-# 5. ZIP ARCHIVE COMPRESSION
-# ==============================================================================
 zip_filename = "RoMini_Storybox_Fabrication_Package.zip"
 with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
     for root, dirs, files in os.walk(pkg_dir):

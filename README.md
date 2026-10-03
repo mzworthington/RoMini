@@ -74,6 +74,7 @@ Tab-by-tab screens: [docs/dashboard.md](docs/dashboard.md).
 | [docs/guide.md](docs/guide.md) | Full laptop + Pi walkthrough |
 | [docs/dashboard.md](docs/dashboard.md) | Parent UI screenshots |
 | [docs/hardware.md](docs/hardware.md) | BOM, PN532 SPI, UPS, GPIO |
+| [docs/fabrication.md](docs/fabrication.md) | 3 mm birch cube, drawings and shop letter |
 | [docs/pi-setup.md](docs/pi-setup.md) | Headless flash checklist |
 | [docs/PRD_001.md](docs/PRD_001.md) | Product requirements |
 | [docs/spec.md](docs/spec.md) | Gherkin, glossary |

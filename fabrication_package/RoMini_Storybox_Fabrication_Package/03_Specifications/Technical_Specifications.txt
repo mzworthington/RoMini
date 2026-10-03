@@ -1,23 +1,24 @@
 ================================================================================
-ROMINI STORYBOX (130mm CUBE) — ONE 3.0 mm SHEET
+ROMINI STORYBOX (130 mm CUBE) — ONE 3.0 mm SHEET
 ================================================================================
 
 1. STOCK
    - One sheet of 3.0 mm BB/BB Baltic birch.
    - Cut file: 01_Vector_CAD_Files/RoMini_Storybox_3mm_Cube.svg
    - Finished cube: 130.0 x 130.0 x 130.0 mm outside.
-   - Do not cut Sheet2 on its own. That drawing is the logo master, already placed on TOP.
+   - Sheet2_3mm_BalticBirch_TopLid.svg is the logo master, already placed on TOP. Do not cut it as a separate part.
 
-2. SEVEN PIECES
-   - TOP: finger-jointed lid. SCORE is the three rings (about 0.2 mm). ENGRAVE is the logo (about 0.5 mm). Do not engrave a background. About 2.5 mm of wood remains under the engrave.
-   - BOTTOM: finger-jointed base. Four green circles are 2.7 mm drills for M2.5 Pi standoffs on a 58 x 49 mm grid.
-   - FRONT: finger-jointed speaker face. 16x16 grille, 2.8 mm holes on a 5.0 mm pitch.
-   - BACK: finger-jointed rear. 22 mm USB-C hole (centre 25, 105) and 16 mm button hole (centre 105, 105), measured from the panel's top-left.
-   - LEFT and RIGHT: finger-jointed side walls.
-   - SPEAKER_BACK: 120 x 120 mm insert that sits behind the grille inside the 124 mm cavity. 72 mm round opening in the centre.
+2. PIECES
+   - TOP: finger-jointed lid. Engrave the black artwork about 0.5 mm. Do not engrave a background, and do not cut through the lid. About 2.5 mm of wood remains.
+   - BOTTOM: 123 x 123 mm panel. It drops into the 124 mm cavity and unscrews. Four green 3.4 mm holes, 5.5 mm from each corner, are clearance for M3 screws.
+   - PI_RISER: 123 x 123 mm shelf. Four green 8.4 mm holes, 5.5 mm from each corner, are clearance for the 8 mm dowels. Glue the shelf about halfway up so the Raspberry Pi sits nearer the NFC hat under the lid. Drill the Pi mounting holes by hand.
+   - FRONT: finger joints on the top and sides, straight bottom edge. 16 x 16 grille, 2.8 mm holes on a 5.0 mm pitch.
+   - BACK: finger joints on the top and sides, straight bottom edge. 22 mm USB-C hole (centre 25, 105) and 16 mm button hole (centre 105, 105), measured from the panel's top-left.
+   - LEFT and RIGHT: finger joints on the top and sides, straight bottom edge.
+   - SPEAKER_BACK: 102 x 102 mm baffle behind the grille. Two 18 x 58 mm openings suit the 30 x 70 mm enclosed speakers, with the long side vertical. 
 
 3. JOINERY
-   - Nine fingers per edge, 3.0 mm deep, so the joint matches the 3.0 mm stock.
+   - Nine fingers per jointed edge, 3.0 mm deep, matching the stock. The bottom edges of the four walls are straight.
    - Bit: 1/8 in (3.175 mm) downcut. Add R1.6 mm dogbones on the internal finger corners.
-   - Red stroke = through-cut. Blue stroke = score. Black fill = engrave. Green stroke = drill.
+   - Red stroke = through-cut. Black fill = engrave. Green stroke = drill.
 ================================================================================
