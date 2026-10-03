@@ -1,0 +1,35 @@
+================================================================================
+ROMINI STORYBOX (130mm CUBE) — MASTER PRODUCTION BLUEPRINT & CNC SPEC
+================================================================================
+
+1. OVERALL ENCLOSURE SPECIFICATIONS:
+   - Form Factor: 130.0 mm x 130.0 mm x 130.0 mm Baltic Birch Cube
+   - Stock 1 (Walls & Sled): 6.0 mm BB/BB Baltic Birch Plywood
+   - Stock 2 (Top Lid): 3.0 mm BB/BB Baltic Birch Plywood
+   - Corner Joints: 10-segment finger/box joints (13.0 mm width x 6.0 mm depth)
+   - CNC Bit: 1/8" (3.175 mm) downcut bit with automatic R1.6 mm dogbone fillets
+
+2. TOP LID (PHOTO-EXTRACTED VECTOR, Sheet2_3mm_BalticBirch_TopLid.svg):
+   - File units: millimetres. Artboard is the finished 130.0 x 130.0 mm lid (rx 8 mm).
+   - CAM layers:
+     * CUT (red stroke): through-cut the plate outline.
+     * SCORE (blue stroke): three concentric rings, centre (63.0, 62.6) mm, radii 47.5 / 50.2 / 52.8 mm. Light score, about 0.2 mm.
+     * ENGRAVE (black fill, plus the cheek outline and smile as strokes): headphone band, hair, earcups, eyes, blush, sparkles, and the traced "RoMini" / "STORYBOX" wordmark. Engrave about 0.5 mm.
+   - The PLAY token and the hand in the reference photo are not on the plate. The left cheek is completed so the face is closed.
+   - Minimum wood left under the engrave: about 2.5 mm on 3.0 mm stock.
+
+3. FRONT ACOUSTIC MATRIX (SPEAKER FACE):
+   - Outer Dimensions: 130.0 x 130.0 x 6.0 mm
+   - Grille Array: High-density 16x16 matrix (256 round holes, 2.8 mm dia, 5.0 mm pitch)
+   - Backing: Dark coarse-woven acoustic tweed mesh mounted behind wooden face
+
+4. REAR CONTROL PORTS:
+   - USB-C Port: 22.0 mm through-hole (lower-left: X=25.0 mm, Y=25.0 mm from bottom)
+   - Power Button: 16.0 mm through-hole (lower-right: X=105.0 mm, Y=25.0 mm from bottom)
+
+5. BASE SLED & HARDWARE:
+   - Sled Dimensions: 118.0 x 118.0 x 6.0 mm (slides flush into bottom opening)
+   - Fasteners: 4x M3 x 10mm (or 12mm) DIN 7991 countersunk hex-socket screws
+   - Corner Cleats: 4x (12.0 x 12.0 x 80.0 mm) timber cleats with M3 brass threaded inserts
+   - Standoff Pattern: 4x M2.5 brass standoffs on a 58.0 x 49.0 mm centered grid
+================================================================================

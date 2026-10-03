@@ -1,0 +1,26 @@
+Subject: CNC Machining RFQ: RoMini Storybox 130mm Wooden Audio Cube
+
+Dear CNC Team,
+
+Please find attached our 1:1 vector CAD package for machining a 130mm cube prototype enclosure for our children's audio storybox.
+
+Job Summary:
+1. Materials:
+   - Sheet 1: 6.0 mm BB/BB Grade Baltic Birch Plywood (Chassis walls & baseplate)
+   - Sheet 2: 3.0 mm BB/BB Grade Baltic Birch Plywood (Top lid with 2.5D relief)
+
+2. Joinery:
+   - 10-segment finger joints (13mm tab x 6mm depth). Please apply R1.6mm corner dogbone fillets for your 1/8" (3.175mm) downcut bit to guarantee flush assembly.
+
+3. Features:
+   - Front Wall: 16x16 matrix of 2.8mm through-cut speaker holes.
+   - Rear Wall: 22mm (USB-C) and 16mm (pushbutton) circular through-holes.
+   - Top Lid (Sheet2_3mm_BalticBirch_TopLid.svg, units in millimetres):
+       CUT = red stroke, through-cut the 130 mm rounded plate.
+       SCORE = blue stroke, three rings, about 0.2 mm deep.
+       ENGRAVE = black artwork, about 0.5 mm deep. Do not engrave a background.
+
+All cut files are organized into those named CAM layers.
+
+Kind regards,
+Design & Engineering Team
