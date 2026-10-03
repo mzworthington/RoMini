@@ -28,7 +28,13 @@ class SystemdHalt:
 
 class MpvPlayer:
     def __init__(
-        self, ipc=None, mixer=None, connect=None, clock: Callable[[], datetime] = datetime.now, alsa=None
+        self,
+        ipc=None,
+        mixer=None,
+        connect=None,
+        clock: Callable[[], datetime] = datetime.now,
+        alsa=None,
+        quiet: bool = True,
     ) -> None:
         self._ipc = ipc
         self.mixer = mixer
@@ -41,6 +47,13 @@ class MpvPlayer:
         self._selected: tuple[str, str] | None = None
         self._started_at: datetime | None = None
         self._proc: object | None = None
+        self._earcon: object | None = None
+        if quiet:
+            self._silence_headphones()
+
+    def quiet_idle(self) -> None:
+        if self._playing:
+            return
         self._silence_headphones()
 
     def _end_mpv(self) -> None:
@@ -73,10 +86,11 @@ class MpvPlayer:
             cmd.append(f"--volume={self.mixer.level}")
             self._apply_alsa(self.mixer.level, unmute=True)
         cmd.append(path)
+        self._playing = True
+        self._end_earcon()
         self._restore_pwm_pins()
         self._end_mpv()
         self._proc = subprocess.Popen(cmd)
-        self._playing = True
         self._uid = uid
         self._path = path
         self._started_at = self._clock()
@@ -183,9 +197,19 @@ class MpvPlayer:
         self._restore_pwm_pins()
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
         if path == READY_EARCON_PATH:
+            self._earcon = proc
             Thread(target=self._finish_earcon, args=(proc,), daemon=True).start()
             return
         self._finish_earcon(proc)
+
+    def _end_earcon(self) -> None:
+        previous = self._earcon
+        self._earcon = None
+        if previous is None:
+            return
+        terminate = getattr(previous, "terminate", None)
+        if callable(terminate):
+            terminate()
 
     def _finish_earcon(self, proc: object) -> None:
         try:
@@ -196,6 +220,8 @@ class MpvPlayer:
                 kill()
             proc.wait(timeout=1)
         finally:
+            if self._playing:
+                return
             self._silence_headphones()
 
 

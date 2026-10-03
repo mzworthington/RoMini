@@ -67,6 +67,40 @@ def _smbus(bus: int) -> object:
     return SMBus(bus)
 
 
+class DeferredUpsHat:
+    def __init__(self, open_hat: Callable[[], UpsHatBattery | None]) -> None:
+        self._open_hat = open_hat
+        self._battery: UpsHatBattery | None = None
+        self._opened = False
+
+    def _hat(self) -> UpsHatBattery | None:
+        if not self._opened:
+            self._opened = True
+            self._battery = self._open_hat()
+        return self._battery
+
+    @property
+    def percent(self) -> int | None:
+        hat = self._hat()
+        if hat is None:
+            return None
+        return hat.percent
+
+    @property
+    def volts(self) -> float | None:
+        hat = self._hat()
+        if hat is None:
+            return None
+        return getattr(hat, "volts", None)
+
+    @property
+    def flow(self) -> str | None:
+        hat = self._hat()
+        if hat is None:
+            return None
+        return getattr(hat, "flow", None)
+
+
 def open_ups_hat(*, open_bus: Callable[[int], object] | None = None) -> UpsHatBattery | None:
     factory = open_bus if open_bus is not None else _smbus
     try:

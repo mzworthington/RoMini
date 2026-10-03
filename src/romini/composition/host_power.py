@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from pathlib import Path
+from threading import Thread
 
 from romini.features.power.host import cpu_governor
 
@@ -25,8 +26,12 @@ class HostPower:
         if radio_sleep is self._radio_sleep:
             return
         state = "on" if radio_sleep else "off"
-        self._run(["iw", "dev", "wlan0", "set", "power_save", state])
         self._radio_sleep = radio_sleep
+        Thread(
+            target=self._run,
+            args=(["iw", "dev", "wlan0", "set", "power_save", state],),
+            daemon=True,
+        ).start()
 
 
 def _run(cmd: list[str]) -> None:

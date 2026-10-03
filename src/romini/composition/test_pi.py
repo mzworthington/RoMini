@@ -206,6 +206,50 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
     ]
 
 
+def test_ready_chime_leaves_a_story_playing_when_the_chime_ends(monkeypatch) -> None:
+    from threading import Event
+    from time import sleep
+
+    from romini.features.boot.ready import READY_EARCON_PATH
+
+    release = Event()
+    sent: list[list[str]] = []
+    chimes: list[object] = []
+
+    class Proc:
+        def __init__(self, cmd: list[str]) -> None:
+            self.cmd = cmd
+            self.terminated = False
+
+        def wait(self, timeout: float | None = None) -> int:
+            if any(part.endswith("hello_romy.wav") for part in self.cmd):
+                release.wait(timeout=0.5)
+            return 0
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+        def poll(self) -> None:
+            return None
+
+    def popen(cmd: list[str], *args, **kwargs) -> Proc:
+        proc = Proc(cmd)
+        if any(part.endswith("hello_romy.wav") for part in cmd):
+            chimes.append(proc)
+        return proc
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    player = MpvPlayer(alsa=sent.append)
+    player.play_earcon(READY_EARCON_PATH)
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
+    sent.clear()
+    release.set()
+    sleep(0.05)
+
+    assert chimes[0].terminated is True
+    assert sent == []
+
+
 def test_ready_chime_returns_before_mpv_exits(monkeypatch) -> None:
     from threading import Event
 

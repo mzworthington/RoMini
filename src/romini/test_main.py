@@ -691,6 +691,38 @@ def test_default_nfc_on_pi_uses_pn532_hat_spi(monkeypatch) -> None:
     assert nfc.read_uid() is None
 
 
+def test_default_nfc_rests_a_reader_that_answers_after_the_timeout(monkeypatch) -> None:
+    from threading import Event
+    from time import sleep
+    from types import ModuleType
+
+    from romini.__main__ import default_nfc
+    from romini.composition.nfc import FakeNfc
+
+    release = Event()
+    rested: list[str] = []
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setattr("romini.__main__.NFC_OPEN_TIMEOUT", 0.05)
+    hat = ModuleType("romini.composition.pn532_hat")
+
+    class PN532_SPI:
+        def __init__(self, *, reset: int = 20, cs: int = 4, debug: bool = False) -> None:
+            release.wait(timeout=1)
+
+        def power_down(self) -> bool:
+            rested.append("down")
+            return True
+
+    hat.PN532_SPI = PN532_SPI
+    monkeypatch.setitem(sys.modules, "romini.composition.pn532_hat", hat)
+
+    assert isinstance(default_nfc(), FakeNfc)
+    release.set()
+    sleep(0.05)
+
+    assert rested == ["down"]
+
+
 def test_default_nfc_uses_a_fake_reader_when_the_hat_does_not_answer(monkeypatch) -> None:
     from time import sleep
     from types import ModuleType
@@ -788,6 +820,102 @@ def test_pi_boot_starts_the_ready_chime_after_the_dashboard_is_listening(tmp_pat
                 close()
 
     assert order.index("dashboard") < order.index("romini/hello_romy.wav")
+
+
+def test_pi_boot_binds_the_dashboard_before_opening_the_ups(tmp_path: Path, monkeypatch) -> None:
+    import romini.__main__ as core
+
+    order: list[str] = []
+    listener: list[object] = []
+    batteries: list[object] = []
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    class Pack:
+        percent = 40
+
+    def open_hat() -> Pack:
+        order.append("ups")
+        return Pack()
+
+    real_create = core.create_dashboard
+    real_start = core.start_dashboard
+
+    def create_dashboard(**kwargs: object) -> object:
+        batteries.append(kwargs["battery"])
+        return real_create(**kwargs)
+
+    def start_dashboard(app: object, *, host: str, port: int) -> object:
+        order.append("dashboard")
+        started = real_start(app, host=host, port=port)
+        listener.append(started)
+        return started
+
+    monkeypatch.setattr(core, "open_ups_hat", open_hat)
+    monkeypatch.setattr(core, "create_dashboard", create_dashboard)
+    monkeypatch.setattr(core, "start_dashboard", start_dashboard)
+    monkeypatch.setattr(core, "default_nfc", lambda: FakeNfc())
+    monkeypatch.setattr(core, "default_ticks", lambda: [None])
+    monkeypatch.setattr(core, "MpvPlayer", lambda **kwargs: FakePlayer())
+    monkeypatch.setattr(core.HostPower, "apply", lambda self, **kwargs: None)
+
+    try:
+        core.entry(led=FakeLed())
+        assert order == ["dashboard"]
+        assert batteries[0].percent == 40
+    finally:
+        for started in listener:
+            close = getattr(started, "close", None)
+            if callable(close):
+                close()
+
+    assert order == ["dashboard", "ups"]
+
+
+def test_pi_boot_binds_the_dashboard_before_the_player_mutes(tmp_path: Path, monkeypatch) -> None:
+    import romini.__main__ as core
+    from romini.composition.pi import MpvPlayer
+
+    order: list[str] = []
+    listener: list[object] = []
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    monkeypatch.setenv("ROMINI_DASHBOARD_PORT", "0")
+
+    class RecordingPlayer(MpvPlayer):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+
+        def _silence_headphones(self) -> None:
+            order.append("mute")
+
+    real_start = core.start_dashboard
+
+    def start_dashboard(app: object, *, host: str, port: int) -> object:
+        order.append("dashboard")
+        started = real_start(app, host=host, port=port)
+        listener.append(started)
+        return started
+
+    monkeypatch.setattr(core, "MpvPlayer", RecordingPlayer)
+    monkeypatch.setattr(core, "default_nfc", lambda: FakeNfc())
+    monkeypatch.setattr(core, "default_ticks", lambda: [None])
+    monkeypatch.setattr(core, "start_dashboard", start_dashboard)
+    monkeypatch.setattr(core, "open_ups_hat", lambda: None)
+    monkeypatch.setattr(core.HostPower, "apply", lambda self, **kwargs: None)
+
+    try:
+        core.entry(led=FakeLed())
+    finally:
+        for started in listener:
+            close = getattr(started, "close", None)
+            if callable(close):
+                close()
+
+    assert order.index("dashboard") < order.index("mute")
 
 
 def test_sim_silent_player_reports_playing_after_play() -> None:

@@ -5,7 +5,7 @@ import sys
 from collections.abc import Callable, Iterable
 from datetime import datetime
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.catalog import run_catalog_ticks
@@ -19,7 +19,7 @@ from romini.composition.loop import run_core_ticks
 from romini.composition.nfc import FakeNfc, Nfc
 from romini.composition.pi import MpvPlayer, Pn532Nfc
 from romini.composition.sim import SimBox, load_sim_box_from_env
-from romini.composition.ups_hat import open_ups_hat
+from romini.composition.ups_hat import DeferredUpsHat, open_ups_hat
 from romini.features.boot.ready import HALT_EARCON_PATH, READY_EARCON_PATH
 from romini.features.play_by_tag.place_figure import Player, StatusLed
 from romini.features.power.host import DashboardTraffic
@@ -106,21 +106,32 @@ def default_nfc() -> Nfc:
     except ImportError:
         return FakeNfc()
     opened: list[Nfc] = []
+    accepted = True
+    gate = Lock()
 
     def open_reader() -> None:
         try:
-            opened.append(Pn532Nfc(PN532_SPI(reset=20, cs=4)))
+            reader: Nfc = Pn532Nfc(PN532_SPI(reset=20, cs=4))
         except Exception:
             log.warning("nfc reader did not open", exc_info=True)
-            opened.append(FakeNfc())
+            reader = FakeNfc()
+        with gate:
+            if not accepted:
+                rest = getattr(reader, "rest", None)
+                if callable(rest):
+                    rest()
+                return
+            opened.append(reader)
 
     thread = Thread(target=open_reader, daemon=True)
     thread.start()
     thread.join(NFC_OPEN_TIMEOUT)
-    if not opened:
-        log.warning("nfc reader did not answer within %ss", NFC_OPEN_TIMEOUT)
-        return FakeNfc()
-    return opened[0]
+    with gate:
+        if not opened:
+            accepted = False
+            log.warning("nfc reader did not answer within %ss", NFC_OPEN_TIMEOUT)
+            return FakeNfc()
+        return opened[0]
 
 
 def default_ticks():
@@ -196,7 +207,7 @@ def main(
     box = load_sim_box_from_env(
         player=player
         if player is not None
-        else (MpvPlayer() if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
+        else (MpvPlayer(quiet=False) if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
         led=led if led is not None else default_led(),
     )
     box.halt = _ChimeHalt(box.halt, box)
@@ -218,7 +229,7 @@ def main(
             pad=box if os.environ.get("ROMINI_PROFILE", "sim") == "sim" else None,
             register=box,
             mixer=box.mixer,
-            battery=open_ups_hat(),
+            battery=DeferredUpsHat(open_ups_hat) if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else open_ups_hat(),
             stories=data / "stories",
             covers=data / "covers",
             characters=data / "characters",
@@ -237,6 +248,9 @@ def main(
             host="0.0.0.0" if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else "127.0.0.1",
             port=int(dash_port),
         )
+    quiet_idle = getattr(box.player, "quiet_idle", None)
+    if callable(quiet_idle):
+        quiet_idle()
     play_power_chime(box, READY_EARCON_PATH)
     if nfc is None and nfc_opener is not None:
         nfc = nfc_opener()
