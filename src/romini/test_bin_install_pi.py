@@ -10,6 +10,12 @@ def test_install_pi_script_sets_pcm_volume_to_full_and_stores_it() -> None:
     assert "alsactl store" in script
 
 
+def test_install_pi_does_not_add_a_gpio_shutdown_button() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert 'ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=17"' not in script
+    assert "dtoverlay=gpio-shutdown" in script
+
+
 def test_install_pi_script_blanks_unused_peripherals() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "hdmi_blanking=2" in script

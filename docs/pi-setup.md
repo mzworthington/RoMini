@@ -24,17 +24,15 @@ sudo reboot
 
 `i2cdetect -y 1` should show **43** (UPS INA219), not **24**. After `bin/install-pi`, confirm a UID with the venv (`romini.composition.pn532_hat.PN532_SPI(reset=20, cs=4)`) and a Type A tag over the coil. If init fails, SPI is off or the DIP is still I2C (SCL/SDA ON).
 
-## 3. Buttons
+## 3. Power switch and lamp
 
-Power off. Halt switch: COM to GND, and the normally-open contact to **both** BCM 17 (physical pin 11) and BCM 3 (physical pin 5). LED − GND, LED + BCM 27. Vol− BCM 22, vol+ BCM 23, play BCM 24. Pin 11 is the sleep button. Pin 5 is the only pin that wakes a Pi 4. Pin 5 is also the UPS I2C clock, so the shutdown overlay stays on pin 11.
+Power off at the HAT slide before wiring. The panel control is a **latching** switch across the UPS HAT (D) **OFF/ON** slide’s two terminals. Leave that slide at **OFF**. Closed applies 5V through the pogos. Open cuts it. Do not use the BOOT button, and do not land the switch on the Pi header.
 
-```bash
-sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
-```
+LED ring: **+ to physical pin 1 (3.3V)**, **− to physical pin 6 (GND)**. The ring lights while the 3.3V rail is up and goes dark as soon as the switch cuts power. It is not BCM 27.
 
-`gpio-shutdown` on BCM 17 (physical pin 11) so a press sleeps the box. Wake is the same switch also tied to BCM 3 (physical pin 5). A Pi 4 does not wake from pin 11, and pin 5 cannot sleep the box while the UPS HAT is using it as I2C clock.
+Leave **physical pin 5 (BCM 3)** free. That pin is the UPS I2C clock. Vol− BCM 22, vol+ BCM 23, play BCM 24 are later buttons.
 
-GPIO press handlers are tested; `run_core_ticks` currently polls **NFC and catalog only**. See [guide.md](./guide.md) §3.4.
+`bin/install-pi` removes any `dtoverlay=gpio-shutdown` line. The box no longer sleeps or wakes from a GPIO button.
 
 ## 4. Speaker
 
@@ -77,7 +75,7 @@ Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=
 | Brown-out | PSU ≥3A |
 | No sound | Aux cable, ALSA not HDMI-only, speaker powered |
 | Uploads vanish | Overlay on without `romini-data` |
-| Halt / no wake | Switch must reach pin 11 (sleep) and pin 5 (wake). Overlay is `gpio_pin=17` |
+| Power stays on | HAT slide must stay OFF, and the latching switch must be across that slide’s two terminals. Pin 5 is I2C, not a wake pin |
 | Catalog ignored | `catalog.yaml` on `romini-data`, UID hex, MP3 under `library/` |
 | OTA skipped | Track is playing (mpv IPC) |
 | `Permission denied` on venv | Tree still root-owned |

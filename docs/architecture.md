@@ -150,7 +150,7 @@ gpio-style venv `python -m romini.composition.update` + timer ([ADR-0002](./ADRs
 
 ## 6. Parent dashboard
 
-Screenshots: [dashboard.md](./dashboard.md). `http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no Cloudflare. The masthead shows free space and remaining charge from the Waveshare UPS HAT (D) when INA219 `0x43` is on i2c-1; the laptop `sim` omits charge. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The Audit log on Settings lists what the box has done (newest first, last 1000). The first box has a halt button only, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
+Screenshots: [dashboard.md](./dashboard.md). `http://<hostname>.local` on house WPA when Avahi + port 80 are on (`romini-core` binds 80 via `CAP_NET_BIND_SERVICE`). Laptop: `127.0.0.1` and `ROMINI_DASHBOARD_PORT`. No HTTP PIN, no Cloudflare. The masthead shows free space and remaining charge from the Waveshare UPS HAT (D) when INA219 `0x43` is on i2c-1; the laptop `sim` omits charge. Assign and upload **write `catalog.yaml`**. Play mode and volume live here (SQLite, not YAML). The Audit log on Settings lists what the box has done (newest first, last 1000). The first box’s only panel control is the power switch, so loudness is set on this page. Dashboard starts only if `ROMINI_DASHBOARD_PORT` is set.
 
 ## 7. Runtime
 
@@ -158,11 +158,11 @@ Screenshots: [dashboard.md](./dashboard.md). `http://<hostname>.local` on house 
 |------|------|
 | `romini-core.service` | NFC, mpv, GPIO, FastAPI; `enable`d so 5V always starts the player |
 | `romini-update.timer` | oneshot `python -m romini.composition.update` |
-| dtoverlay gpio-shutdown | BCM 17 (pin 11) sleeps; the same switch on BCM 3 (pin 5) wakes |
+| Power | Latching switch across the HAT OFF/ON slide. No `gpio-shutdown` overlay |
 
 Profiles `sim` / `pi`: [ADR-0004](./ADRs/0004-composition-root-profiles.md), [development.md](./development.md).
 
-LED: boot animation, then steady = ready, pulse = playing, flash = shutting down.
+The panel lamp is the switch ring on pin 1 (3.3V) and pin 6 (GND). It is lit whenever the rail is up. Software LED pulses stay on BCM 27 and do not drive that ring.
 
 ### Ports
 
@@ -190,7 +190,7 @@ PR: `pre-commit --all-files` + `make test` (ruff, pytest). `main`: semantic-rele
 
 1. Domain + presence/tap slices on `sim` — done ([spec.md](./spec.md)).
 2. Breadboard: PN532 SPI + mpv into powered speaker — soak.
-3. Halt + LED in `run_core_ticks`, halt wake, boot earcon on device — soak / remaining GPIO poll. Volume on the dashboard for the first box; physical vol± later.
+3. Boot earcon on device — soak. Volume on the dashboard for the first box; physical vol± later. Power is the HAT latching switch, not a GPIO wake.
 4. Dashboard + provision files + updater skip-while-playing — laptop complete; overlay on device.
 5. Birthday: `library/` + `catalog.yaml` + affixed Tags.
 

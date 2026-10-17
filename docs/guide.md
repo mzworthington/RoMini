@@ -157,7 +157,7 @@ Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST
 | Session / volume / play mode / Audit log | SQLite WAL `state.sqlite` |
 | Dashboard | Same FastAPI; bind `127.0.0.1` |
 | Audio | Silent. CI must not need speakers |
-| OverlayFS, Avahi, gpio-shutdown | Not emulated |
+| OverlayFS, Avahi, HAT power cut | Not emulated |
 | OTA | Tests + `python -m romini.composition.update` against GitHub; not the inner loop |
 
 ---
@@ -201,9 +201,9 @@ sudo reboot
 
 `i2cdetect -y 1` should show **43** (UPS), not **24**. Confirm a UID with the venv `PN532_SPI(reset=20, cs=4)` **before** trusting software.
 
-### 3.4 Buttons and speaker
+### 3.4 Power switch, lamp, and speaker
 
-Power off. Halt switch: COM to GND, normally-open contact to **both** BCM 17 (physical pin 11) and BCM 3 (physical pin 5). LED − GND, LED + **BCM 27**. Vol− **22**, vol+ **23**, play **24**. Pin 11 sleeps the box. Pin 5 wakes a Pi 4. Pin 5 is also the UPS I2C clock, so the overlay stays on pin 11.
+Power off at the HAT slide before wiring. Latching panel switch across the UPS HAT (D) **OFF/ON** slide’s two terminals. Leave that slide at **OFF**. LED ring **+ to physical pin 1 (3.3V)**, **− to physical pin 6 (GND)**. The ring follows the rail: lit while the box has power, dark when the switch cuts it. Do not use BCM 27, pin 11, or pin 5. Pin 5 is the UPS I2C clock. Vol− **22**, vol+ **23**, play **24** are later buttons.
 
 ```bash
 sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
@@ -211,11 +211,11 @@ sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
-That snippet is halt sleep on BCM 17 (physical pin 11), with wake on BCM 3 (physical pin 5), plus SPI, I2C, and `dtoverlay=audremap,pins_18_19` so analogue audio leaves the AV jack and comes out on BCM 18 and 19. `bin/install-pi` appends any missing lines and reboots. A later idle update does the same.
+That snippet is SPI, I2C, and `dtoverlay=audremap,pins_18_19` so analogue audio leaves the AV jack and comes out on BCM 18 and 19. It does not install `gpio-shutdown`. `bin/install-pi` deletes any `dtoverlay=gpio-shutdown` line already on the card and reboots when the boot file changes. A later idle update does the same.
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 
-**Core loop today** polls NFC + catalog every 250 ms and leaves the reader field on, so a figure is seen as soon as it is in range. An empty, quiet shelf powers off after 10 minutes. GPIO pin handlers exist (`apply_gpio_press`) and are covered in tests; they are not yet wired into `run_core_ticks`. On the bench, use sim HTTP/TTY against a laptop or wait for that poll to land. LED pulse uses `RPi.GPIO` on pin 27 when `ROMINI_PROFILE=pi`.
+**Core loop today** polls NFC + catalog every 250 ms and leaves the reader field on, so a figure is seen as soon as it is in range. An empty, quiet shelf still calls software `poweroff` after 10 minutes; that does not open the HAT switch, so the ring stays lit until the latching switch cuts 5V. GPIO pin handlers exist (`apply_gpio_press`) and are covered in tests; they are not yet wired into `run_core_ticks`. On the bench, use sim HTTP/TTY against a laptop or wait for that poll to land.
 
 ### 3.5 Disk (before yank-risk)
 
@@ -298,7 +298,7 @@ sudo systemctl restart romini-core.service
 | `Permission denied` on venv | `chown` `/var/lib/romini` to the SSH user before `install-pi` |
 | bind `0.0.0.0:80` errno 13 | Recopy `romini-core.service` (needs `AmbientCapabilities`) and `daemon-reload` |
 | Uploads vanish | Overlay on without `romini-data` |
-| Halt / no wake | Switch must reach pin 11 (sleep) and pin 5 (wake). Overlay is `gpio_pin=17` |
+| Power stays on | HAT slide must stay OFF, and the latching switch must be across that slide’s two terminals. Pin 5 is I2C, not a wake pin |
 | Catalog ignored | `catalog.yaml` on the data volume, UID hex, file under `library/` |
 | OTA while a story plays | Expected skip until idle |
 | GPIO buttons silent | Not in `run_core_ticks` yet; NFC still works |

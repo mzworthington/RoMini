@@ -33,10 +33,13 @@ def test_boot_config_blanks_hdmi_bluetooth_and_leds() -> None:
     assert "dtparam=pwr_led_trigger=none" in text
 
 
-def test_gpio_shutdown_overlay_stays_off_the_i2c_clock() -> None:
-    from romini.composition.provision import GPIO_SHUTDOWN_OVERLAY
+def test_boot_config_leaves_the_i2c_clock_free_of_a_shutdown_button() -> None:
+    from romini.composition.provision import merge_boot_config
 
-    assert GPIO_SHUTDOWN_OVERLAY == "dtoverlay=gpio-shutdown,gpio_pin=17"
+    text = merge_boot_config("dtoverlay=gpio-shutdown,gpio_pin=3\n")
+
+    assert "gpio-shutdown" not in text
+    assert "dtparam=i2c_arm=on" in text
 
 
 def test_romini_core_service_prepares_the_governor_and_wifi_sleep() -> None:
@@ -226,13 +229,13 @@ def test_apply_boot_config_writes_audremap_once(tmp_path: Path) -> None:
     assert text.count("dtparam=audio=on") == 1
 
 
-def test_merge_boot_config_moves_shutdown_off_the_i2c_clock() -> None:
+def test_merge_boot_config_drops_gpio_shutdown() -> None:
     from romini.composition.provision import merge_boot_config
 
-    merged = merge_boot_config("dtoverlay=gpio-shutdown,gpio_pin=3\n")
+    merged = merge_boot_config("dtoverlay=gpio-shutdown,gpio_pin=17\ndtoverlay=gpio-shutdown,gpio_pin=3\n")
 
-    assert merged.count("gpio-shutdown") == 1
-    assert "dtoverlay=gpio-shutdown,gpio_pin=17" in merged
+    assert "gpio-shutdown" not in merged
+    assert "dtparam=i2c_arm=on" in merged
 
 
 def test_merge_boot_config_appends_audremap_once() -> None:
@@ -244,7 +247,7 @@ def test_merge_boot_config_appends_audremap_once() -> None:
 
     assert once.count("dtoverlay=audremap,pins_18_19") == 1
     assert once.count("dtparam=audio=on") == 1
-    assert once.count("dtoverlay=gpio-shutdown,gpio_pin=17") == 1
+    assert "gpio-shutdown" not in once
     assert twice == once
 
 
@@ -282,7 +285,7 @@ def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:
     assert (dest / "avahi/services/romini.service").is_file()
     assert "LABEL=romini-data" in (dest / "fstab.romini-data").read_text()
     cfg = (dest / "config.txt.romini").read_text()
-    assert "gpio-shutdown" in cfg
+    assert "gpio-shutdown" not in cfg
     assert "dtparam=i2c_arm=on" in cfg
     assert "dtparam=spi=on" in cfg
 

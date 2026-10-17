@@ -9,9 +9,9 @@ Domain talks ports; this file is the `pi` profile. Software: [architecture.md](.
 | Computer | Raspberry Pi 4 Model B **4GB** | [Pi Hut](https://thepihut.com/products/raspberry-pi-4-model-b?variant=20064052740158) |
 | NFC reader | Waveshare **PN532 NFC HAT** | [Pi Hut](https://thepihut.com/products/nfc-hat-for-raspberry-pi-pn532) · [wiki](https://www.waveshare.com/wiki/PN532_NFC_HAT) |
 | Figures | **NTAG203** clear tags (UID only) | [Pi Hut](https://thepihut.com/products/13-56mhz-rfid-nfc-clear-tag-ntag203-chip) |
-| Halt + status | 16mm metal momentary, **blue LED ring** | [Pi Hut](https://thepihut.com/products/rugged-metal-pushbutton-with-blue-led-ring) |
+| Power + lamp | 16mm metal **latching** switch, **blue LED ring** | [Pi Hut](https://thepihut.com/products/rugged-metal-pushbutton-with-blue-led-ring) (same family; contact must be latching, not momentary) |
 | UPS | Waveshare **21700 UPS HAT (D)** (two 21700 cells, not included) | [Pi Hut](https://thepihut.com/products/21700-ups-hat-d-for-raspberry-pi-4-3) · [wiki](https://www.waveshare.com/wiki/UPS_HAT_(D)) |
-| Volume + play | **Three more** 16mm momentaries (LED optional) — later; first box is halt only | same switch family |
+| Volume + play | **Three more** 16mm momentaries (LED optional) — later; first box is the power switch only | same switch family |
 | Audio | **Powered speaker with aux/amp jack** (household choice) | not the passive 4Ω pair as the amp |
 | Storage | **16GB** microSD | user-supplied |
 
@@ -31,7 +31,8 @@ flowchart TB
   ntag["NTAG203"] --> hat["PN532 SPI"]
   hat --> pi["Pi 4B 4GB"]
   ups["UPS HAT D INA219"] --> pi
-  halt["Halt NO + LED"] --> pi
+  pwr["Latching switch across HAT OFF/ON"] --> ups
+  lamp["LED ring on 3.3V"] --> pi
   vol["Vol+ Vol- (later)"] --> pi
   play["Play/pause (later)"] --> pi
   pi -->|"PWM GPIO 18 and 19"| spk["Powered speaker aux"]
@@ -46,6 +47,8 @@ flowchart TB
 
 Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU also appears at `0x2D`). Charge on the dashboard is estimated from pack voltage: 3.0 V empty, 4.2 V full, clamped. Charge the pack through the HAT USB-C, not the Pi USB-C. `i2cdetect -y 1` should show **43** (and **2d**), not the PN532.
 
+The silk-screen **OFF/ON** slide is the hard 5V cut. Leave that slide at **OFF**. Wire the panel latching switch across the slide’s two terminals, so the panel switch is the only thing that closes the output. ON applies 5V to the Pi. OFF removes it. Do not use the **BOOT** button pads for this; BOOT only wakes the battery protection chip. Do not put the switch on the Pi header. Pin 2 and pin 4 are paralleled with the pogo 5V feed, so opening them does not cut power.
+
 ### Audio
 
 Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **BCM 19** (header pin 35) with `dtoverlay=audremap,pins_18_19`. Those pins need the usual filter into the powered speaker aux input. Avoid I2S while RSTPDN is GPIO 20 ([ADR-0005](./ADRs/0005-pn532-spi-analogue-audio.md)).
@@ -54,9 +57,10 @@ Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **B
 
 | Function | BCM | Board pin | Notes |
 |----------|-----|-----------|--------|
-| Halt (NO to pin 11 and pin 5, COM GND) | 17 and 3 | 11 and 5 | Pin 11 sleeps the box. Pin 5 wakes a Pi 4. Same switch, both pins |
+| Power switch | — | HAT OFF/ON slide, both terminals | Latching. Slide stays OFF. Not a GPIO. Not pin 11, not pin 5 |
+| Power LED + | — | 1 (3.3V) | LED − to pin 6 (GND). On while the rail is up, off when the switch cuts power. Built-in resistor is fine at 3.3V |
+| I2C clock (UPS) | 3 | 5 | Leave free. Do not land the power switch here |
 | Analogue audio left/right | 18 / 19 | 12 / 35 | `audremap` PWM. Not free GPIO |
-| Status LED + | 27 | 13 | LED − to GND; 3.3V OK with built-in resistor |
 | Volume down | 22 | 15 | Internal pull-up. Wired later; v1 volume is the dashboard |
 | Volume up | 23 | 16 | Wired later |
 | Play/pause | 24 | 18 | Wired later. Long-press (~0.8s) = restart |
@@ -73,18 +77,18 @@ Dashboard shows free space. Full Library → fail closed. **No `nofail`** on the
 
 ## Enclosure
 
-HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker magnets off the coil. First enclosure: one 16mm hole for halt + LED. Leave room for three more switches (vol±, play) later. The 130 mm birch cube, the sheet render and the shop letter are in [fabrication.md](fabrication.md).
+HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker magnets off the coil. First enclosure: one 16mm hole for the power switch and its lamp. Leave room for three more switches (vol±, play) later. The 130 mm birch cube, the sheet render and the shop letter are in [fabrication.md](fabrication.md).
 
 ## Software mapping
 
 | Port | `pi` adapter |
 |------|----------------|
 | NFC | PN532 SPI cs=4 rst=20, 250ms, UID hex |
-| LED | GPIO 27 PWM |
+| LED | Panel ring on pin 1 (3.3V) and pin 6 (GND). Software pulses on BCM 27 do not light this ring |
 | Vol ± | GPIO 22 / 23 (`apply_gpio_press`; not yet in `run_core_ticks`). First box: parent sets volume on the dashboard |
 | Play/pause | GPIO 24 (same). First box: unused |
 | Catalog import | Watch `catalog.yaml`, upsert mappings |
 | Battery | UPS HAT (D) INA219 `0x43`; `sim` omits the reading |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |
-| Halt | GPIO 17 (pin 11) sleeps; GPIO 3 (pin 5) wakes. Same switch to both, COM to GND |
+| Power | Latching switch across the HAT OFF/ON slide (slide left OFF). Software `poweroff` (dashboard, shelf timer) is separate and does not cut the HAT output |
