@@ -34,7 +34,8 @@ def start_dashboard(app: FastAPI, *, host: str, port: int) -> DashboardListener:
             break
         sleep(0.05)
     bound = port
-    if server.servers:
-        sock = server.servers[0].sockets[0]
+    servers = getattr(server, "servers", None)
+    if servers:
+        sock = servers[0].sockets[0]
         bound = int(sock.getsockname()[1])
     return DashboardListener(server, thread, bound)
