@@ -69,7 +69,7 @@ def create_dashboard(
     updates: object | None = None,
     traffic: DashboardTraffic | None = None,
 ) -> FastAPI:
-    app = FastAPI()
+    app = FastAPI(telemetry={"auto_configure": False})
     if traffic is not None:
 
         @app.middleware("http")
