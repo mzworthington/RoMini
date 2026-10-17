@@ -1,13 +1,47 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: 'uv'
+    directory: '/'
     schedule:
-      interval: weekly
-  - package-ecosystem: uv
-    directory: /
-    schedule:
-      interval: weekly
+      interval: 'weekly'
+      day: 'sunday'
+      time: '00:00'
+    open-pull-requests-limit: 5
+    # Direct deps only. Transitive security fixes otherwise land as
+    # lockfile-only PRs (uv.lock with no pyproject.toml change).
+    allow:
+      - dependency-type: 'direct'
     # Raise the pyproject.toml floor even when the existing range already
     # allows the release, so the manifest moves with uv.lock.
-    versioning-strategy: increase
+    versioning-strategy: 'increase'
+    commit-message:
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: 'scope'
+    groups:
+      uv-security:
+        applies-to: 'security-updates'
+        patterns:
+          - '*'
+      uv-minor-patch:
+        applies-to: 'version-updates'
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'sunday'
+      time: '00:00'
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    groups:
+      actions:
+        patterns:
+          - '*'
