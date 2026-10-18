@@ -973,14 +973,27 @@ def test_dashboard_figures_studio_counts_mapped_figures(tmp_path: Path) -> None:
     assert 'style="width: 40%"' in library
 
 
-def test_dashboard_figures_shows_todays_listening_time() -> None:
+def test_dashboard_figures_shows_todays_listening_time(monkeypatch) -> None:
     from datetime import datetime, timedelta
 
     from fastapi.testclient import TestClient
 
+    from romini.composition.dashboard import shared
     from romini.features.listening.log import MemoryPlayLog
 
-    now = datetime.now().astimezone()
+    # Five minutes after local midnight. The session starts the previous evening,
+    # so the figures page must show only the part that falls on today.
+    wall = datetime(2026, 10, 18, 0, 5)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            if tz is None:
+                return wall
+            return wall.replace(tzinfo=tz)
+
+    monkeypatch.setattr(shared, "datetime", Clock)
+    now = wall.astimezone()
     log = MemoryPlayLog()
     log.begin(now - timedelta(hours=1, minutes=35))
     log.end(now)
@@ -991,7 +1004,8 @@ def test_dashboard_figures_shows_todays_listening_time() -> None:
         card = html.split("Today's Session", 1)[1]
     card = card.split("</li>", 1)[0]
 
-    assert "1h 35m" in card
+    assert "<strong>5m</strong>" in card
+    assert "1h 35m" not in card
     assert "bedtime" not in card.lower()
 
 
