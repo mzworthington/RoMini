@@ -68,6 +68,15 @@ def test_install_pi_script_installs_lgpio_build_deps() -> None:
     assert "liblgpio-dev" in script
 
 
+def test_install_pi_fetches_lgpio_debs_when_apt_cannot_see_the_package() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    first_apt = script.split("apt-get install", 1)[1].split("\n", 1)[0]
+    assert "liblgpio-dev" not in first_apt
+    assert "apt-cache show liblgpio-dev" in script
+    assert "pool/main/l/lg-gpio" in script
+    assert "dpkg --print-architecture" in script
+
+
 def test_install_pi_script_prints_bold_colour_success_when_finished() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert r"\033[1;32m" in script

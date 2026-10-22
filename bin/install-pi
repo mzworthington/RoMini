@@ -14,7 +14,22 @@ VENV="${DATA}/install/venv"
 API="https://api.github.com/repos/${REPO}/releases/latest"
 
 sudo apt-get update
-sudo apt-get install -y python3-venv python3-pip python3-dev swig liblgpio-dev avahi-daemon mpv alsa-utils curl
+sudo apt-get install -y python3-venv python3-pip python3-dev swig avahi-daemon mpv alsa-utils curl
+# Trixie can refresh the Raspberry Pi archive and still not offer liblgpio-dev.
+if apt-cache show liblgpio-dev >/dev/null 2>&1; then
+  sudo apt-get install -y liblgpio-dev
+else
+  LGPIO_ARCH="$(dpkg --print-architecture)"
+  LGPIO_VER="0.2.2-1~rpt1+trixie"
+  LGPIO_BASE="https://archive.raspberrypi.com/debian/pool/main/l/lg-gpio"
+  LGPIO_DIR="$(mktemp -d)"
+  curl -fsSL -o "${LGPIO_DIR}/liblgpio1.deb" \
+    "${LGPIO_BASE}/liblgpio1_${LGPIO_VER}_${LGPIO_ARCH}.deb"
+  curl -fsSL -o "${LGPIO_DIR}/liblgpio-dev.deb" \
+    "${LGPIO_BASE}/liblgpio-dev_${LGPIO_VER}_${LGPIO_ARCH}.deb"
+  sudo apt-get install -y "${LGPIO_DIR}/liblgpio1.deb" "${LGPIO_DIR}/liblgpio-dev.deb"
+  rm -rf "${LGPIO_DIR}"
+fi
 
 sudo mkdir -p "${DATA}/library" "${DATA}/install" /etc/romini /var/log/romini
 sudo chmod 700 /etc/romini
