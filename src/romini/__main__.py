@@ -11,7 +11,7 @@ from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
 from romini.composition.dashboard.power import LocalPower, LocalUpdate
-from romini.composition.gpio import GpioLed, GpioMemWakePin, RpiGpioLedDriver
+from romini.composition.gpio import GpioLed, RpiGpioLedDriver, RpiQuietSwitch
 from romini.composition.host_power import HostPower
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
@@ -86,6 +86,20 @@ def load_rpi_gpio() -> object:
     import RPi.GPIO as GPIO
 
     return GPIO
+
+
+def default_quiet_switch() -> RpiQuietSwitch | None:
+    if os.environ.get("ROMINI_PROFILE", "sim") != "pi":
+        return None
+    try:
+        gpio = load_rpi_gpio()
+    except ImportError:
+        return None
+    try:
+        return RpiQuietSwitch(gpio)
+    except Exception:
+        log.warning("quiet switch did not open", exc_info=True)
+        return None
 
 
 def default_led() -> StatusLed:
@@ -256,19 +270,13 @@ def main(
         nfc = nfc_opener()
     if lines is not None:
         run_sim_lines(box, lines)
-    wake_pin_low = None
-    if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
-        try:
-            wake_pin_low = GpioMemWakePin()
-        except OSError:
-            log.warning("wake pin unreadable", exc_info=True)
+    box.quiet_switch = default_quiet_switch()
     if nfc is not None and ticks is not None:
         run_core_ticks(
             box,
             nfc,
             data_dir=Path(os.environ["ROMINI_DATA"]),
             ticks=ticks,
-            wake_pin_low=wake_pin_low,
         )
     if catalog_ticks is not None:
         run_catalog_ticks(box, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=catalog_ticks)

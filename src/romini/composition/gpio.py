@@ -1,4 +1,3 @@
-import mmap
 import signal
 
 from romini.composition.sim import SimBox
@@ -10,8 +9,6 @@ from romini.features.play_by_tag.place_figure import (
 )
 
 GPIO_HALT = 17
-WAKE_PIN = 3
-GPLEV0 = 0x34
 GPIO_VOL_DOWN = 22
 GPIO_VOL_UP = 23
 GPIO_PLAY = 24
@@ -52,17 +49,14 @@ class RpiGpioLedDriver:
         self._gpio.output(GPIO_LED, self._gpio.LOW)
 
 
-def wake_pin_is_low(level_word: int, pin: int = WAKE_PIN) -> bool:
-    return (level_word & (1 << pin)) == 0
+class RpiQuietSwitch:
+    def __init__(self, gpio: object) -> None:
+        self._gpio = gpio
+        gpio.setmode(gpio.BCM)
+        gpio.setup(GPIO_HALT, gpio.IN, pull_up_down=gpio.PUD_UP)
 
-
-class GpioMemWakePin:
-    def __init__(self, path: str = "/dev/gpiomem") -> None:
-        self._file = open(path, "r+b")
-        self._mem = mmap.mmap(self._file.fileno(), 4096, mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE)
-
-    def __call__(self) -> bool:
-        return wake_pin_is_low(int.from_bytes(self._mem[GPLEV0 : GPLEV0 + 4], "little"))
+    def is_open(self) -> bool:
+        return bool(self._gpio.input(GPIO_HALT))
 
 
 def apply_gpio_press(box: SimBox, pin: int) -> None:

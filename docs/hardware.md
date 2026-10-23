@@ -31,8 +31,8 @@ flowchart TB
   ntag["NTAG203"] --> hat["PN532 SPI"]
   hat --> pi["Pi 4B 4GB"]
   ups["UPS HAT D INA219"] --> pi
-  pwr["Latching switch across HAT OFF/ON"] --> ups
-  lamp["LED ring on 3.3V"] --> pi
+  pwr["Latching switch pin 11 to pin 9"] --> pi
+  ups -->|"5V stays on"| pi
   vol["Vol+ Vol- (later)"] --> pi
   play["Play/pause (later)"] --> pi
   pi -->|"PWM GPIO 18 and 19"| spk["Powered speaker aux"]
@@ -47,7 +47,7 @@ flowchart TB
 
 Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU also appears at `0x2D`). Charge on the dashboard is estimated from pack voltage: 3.0 V empty, 4.2 V full, clamped. Charge the pack through the HAT USB-C, not the Pi USB-C. `i2cdetect -y 1` should show **43** (and **2d**), not the PN532.
 
-The silk-screen **OFF/ON** slide is the hard 5V cut. Leave that slide at **OFF**. Wire the panel latching switch across the slide’s two terminals, so the panel switch is the only thing that closes the output. ON applies 5V to the Pi. OFF removes it. Do not use the **BOOT** button pads for this; BOOT only wakes the battery protection chip. Do not put the switch on the Pi header. Pin 2 and pin 4 are paralleled with the pogo 5V feed, so opening them does not cut power.
+Leave the silk-screen **OFF/ON** slide at **ON** so the pogos keep feeding 5V. The panel latching switch is the quiet control: one terminal on **physical pin 11 (BCM 17)**, the other on **physical pin 9 (GND)**. Closed is awake. Open pauses playback and ignores new figures. Closing it again resumes the story that was playing. The player enables the pin’s pull-up, and it treats an unwired pin as awake until it has seen the switch closed once. Do not use the **BOOT** button pads. Do not land the switch on pin 5. Pin 2 and pin 4 are paralleled with the pogo 5V feed, so opening them does not cut power.
 
 ### Audio
 
@@ -57,9 +57,9 @@ Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **B
 
 | Function | BCM | Board pin | Notes |
 |----------|-----|-----------|--------|
-| Hard power | — | HAT OFF/ON slide, both terminals | Latching. Slide stays OFF. Cuts 5V. Not a GPIO |
-| Sleep / wake | 3 | 5 (SCL) | Momentary to GND. The player sees the clock held low and halts. After `poweroff` the firmware boots on the same short. I2C keeps the pin; `gpio-shutdown` cannot claim it |
-| Power LED + | — | 1 (3.3V) | LED − to pin 6 (GND). On while the rail is up. Built-in resistor is fine at 3.3V |
+| Quiet switch | 17 | 11 | Latching to pin 9 (GND). Closed = awake. Open = pause. Internal pull-up. Not pin 5 |
+| I2C clock (UPS) | 3 | 5 | Leave free. The UPS clock lives here |
+| Power LED + | — | 1 (3.3V) | Optional. LED − to pin 6 (GND). The first box leaves the ring unwired |
 | Analogue audio left/right | 18 / 19 | 12 / 35 | `audremap` PWM. Not free GPIO |
 | Volume down | 22 | 15 | Internal pull-up. Wired later; v1 volume is the dashboard |
 | Volume up | 23 | 16 | Wired later |
@@ -91,4 +91,4 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 | Battery | UPS HAT (D) INA219 `0x43`; `sim` omits the reading |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |
-| Power | Latching switch across the HAT OFF/ON slide (slide left OFF) cuts 5V. Momentary pin 5 to GND sleeps and wakes. The player reads the pin without taking it from I2C. Software `poweroff` does not cut the HAT output; the same button boots the halted Pi |
+| Power | Latching switch on BCM 17 (pin 11) to GND (pin 9). HAT slide stays ON. Open pauses; closed resumes. No `gpio-shutdown`. Dashboard and bedtime `poweroff` still halt, and this switch cannot boot a halted Pi |

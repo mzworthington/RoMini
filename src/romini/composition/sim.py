@@ -95,6 +95,8 @@ class SimBox:
         )
 
     def place(self, uid: str) -> None:
+        if getattr(self, "quiet", False) and not self.assign_mode:
+            return
         settings = getattr(self, "settings", None)
         beep = True if settings is None else settings.nfc_beep()
         earcon = getattr(self, "earcon", None) if beep else None

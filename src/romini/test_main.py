@@ -409,24 +409,39 @@ def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) ->
     assert hosts == ["0.0.0.0"]
 
 
-def test_pi_core_watches_the_wake_pin_without_claiming_it(tmp_path: Path, monkeypatch) -> None:
+def test_pi_core_reads_the_latch_on_bcm_17(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.gpio import GPIO_HALT, RpiQuietSwitch
+
     data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "pi")
-    seen: dict[str, object] = {}
 
-    def run(*_args: object, **kwargs: object) -> None:
-        seen.update(kwargs)
+    class Gpio:
+        BCM = 11
+        OUT = 0
+        IN = 1
+        HIGH = 1
+        LOW = 0
+        PUD_UP = 2
+        setups: list[tuple[int, int]] = []
 
-    def reader() -> bool:
-        return False
+        def setmode(self, mode: int) -> None:
+            return
 
-    monkeypatch.setattr("romini.__main__.run_core_ticks", run)
-    monkeypatch.setattr("romini.__main__.GpioMemWakePin", lambda path="/dev/gpiomem": reader)
+        def setup(self, pin: int, mode: int, pull_up_down: int | None = None) -> None:
+            self.setups.append((pin, mode))
 
-    main(player=FakePlayer(), led=FakeLed(), nfc=FakeNfc(), ticks=[None])
+        def output(self, pin: int, value: int) -> None:
+            return
 
-    assert seen["wake_pin_low"] is reader
+        def input(self, pin: int) -> int:
+            return self.LOW
+
+    monkeypatch.setattr("romini.__main__.load_rpi_gpio", lambda: Gpio())
+    box = main(player=FakePlayer(), led=FakeLed())
+
+    assert isinstance(box.quiet_switch, RpiQuietSwitch)
+    assert (GPIO_HALT, Gpio.IN) in Gpio.setups
 
 
 def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> None:
@@ -439,17 +454,22 @@ def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> N
     class Gpio:
         BCM = 11
         OUT = 0
+        IN = 1
         HIGH = 1
         LOW = 0
+        PUD_UP = 2
 
         def setmode(self, mode: int) -> None:
             return
 
-        def setup(self, pin: int, mode: int) -> None:
+        def setup(self, pin: int, mode: int, pull_up_down: int | None = None) -> None:
             return
 
         def output(self, pin: int, value: int) -> None:
             return
+
+        def input(self, pin: int) -> int:
+            return self.LOW
 
     monkeypatch.setattr("romini.__main__.load_rpi_gpio", lambda: Gpio())
     box = main()
