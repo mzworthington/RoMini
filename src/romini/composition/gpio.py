@@ -49,16 +49,6 @@ class RpiGpioLedDriver:
         self._gpio.output(GPIO_LED, self._gpio.LOW)
 
 
-class RpiQuietSwitch:
-    def __init__(self, gpio: object) -> None:
-        self._gpio = gpio
-        gpio.setmode(gpio.BCM)
-        gpio.setup(GPIO_HALT, gpio.IN, pull_up_down=gpio.PUD_UP)
-
-    def is_open(self) -> bool:
-        return bool(self._gpio.input(GPIO_HALT))
-
-
 def apply_gpio_press(box: SimBox, pin: int) -> None:
     if pin == GPIO_VOL_UP:
         on_volume_up(mixer=box.mixer)

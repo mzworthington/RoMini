@@ -158,7 +158,7 @@ Screenshots: [dashboard.md](./dashboard.md). `http://<hostname>.local` on house 
 |------|------|
 | `romini-core.service` | NFC, mpv, GPIO, FastAPI; `enable`d so 5V always starts the player |
 | `romini-update.timer` | oneshot `python -m romini.composition.update` |
-| Power | Latching switch on BCM 17 (pin 11 to pin 9). HAT slide stays ON. No `gpio-shutdown`. Idle shelf does not halt |
+| Power | Momentary button on BCM 26 (pin 37) and BCM 3 (pin 5) to GND (pin 39). `gpio-shutdown` on BCM 26 halts. BCM 3 wakes. HAT slide stays ON. Idle shelf does not halt |
 
 Profiles `sim` / `pi`: [ADR-0004](./ADRs/0004-composition-root-profiles.md), [development.md](./development.md).
 
@@ -190,7 +190,7 @@ PR: `pre-commit --all-files` + `make test` (ruff, pytest). `main`: semantic-rele
 
 1. Domain + presence/tap slices on `sim` — done ([spec.md](./spec.md)).
 2. Breadboard: PN532 SPI + mpv into powered speaker — soak.
-3. Boot earcon on device — soak. Volume on the dashboard for the first box; physical vol± later. The panel switch on BCM 17 pauses and resumes. It does not cut 5V.
+3. Boot earcon on device — soak. Volume on the dashboard for the first box; physical vol± later. The momentary button halts through BCM 26 and wakes through BCM 3. It does not cut the HAT 5V.
 4. Dashboard + provision files + updater skip-while-playing — laptop complete; overlay on device.
 5. Birthday: `library/` + `catalog.yaml` + affixed Tags.
 

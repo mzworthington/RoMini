@@ -923,10 +923,11 @@ def test_core_ticks_do_not_power_off_an_idle_shelf(tmp_path: Path) -> None:
     assert halt.poweroffs == 0
 
 
-def test_core_ticks_pause_when_the_latch_opens(tmp_path: Path) -> None:
+def test_core_ticks_keep_playing_when_pin_11_opens(tmp_path: Path) -> None:
     data = write_frog_data(tmp_path)
     player = FakePlayer()
-    player.play(str(frog_story_path(data)), position_sec=3.0, uid=FROG_UID)
+    story = str(frog_story_path(data))
+    player.play(story, position_sec=3.0, uid=FROG_UID)
     box = load_sim_box(data_dir=data, player=player, led=FakeLed())
     halt = FakeHalt()
     box.halt = halt
@@ -940,71 +941,26 @@ def test_core_ticks_pause_when_the_latch_opens(tmp_path: Path) -> None:
 
     run_core_ticks(box, FakeNfc(uid=FROG_UID), data_dir=data, ticks=ticks(), sleep=lambda _: None)
 
-    assert player.pauses == 1
-    assert player.is_playing() is False
+    assert player.pauses == 0
+    assert player.is_playing() is True
     assert halt.poweroffs == 0
 
 
-def test_core_ticks_ignore_a_figure_while_the_latch_is_open(tmp_path: Path) -> None:
+def test_core_ticks_start_a_figure_while_pin_11_is_open(tmp_path: Path) -> None:
     data = write_frog_data(tmp_path)
     player = FakePlayer()
     box = load_sim_box(data_dir=data, player=player, led=FakeLed())
-    latch = Latch(open_switch=False)
-    box.quiet_switch = latch
+    box.quiet_switch = Latch(open_switch=True)
     nfc = FakeNfc()
 
     def ticks() -> object:
         yield None
-        latch.open_switch = True
         nfc._uid = FROG_UID
-        yield None
-
-    run_core_ticks(box, nfc, data_dir=data, ticks=ticks(), sleep=lambda _: None)
-
-    assert player.plays == []
-
-
-def test_core_ticks_play_a_figure_that_landed_while_the_latch_was_open(tmp_path: Path) -> None:
-    data = write_frog_data(tmp_path)
-    player = FakePlayer()
-    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
-    latch = Latch(open_switch=False)
-    box.quiet_switch = latch
-    nfc = FakeNfc()
-
-    def ticks() -> object:
-        yield None
-        latch.open_switch = True
-        nfc._uid = FROG_UID
-        yield None
-        latch.open_switch = False
         yield None
 
     run_core_ticks(box, nfc, data_dir=data, ticks=ticks(), sleep=lambda _: None)
 
     assert player.plays == [(str(frog_story_path(data)), 0.0)]
-
-
-def test_core_ticks_resume_when_the_latch_closes(tmp_path: Path) -> None:
-    data = write_frog_data(tmp_path)
-    player = FakePlayer()
-    story = str(frog_story_path(data))
-    player.play(story, position_sec=3.0, uid=FROG_UID)
-    box = load_sim_box(data_dir=data, player=player, led=FakeLed())
-    latch = Latch(open_switch=False)
-    box.quiet_switch = latch
-
-    def ticks() -> object:
-        yield None
-        latch.open_switch = True
-        yield None
-        latch.open_switch = False
-        yield None
-
-    run_core_ticks(box, FakeNfc(uid=FROG_UID), data_dir=data, ticks=ticks(), sleep=lambda _: None)
-
-    assert player.plays[-1] == (story, 3.0)
-    assert player.is_playing() is True
 
 
 def test_core_ticks_keep_the_shelf_awake_while_a_story_plays(tmp_path: Path) -> None:

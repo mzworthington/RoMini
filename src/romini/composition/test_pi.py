@@ -534,35 +534,6 @@ def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
     assert player.started_at() == datetime(2026, 9, 19, 22, 33)
 
 
-def test_quiet_switch_pulls_up_bcm_17_and_reads_an_open_latch() -> None:
-    from romini.composition.gpio import GPIO_HALT, RpiQuietSwitch
-
-    class Gpio:
-        BCM = 11
-        IN = 1
-        PUD_UP = 2
-        setups: list[tuple[int, int, int | None]] = []
-        level = 1
-
-        def setmode(self, mode: int) -> None:
-            return
-
-        def setup(self, pin: int, mode: int, pull_up_down: int | None = None) -> None:
-            self.setups.append((pin, mode, pull_up_down))
-
-        def input(self, pin: int) -> int:
-            assert pin == GPIO_HALT
-            return self.level
-
-    gpio = Gpio()
-    switch = RpiQuietSwitch(gpio)
-
-    assert gpio.setups == [(GPIO_HALT, Gpio.IN, Gpio.PUD_UP)]
-    assert switch.is_open() is True
-    gpio.level = 0
-    assert switch.is_open() is False
-
-
 def test_rpi_gpio_led_stays_on_while_awake_and_turns_off_for_sleep() -> None:
     from romini.composition.gpio import GPIO_LED, RpiGpioLedDriver
 

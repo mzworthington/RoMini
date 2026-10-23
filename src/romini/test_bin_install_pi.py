@@ -10,10 +10,12 @@ def test_install_pi_script_sets_pcm_volume_to_full_and_stores_it() -> None:
     assert "alsactl store" in script
 
 
-def test_install_pi_drops_gpio_shutdown_so_i2c_keeps_the_wake_pin() -> None:
+def test_install_pi_shuts_down_on_gpio26_and_drops_other_shutdown_pins() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "sudo sed -i '/^dtoverlay=gpio-shutdown/d'" in script
-    assert 'ensure_boot_line "dtoverlay=gpio-shutdown' not in script
+    assert 'ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=26"' in script
+    assert 'ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=3"' not in script
+    assert 'ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=17"' not in script
 
 
 def test_install_pi_script_blanks_unused_peripherals() -> None:

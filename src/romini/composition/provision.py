@@ -13,6 +13,7 @@ HDMI_BLANKING = "hdmi_blanking=2"
 DISABLE_BT = "dtoverlay=disable-bt"
 ACT_LED_OFF = "dtparam=act_led_trigger=none"
 PWR_LED_OFF = "dtparam=pwr_led_trigger=none"
+GPIO_SHUTDOWN = "dtoverlay=gpio-shutdown,gpio_pin=26"
 BOOT_CONFIG_LINES = (
     I2C_ARM,
     SPI_ARM,
@@ -23,6 +24,7 @@ BOOT_CONFIG_LINES = (
     DISABLE_BT,
     ACT_LED_OFF,
     PWR_LED_OFF,
+    GPIO_SHUTDOWN,
 )
 
 

@@ -423,6 +423,6 @@ No tests exist yet. Design should **add** unit/slice cases for every scenario ab
 - Player aggregates and ports as in [architecture.md](./architecture.md).
 - SQLite WAL: playback position, volume, `play_mode`, and a **cache** of the catalog. Catalog YAML is source of truth for Tag → Track ([library-catalog.md](./library-catalog.md), [ADR-0007](./ADRs/0007-yaml-catalog-sqlite-session.md)).
 - Paths relative to the data volume Library directory.
-- `pi` pins: latching quiet switch on BCM 17 (physical pin 11) to GND (physical pin 9). HAT OFF/ON slide stays ON. Closed resumes; open pauses. No `gpio-shutdown` overlay. Pin 5 stays the UPS I2C clock. Vol− 22, vol+ 23, play/pause 24 are later buttons ([hardware.md](./hardware.md)). Volume for the first box is set on the dashboard.
+- `pi` pins: momentary button, one leg on GND (physical pin 39), the other split to BCM 26 (physical pin 37) and BCM 3 (physical pin 5). `dtoverlay=gpio-shutdown,gpio_pin=26` halts the running Pi. The same press pulls BCM 3 low and wakes a halted Pi. HAT OFF/ON slide stays ON. Pin 11 is unused. Vol− 22, vol+ 23, play/pause 24 are later buttons ([hardware.md](./hardware.md)). Volume for the first box is set on the dashboard.
 - Overlay + `romini-data` before any box can be yanked; bench may stay read-write.
 - Ready earcon ships **in the wheel**, not in `catalog.yaml`.

@@ -26,11 +26,11 @@ sudo reboot
 
 ## 3. Power switch and lamp
 
-Leave the UPS HAT (D) **OFF/ON** slide at **ON**. The panel control is a **latching** switch from **physical pin 11 (BCM 17)** to **physical pin 9 (GND)**. Closed is awake. Open pauses and ignores a new figure. Closing it again resumes the story that was on. The first box leaves the LED ring unwired.
+Leave the UPS HAT (D) **OFF/ON** slide at **ON**. The panel control is a **momentary** button. One leg to **physical pin 39 (GND)**. The other leg splits to **physical pin 37 (BCM 26)** and **physical pin 5 (BCM 3)**. Press and release to halt. Press and release again to boot. Do not hold it through the boot. Move any wire off pin 11. The first box leaves the LED ring unwired.
 
 Leave **physical pin 5 (BCM 3)** free. That pin is the UPS I2C clock. Vol− BCM 22, vol+ BCM 23, play BCM 24 are later buttons.
 
-`bin/install-pi` removes any `dtoverlay=gpio-shutdown` line. The latch is read by the player, with an internal pull-up. An unwired pin 11 stays awake until the switch has been closed once.
+`bin/install-pi` writes `dtoverlay=gpio-shutdown,gpio_pin=26` and removes a shutdown overlay on any other pin. The kernel owns that button. The player does not read it. A later idle update does the same and reboots when the boot file changes.
 
 ## 4. Speaker
 
@@ -73,7 +73,7 @@ Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=
 | Brown-out | PSU ≥3A |
 | No sound | Aux cable, ALSA not HDMI-only, speaker powered |
 | Uploads vanish | Overlay on without `romini-data` |
-| Stories keep playing with the switch open | Pin 11 must reach pin 9 when the switch is closed, and the player must be the release that reads BCM 17. Pin 5 is I2C |
+| Press does not halt | Pin 37 to the button, `dtoverlay=gpio-shutdown,gpio_pin=26`, reboot. Pin 5 stays the other leg so a later press can boot |
 | Catalog ignored | `catalog.yaml` on `romini-data`, UID hex, MP3 under `library/` |
 | OTA skipped | Track is playing (mpv IPC) |
 | `Permission denied` on venv | Tree still root-owned |

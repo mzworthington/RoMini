@@ -409,12 +409,11 @@ def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) ->
     assert hosts == ["0.0.0.0"]
 
 
-def test_pi_core_reads_the_latch_on_bcm_17(tmp_path: Path, monkeypatch) -> None:
-    from romini.composition.gpio import GPIO_HALT, RpiQuietSwitch
-
+def test_pi_core_leaves_gpio26_and_gpio3_free_for_shutdown_and_the_ups(tmp_path: Path, monkeypatch) -> None:
     data = write_empty_data(tmp_path)
     monkeypatch.setenv("ROMINI_DATA", str(data))
     monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    claimed: list[int] = []
 
     class Gpio:
         BCM = 11
@@ -423,13 +422,12 @@ def test_pi_core_reads_the_latch_on_bcm_17(tmp_path: Path, monkeypatch) -> None:
         HIGH = 1
         LOW = 0
         PUD_UP = 2
-        setups: list[tuple[int, int]] = []
 
         def setmode(self, mode: int) -> None:
             return
 
         def setup(self, pin: int, mode: int, pull_up_down: int | None = None) -> None:
-            self.setups.append((pin, mode))
+            claimed.append(pin)
 
         def output(self, pin: int, value: int) -> None:
             return
@@ -440,8 +438,10 @@ def test_pi_core_reads_the_latch_on_bcm_17(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("romini.__main__.load_rpi_gpio", lambda: Gpio())
     box = main(player=FakePlayer(), led=FakeLed())
 
-    assert isinstance(box.quiet_switch, RpiQuietSwitch)
-    assert (GPIO_HALT, Gpio.IN) in Gpio.setups
+    assert getattr(box, "quiet_switch", None) is None
+    assert 26 not in claimed
+    assert 17 not in claimed
+    assert 3 not in claimed
 
 
 def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> None:

@@ -9,7 +9,7 @@ Domain talks ports; this file is the `pi` profile. Software: [architecture.md](.
 | Computer | Raspberry Pi 4 Model B **4GB** | [Pi Hut](https://thepihut.com/products/raspberry-pi-4-model-b?variant=20064052740158) |
 | NFC reader | Waveshare **PN532 NFC HAT** | [Pi Hut](https://thepihut.com/products/nfc-hat-for-raspberry-pi-pn532) · [wiki](https://www.waveshare.com/wiki/PN532_NFC_HAT) |
 | Figures | **NTAG203** clear tags (UID only) | [Pi Hut](https://thepihut.com/products/13-56mhz-rfid-nfc-clear-tag-ntag203-chip) |
-| Power + lamp | 16mm metal **latching** switch, **blue LED ring** | [Pi Hut](https://thepihut.com/products/rugged-metal-pushbutton-with-blue-led-ring) (same family; contact must be latching, not momentary) |
+| Power + lamp | 16mm metal **momentary** switch, **blue LED ring** | [Pi Hut](https://thepihut.com/products/rugged-metal-pushbutton-with-blue-led-ring) (same family; contact must be momentary, not latching) |
 | UPS | Waveshare **21700 UPS HAT (D)** (two 21700 cells, not included) | [Pi Hut](https://thepihut.com/products/21700-ups-hat-d-for-raspberry-pi-4-3) · [wiki](https://www.waveshare.com/wiki/UPS_HAT_(D)) |
 | Volume + play | **Three more** 16mm momentaries (LED optional) — later; first box is the power switch only | same switch family |
 | Audio | **Powered speaker with aux/amp jack** (household choice) | not the passive 4Ω pair as the amp |
@@ -31,7 +31,7 @@ flowchart TB
   ntag["NTAG203"] --> hat["PN532 SPI"]
   hat --> pi["Pi 4B 4GB"]
   ups["UPS HAT D INA219"] --> pi
-  pwr["Latching switch pin 11 to pin 9"] --> pi
+  pwr["Momentary button pins 37 and 5 to pin 39"] --> pi
   ups -->|"5V stays on"| pi
   vol["Vol+ Vol- (later)"] --> pi
   play["Play/pause (later)"] --> pi
@@ -47,7 +47,7 @@ flowchart TB
 
 Pogo pins on the **underside** of the Pi. INA219 on i2c-1 address `0x43` (MCU also appears at `0x2D`). Charge on the dashboard is estimated from pack voltage: 3.0 V empty, 4.2 V full, clamped. Charge the pack through the HAT USB-C, not the Pi USB-C. `i2cdetect -y 1` should show **43** (and **2d**), not the PN532.
 
-Leave the silk-screen **OFF/ON** slide at **ON** so the pogos keep feeding 5V. The panel latching switch is the quiet control: one terminal on **physical pin 11 (BCM 17)**, the other on **physical pin 9 (GND)**. Closed is awake. Open pauses playback and ignores new figures. Closing it again resumes the story that was playing. The player enables the pin’s pull-up, and it treats an unwired pin as awake until it has seen the switch closed once. Do not use the **BOOT** button pads. Do not land the switch on pin 5. Pin 2 and pin 4 are paralleled with the pogo 5V feed, so opening them does not cut power.
+Leave the silk-screen **OFF/ON** slide at **ON** so the pogos keep feeding 5V. The panel control is a **momentary** button, not a latch you hold closed. One leg goes to **physical pin 39 (GND)**. The other leg splits to **physical pin 37 (BCM 26)** and **physical pin 5 (BCM 3)**. A press while the Pi is running asks the kernel to halt the whole machine. A press while it is halted pulls BCM 3 low and the firmware boots it again. Let go. Holding the button through boot can shut it straight back down. BCM 3 stays the UPS I2C clock while the Pi is running. The overlay debounce ignores those short clock pulses. Do not use pin 11. Do not use the **BOOT** button pads. Pin 2 and pin 4 are paralleled with the pogo 5V feed, so opening them does not cut power. The ring can stay lit after halt because the HAT still feeds 5V. The CPU, radio, and player are stopped.
 
 ### Audio
 
@@ -57,8 +57,8 @@ Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **B
 
 | Function | BCM | Board pin | Notes |
 |----------|-----|-----------|--------|
-| Quiet switch | 17 | 11 | Latching to pin 9 (GND). Closed = awake. Open = pause. Internal pull-up. Not pin 5 |
-| I2C clock (UPS) | 3 | 5 | Leave free. The UPS clock lives here |
+| Shutdown | 26 | 37 | `dtoverlay=gpio-shutdown,gpio_pin=26`. Momentary to pin 39 (GND). Press halts the Pi |
+| Wake | 3 | 5 | Same momentary also lands here. Only this pin boots a halted Pi. UPS I2C clock while running |
 | Power LED + | — | 1 (3.3V) | Optional. LED − to pin 6 (GND). The first box leaves the ring unwired |
 | Analogue audio left/right | 18 / 19 | 12 / 35 | `audremap` PWM. Not free GPIO |
 | Volume down | 22 | 15 | Internal pull-up. Wired later; v1 volume is the dashboard |
@@ -91,4 +91,4 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 | Battery | UPS HAT (D) INA219 `0x43`; `sim` omits the reading |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |
-| Power | Latching switch on BCM 17 (pin 11) to GND (pin 9). HAT slide stays ON. Open pauses; closed resumes. No `gpio-shutdown`. Dashboard and bedtime `poweroff` still halt, and this switch cannot boot a halted Pi |
+| Power | Momentary button from pin 39 (GND) to pin 37 (BCM 26) and pin 5 (BCM 3). `dtoverlay=gpio-shutdown,gpio_pin=26` halts the Pi. The same press wakes it. HAT slide stays ON. Pin 11 is unused. Dashboard and bedtime `poweroff` still halt |

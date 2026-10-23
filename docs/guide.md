@@ -203,7 +203,7 @@ sudo reboot
 
 ### 3.4 Power switch, lamp, and speaker
 
-Leave the UPS slide **ON**. Latching panel switch from **physical pin 11 (BCM 17)** to **physical pin 9 (GND)**. Closed is awake. Open pauses. The first box leaves the LED ring unwired. Leave pin 5 for the UPS I2C clock. Vol− **22**, vol+ **23**, play **24** are later buttons.
+Leave the UPS slide **ON**. Momentary panel button: one leg on **physical pin 39 (GND)**, the other leg split to **physical pin 37 (BCM 26)** and **physical pin 5 (BCM 3)**. Press and release to halt. Press and release again to boot. The first box leaves the LED ring unwired. Take the button off pin 11. Vol− **22**, vol+ **23**, play **24** are later buttons.
 
 ```bash
 sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
@@ -211,11 +211,11 @@ sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
-That snippet is SPI, I2C, and `dtoverlay=audremap,pins_18_19`. Analogue audio leaves the AV jack on BCM 18 and 19. The quiet switch is BCM 17, read by the player. `bin/install-pi` deletes any `dtoverlay=gpio-shutdown` line and reboots when the boot file changes. A later idle update does the same.
+That snippet is SPI, I2C, analogue audio, and `dtoverlay=gpio-shutdown,gpio_pin=26`. Analogue audio leaves the AV jack on BCM 18 and 19. The kernel watches BCM 26. `bin/install-pi` keeps that shutdown line, deletes a shutdown overlay on any other pin, and reboots when the boot file changes. A later idle update does the same.
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 
-**Core loop today** polls NFC + catalog every 250 ms and leaves the reader field on, so a figure is seen as soon as it is in range. Each tick also reads the pin 11 latch. After the switch has been closed once, opening it pauses playback and a figure on the coil does not start. Closing it resumes that story. An empty shelf does not `poweroff`. Bedtime and the dashboard still can. Vol± and play (`apply_gpio_press`) are not in the loop yet.
+**Core loop today** polls NFC + catalog every 250 ms and leaves the reader field on, so a figure is seen as soon as it is in range. It does not read the power button. The kernel halts on that press, which stops the story and the rest of the Pi. An empty shelf does not `poweroff`. Bedtime and the dashboard still can. Vol± and play (`apply_gpio_press`) are not in the loop yet.
 
 ### 3.5 Disk (before yank-risk)
 
@@ -298,10 +298,10 @@ sudo systemctl restart romini-core.service
 | `Permission denied` on venv | `chown` `/var/lib/romini` to the SSH user before `install-pi` |
 | bind `0.0.0.0:80` errno 13 | Recopy `romini-core.service` (needs `AmbientCapabilities`) and `daemon-reload` |
 | Uploads vanish | Overlay on without `romini-data` |
-| Switch open and a story still plays | Pin 11 to pin 9, HAT slide ON, and a player build that reads BCM 17. Pin 5 is the UPS clock |
+| Press does not halt | Button from pin 39 to pin 37 and pin 5. `dtoverlay=gpio-shutdown,gpio_pin=26` in the boot file, then reboot. No wire on pin 11 |
 | Catalog ignored | `catalog.yaml` on the data volume, UID hex, file under `library/` |
 | OTA while a story plays | Expected skip until idle |
-| Quiet switch silent | Pin 11 is in the core loop. Vol± and play are not |
+| Halted Pi does not boot | Same button must also reach pin 5. Hold it about a second, then let go. The HAT slide stays ON |
 
 Device timings (500 ms play start, 20 s boot to ready) are soak checks, not laptop pytest.
 
