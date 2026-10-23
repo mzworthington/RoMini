@@ -12,6 +12,8 @@ HDMI_BLANKING = "hdmi_blanking=2"
 DISABLE_BT = "dtoverlay=disable-bt"
 ACT_LED_OFF = "dtparam=act_led_trigger=none"
 PWR_LED_OFF = "dtparam=pwr_led_trigger=none"
+# Pin 5 (BCM 3). A momentary short to ground halts while running and boots after poweroff.
+GPIO_SHUTDOWN = "dtoverlay=gpio-shutdown,gpio_pin=3"
 BOOT_CONFIG_LINES = (
     I2C_ARM,
     SPI_ARM,
@@ -22,6 +24,7 @@ BOOT_CONFIG_LINES = (
     DISABLE_BT,
     ACT_LED_OFF,
     PWR_LED_OFF,
+    GPIO_SHUTDOWN,
 )
 
 
@@ -62,7 +65,11 @@ def apply_boot_config(path: Path, lines: tuple[str, ...] = BOOT_CONFIG_LINES) ->
 
 
 def merge_boot_config(config_text: str, lines: tuple[str, ...] = BOOT_CONFIG_LINES) -> str:
-    kept = [line for line in config_text.splitlines() if not line.strip().startswith("dtoverlay=gpio-shutdown")]
+    kept = [
+        line
+        for line in config_text.splitlines()
+        if line.strip() == GPIO_SHUTDOWN or not line.strip().startswith("dtoverlay=gpio-shutdown")
+    ]
     body = "\n".join(kept)
     if body:
         body += "\n"

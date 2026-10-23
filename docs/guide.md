@@ -203,7 +203,7 @@ sudo reboot
 
 ### 3.4 Power switch, lamp, and speaker
 
-Power off at the HAT slide before wiring. Latching panel switch across the UPS HAT (D) **OFF/ON** slide’s two terminals. Leave that slide at **OFF**. LED ring **+ to physical pin 1 (3.3V)**, **− to physical pin 6 (GND)**. The ring follows the rail: lit while the box has power, dark when the switch cuts it. Do not use BCM 27, pin 11, or pin 5. Pin 5 is the UPS I2C clock. Vol− **22**, vol+ **23**, play **24** are later buttons.
+Power off at the HAT slide before wiring. Latching panel switch across the UPS HAT (D) **OFF/ON** slide’s two terminals. Leave that slide at **OFF**. LED ring **+ to physical pin 1 (3.3V)**, **− to physical pin 6 (GND)**. The ring follows the rail: lit while the box has power, dark when the switch cuts it. A momentary button from **pin 5 (SCL)** to **GND** sleeps and wakes: press to halt, press again after poweroff to boot. Do not use BCM 27 or pin 11 for that button. Vol− **22**, vol+ **23**, play **24** are later buttons.
 
 ```bash
 sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
@@ -211,7 +211,7 @@ sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
-That snippet is SPI, I2C, and `dtoverlay=audremap,pins_18_19` so analogue audio leaves the AV jack and comes out on BCM 18 and 19. It does not install `gpio-shutdown`. `bin/install-pi` deletes any `dtoverlay=gpio-shutdown` line already on the card and reboots when the boot file changes. A later idle update does the same.
+That snippet is SPI, I2C, `dtoverlay=audremap,pins_18_19`, and `dtoverlay=gpio-shutdown,gpio_pin=3`. Analogue audio leaves the AV jack on BCM 18 and 19. Pin 5 sleeps and wakes. `bin/install-pi` drops any other `gpio-shutdown` pin and reboots when the boot file changes. A later idle update does the same.
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 

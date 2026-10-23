@@ -158,7 +158,7 @@ Screenshots: [dashboard.md](./dashboard.md). `http://<hostname>.local` on house 
 |------|------|
 | `romini-core.service` | NFC, mpv, GPIO, FastAPI; `enable`d so 5V always starts the player |
 | `romini-update.timer` | oneshot `python -m romini.composition.update` |
-| Power | Latching switch across the HAT OFF/ON slide. No `gpio-shutdown` overlay |
+| Power | Latching switch across the HAT OFF/ON slide cuts 5V. Momentary pin 5 to GND sleeps and wakes (`gpio-shutdown` on GPIO 3) |
 
 Profiles `sim` / `pi`: [ADR-0004](./ADRs/0004-composition-root-profiles.md), [development.md](./development.md).
 

@@ -57,9 +57,9 @@ Analogue PWM is remapped off the AV jack onto **BCM 18** (header pin 12) and **B
 
 | Function | BCM | Board pin | Notes |
 |----------|-----|-----------|--------|
-| Power switch | — | HAT OFF/ON slide, both terminals | Latching. Slide stays OFF. Not a GPIO. Not pin 11, not pin 5 |
-| Power LED + | — | 1 (3.3V) | LED − to pin 6 (GND). On while the rail is up, off when the switch cuts power. Built-in resistor is fine at 3.3V |
-| I2C clock (UPS) | 3 | 5 | Leave free. Do not land the power switch here |
+| Hard power | — | HAT OFF/ON slide, both terminals | Latching. Slide stays OFF. Cuts 5V. Not a GPIO |
+| Sleep / wake | 3 | 5 (SCL) | Momentary to GND. Press while running halts. Press after `poweroff` boots. A held short glitches the UPS clock |
+| Power LED + | — | 1 (3.3V) | LED − to pin 6 (GND). On while the rail is up. Built-in resistor is fine at 3.3V |
 | Analogue audio left/right | 18 / 19 | 12 / 35 | `audremap` PWM. Not free GPIO |
 | Volume down | 22 | 15 | Internal pull-up. Wired later; v1 volume is the dashboard |
 | Volume up | 23 | 16 | Wired later |
@@ -91,4 +91,4 @@ HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker mag
 | Battery | UPS HAT (D) INA219 `0x43`; `sim` omits the reading |
 | Player | mpv + ALSA analogue |
 | Mixer | ALSA + ceiling |
-| Power | Latching switch across the HAT OFF/ON slide (slide left OFF). Software `poweroff` (dashboard, shelf timer) is separate and does not cut the HAT output |
+| Power | Latching switch across the HAT OFF/ON slide (slide left OFF) cuts 5V. Momentary pin 5 to GND sleeps and wakes. Software `poweroff` does not cut the HAT output; the same button boots the halted Pi |

@@ -98,8 +98,8 @@ ensure_boot_line() {
   printf '%s\n' "${line}" | sudo tee -a "${BOOT}" >/dev/null
   BOOT_CHANGED=1
 }
-if [ -f "${BOOT}" ] && grep -q '^dtoverlay=gpio-shutdown' "${BOOT}"; then
-  sudo sed -i '/^dtoverlay=gpio-shutdown/d' "${BOOT}"
+if [ -f "${BOOT}" ] && grep '^dtoverlay=gpio-shutdown' "${BOOT}" | grep -qxvF "dtoverlay=gpio-shutdown,gpio_pin=3"; then
+  sudo sed -i '/^dtoverlay=gpio-shutdown/{/^dtoverlay=gpio-shutdown,gpio_pin=3$/!d;}' "${BOOT}"
   BOOT_CHANGED=1
 fi
 ensure_boot_line "dtparam=i2c_arm=on"
@@ -111,6 +111,7 @@ ensure_boot_line "hdmi_blanking=2"
 ensure_boot_line "dtoverlay=disable-bt"
 ensure_boot_line "dtparam=act_led_trigger=none"
 ensure_boot_line "dtparam=pwr_led_trigger=none"
+ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=3"
 if amixer -c Headphones scontents 2>/dev/null | grep -q "Simple mixer control 'PCM'"; then
   amixer -c Headphones sset PCM 100%
   sudo alsactl store
