@@ -534,6 +534,22 @@ def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
     assert player.started_at() == datetime(2026, 9, 19, 22, 33)
 
 
+def test_gpio_mem_wake_pin_sees_a_held_clock_line(tmp_path: Path) -> None:
+    from romini.composition.gpio import GpioMemWakePin
+
+    path = tmp_path / "gpiomem"
+    path.write_bytes(bytes(4096))
+
+    assert GpioMemWakePin(str(path))() is True
+
+
+def test_wake_pin_is_low_when_the_i2c_clock_bit_is_clear() -> None:
+    from romini.composition.gpio import wake_pin_is_low
+
+    assert wake_pin_is_low(0) is True
+    assert wake_pin_is_low(1 << 3) is False
+
+
 def test_rpi_gpio_led_stays_on_while_awake_and_turns_off_for_sleep() -> None:
     from romini.composition.gpio import GPIO_LED, RpiGpioLedDriver
 

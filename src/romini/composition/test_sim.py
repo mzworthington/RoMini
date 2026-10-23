@@ -928,6 +928,24 @@ def test_core_ticks_leave_the_status_light_on_when_the_shelf_sleeps(
     assert order == ["poweroff"]
 
 
+def test_core_ticks_power_off_when_the_wake_pin_is_held_low(tmp_path: Path) -> None:
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    halt = FakeHalt()
+    box.halt = halt
+
+    run_core_ticks(
+        box,
+        FakeNfc(),
+        data_dir=data,
+        ticks=[None],
+        sleep=lambda _: None,
+        wake_pin_low=lambda: True,
+    )
+
+    assert halt.poweroffs == 1
+
+
 def test_core_ticks_power_off_when_the_shelf_has_been_idle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("romini.composition.loop.SHELF_HALT_SEC", 0.5)
     data = write_empty_data(tmp_path)

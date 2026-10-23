@@ -33,6 +33,7 @@ def run_core_ticks(
     data_dir: Path,
     ticks: Iterable[object],
     sleep: Callable[[float], None] = wall_sleep,
+    wake_pin_low: Callable[[], bool] | None = None,
 ) -> None:
     previous_uid: str | None = None
     previous_mtime: float | None = None
@@ -51,6 +52,9 @@ def run_core_ticks(
             idle_sec = 0.0
         previous_uid = seen
         previous_mtime = poll_catalog(box, data_dir=data_dir, previous_mtime=previous_mtime)
+        if wake_pin_low is not None and wake_pin_low():
+            box.halt.poweroff()
+            return
         release_armed_bedtime(box)
         step = NFC_POLL_SEC
         if seen is None and not box.assign_mode and not box.player.is_playing():

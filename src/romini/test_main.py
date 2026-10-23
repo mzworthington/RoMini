@@ -409,6 +409,26 @@ def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) ->
     assert hosts == ["0.0.0.0"]
 
 
+def test_pi_core_watches_the_wake_pin_without_claiming_it(tmp_path: Path, monkeypatch) -> None:
+    data = write_empty_data(tmp_path)
+    monkeypatch.setenv("ROMINI_DATA", str(data))
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    seen: dict[str, object] = {}
+
+    def run(*_args: object, **kwargs: object) -> None:
+        seen.update(kwargs)
+
+    def reader() -> bool:
+        return False
+
+    monkeypatch.setattr("romini.__main__.run_core_ticks", run)
+    monkeypatch.setattr("romini.__main__.GpioMemWakePin", lambda path="/dev/gpiomem": reader)
+
+    main(player=FakePlayer(), led=FakeLed(), nfc=FakeNfc(), ticks=[None])
+
+    assert seen["wake_pin_low"] is reader
+
+
 def test_romini_core_main_pi_defaults_gpio_led(tmp_path: Path, monkeypatch) -> None:
     from romini.composition.gpio import GpioLed
 

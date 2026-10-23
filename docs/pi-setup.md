@@ -30,9 +30,9 @@ Power off at the HAT slide before wiring. The panel control is a **latching** sw
 
 LED ring: **+ to physical pin 1 (3.3V)**, **− to physical pin 6 (GND)**. The ring lights while the 3.3V rail is up and goes dark as soon as the switch cuts power. It is not BCM 27.
 
-Sleep and wake is a **momentary** button from **physical pin 5 (BCM 3, SCL)** to **GND**. Press while the box is running and it halts. Press again after `systemctl poweroff` and the Pi boots. The HAT slide stays the hard 5V cut. Holding the button grounds the UPS I2C clock for that moment. Vol− BCM 22, vol+ BCM 23, play BCM 24 are later buttons.
+Sleep and wake is a **momentary** button from **physical pin 5 (BCM 3, SCL)** to **GND**. Press while the box is running and the player halts. Press again after `systemctl poweroff` and the Pi boots. The HAT slide stays the hard 5V cut. Holding the button grounds the UPS I2C clock for that moment. Vol− BCM 22, vol+ BCM 23, play BCM 24 are later buttons.
 
-`bin/install-pi` writes `dtoverlay=gpio-shutdown,gpio_pin=3` and reboots when the boot file changes.
+`bin/install-pi` removes any `dtoverlay=gpio-shutdown` line. That overlay cannot claim pin 5 while the UPS clock is using it. The running player watches the pin level instead.
 
 ## 4. Speaker
 

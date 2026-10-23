@@ -211,7 +211,7 @@ sudo tee -a /boot/firmware/config.txt < /tmp/romini-provision/config.txt.romini
 # generate snippets: venv python -m romini.composition.provision /tmp/romini-provision
 ```
 
-That snippet is SPI, I2C, `dtoverlay=audremap,pins_18_19`, and `dtoverlay=gpio-shutdown,gpio_pin=3`. Analogue audio leaves the AV jack on BCM 18 and 19. Pin 5 sleeps and wakes. `bin/install-pi` drops any other `gpio-shutdown` pin and reboots when the boot file changes. A later idle update does the same.
+That snippet is SPI, I2C, and `dtoverlay=audremap,pins_18_19`. Analogue audio leaves the AV jack on BCM 18 and 19. Pin 5 sleeps and wakes, but the player reads the level itself. `gpio-shutdown` cannot take the pin from the UPS clock, so `bin/install-pi` deletes that overlay and reboots when the boot file changes. A later idle update does the same.
 
 AV jack → speaker aux. `speaker-test -c 2` or `mpv` at low volume. Software volume ceiling still applies.
 

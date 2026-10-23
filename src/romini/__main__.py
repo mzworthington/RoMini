@@ -11,7 +11,7 @@ from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.catalog import run_catalog_ticks
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard, start_dashboard
 from romini.composition.dashboard.power import LocalPower, LocalUpdate
-from romini.composition.gpio import GpioLed, RpiGpioLedDriver
+from romini.composition.gpio import GpioLed, GpioMemWakePin, RpiGpioLedDriver
 from romini.composition.host_power import HostPower
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
@@ -256,8 +256,20 @@ def main(
         nfc = nfc_opener()
     if lines is not None:
         run_sim_lines(box, lines)
+    wake_pin_low = None
+    if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
+        try:
+            wake_pin_low = GpioMemWakePin()
+        except OSError:
+            log.warning("wake pin unreadable", exc_info=True)
     if nfc is not None and ticks is not None:
-        run_core_ticks(box, nfc, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=ticks)
+        run_core_ticks(
+            box,
+            nfc,
+            data_dir=Path(os.environ["ROMINI_DATA"]),
+            ticks=ticks,
+            wake_pin_low=wake_pin_low,
+        )
     if catalog_ticks is not None:
         run_catalog_ticks(box, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=catalog_ticks)
     return box
