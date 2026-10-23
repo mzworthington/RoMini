@@ -297,6 +297,56 @@ def test_dashboard_scan_dock_matches_reader_card_and_pulses_only_while_registeri
     assert "Stop registering" in listening_scan
 
 
+def test_dashboard_scan_icon_goes_green_when_a_new_tag_is_registered() -> None:
+    from datetime import UTC, datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+    from romini.features.audit.record import AuditEntry
+
+    class Listening:
+        assign_mode = True
+
+    waiting = MemoryAuditLog()
+    waiting.record(
+        AuditEntry(
+            happened_at=datetime(2026, 10, 23, 22, 0, tzinfo=UTC),
+            action="register",
+            summary="Register on",
+            headline="Register on",
+        )
+    )
+    waiting_html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=Listening(), audit=waiting))
+        .get("/figures")
+        .text
+    )
+    waiting_scan = waiting_html.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
+    assert "is-registered" not in waiting_scan
+
+    saved = MemoryAuditLog()
+    saved.record(
+        AuditEntry(
+            happened_at=datetime(2026, 10, 23, 22, 1, tzinfo=UTC),
+            action="register",
+            summary="Registered 04aabbccddeeff",
+            headline="Figure registered",
+        )
+    )
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=Listening(), audit=saved))
+        .get("/figures")
+        .text
+    )
+    scan = html.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
+    assert "is-registered" in scan
+    assert "Figure registered" in scan
+    css = (Path(__file__).parent / "dashboard" / "templates" / "css" / "studio.css").read_text()
+    rule = css.split(".scan-target.is-registered .scan-mark", 1)[1].split("}", 1)[0]
+    assert "#1f7a3a" in rule
+
+
 def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 

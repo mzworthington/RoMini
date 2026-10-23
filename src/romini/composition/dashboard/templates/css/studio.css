@@ -139,6 +139,13 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+.scan-target.is-registered .scan-mark {
+  background: #e3f3e6;
+  color: #1f7a3a;
+}
+.scan-target.is-registered .scan-ping { background: rgba(31, 122, 58, 0.28); }
+.scan-target.is-registered .scan-status { color: #1f7a3a; }
+.scan-dock:has(.is-registered) .scan-live { background: #1f7a3a; }
 .scan-target.is-registering .scan-ping { animation: scan-ping 1.6s ease-out infinite; }
 .scan-dock:has(.is-registering) .scan-live { animation: scan-dot 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {

@@ -57,12 +57,13 @@
 <span class="scan-live" aria-hidden="true"></span>
 </div>
 
-<div class="scan-target{% if assign_mode %} is-registering{% endif %}">
+{% set just_registered = assign_mode and audit_entries and audit_entries[0].headline == 'Figure registered' %}
+<div class="scan-target{% if assign_mode %} is-registering{% endif %}{% if just_registered %} is-registered{% endif %}">
 <div class="scan-mark" aria-hidden="true">
 <span class="scan-ping"></span>
 <svg viewBox="0 0 24 24"><path d="M8.2 8.4a5.2 5.2 0 0 1 0 7.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11.1 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 3.8a11.6 11.6 0 0 1 0 16.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
 </div>
-<p class="scan-status">Reader is Listening</p>
+<p class="scan-status">{% if just_registered %}Figure registered{% else %}Reader is Listening{% endif %}</p>
 <p class="hint">Place a figure on the box</p>
 </div>
 {% if register %}
