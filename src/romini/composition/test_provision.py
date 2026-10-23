@@ -62,6 +62,21 @@ def test_romini_core_service_can_read_the_system_journal() -> None:
     assert "SupplementaryGroups=systemd-journal" in ROMINI_CORE_SERVICE
 
 
+def test_updater_adds_gpio_so_the_running_player_can_read_the_wake_pin() -> None:
+    from romini.composition.provision import grant_gpio_to_player
+
+    unit = "[Service]\nSupplementaryGroups=systemd-journal\n"
+
+    assert grant_gpio_to_player(unit) == "[Service]\nSupplementaryGroups=systemd-journal gpio\n"
+    assert grant_gpio_to_player(grant_gpio_to_player(unit)) == grant_gpio_to_player(unit)
+
+
+def test_romini_core_service_can_read_the_wake_pin() -> None:
+    from romini.composition.provision import ROMINI_CORE_SERVICE
+
+    assert "SupplementaryGroups=systemd-journal gpio" in ROMINI_CORE_SERVICE
+
+
 def test_romini_core_starts_before_the_network_is_online() -> None:
     from romini.composition.provision import ROMINI_CORE_SERVICE, ROMINI_UPDATE_SERVICE
 

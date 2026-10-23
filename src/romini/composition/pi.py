@@ -23,7 +23,7 @@ def mpv_ipc_socket() -> str:
 
 class SystemdHalt:
     def poweroff(self) -> None:
-        subprocess.run(["systemctl", "poweroff"], check=False)
+        subprocess.run(["sudo", "-n", "systemctl", "poweroff"], check=False)
 
 
 class MpvPlayer:

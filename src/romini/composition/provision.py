@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -80,7 +81,7 @@ Description=RoMini player
 Type=simple
 User=pi
 Group=pi
-SupplementaryGroups=systemd-journal
+SupplementaryGroups=systemd-journal gpio
 WorkingDirectory=/var/lib/romini
 Environment=ROMINI_PROFILE=pi
 Environment=ROMINI_DATA=/var/lib/romini
@@ -165,6 +166,26 @@ def write_provision_files(dest: Path) -> None:
     (dest / "config.txt.romini").write_text(merge_boot_config(""))
 
 
+def grant_gpio_to_player(unit_text: str) -> str:
+    granted = "SupplementaryGroups=systemd-journal gpio"
+    if granted in unit_text:
+        return unit_text
+    return unit_text.replace("SupplementaryGroups=systemd-journal", granted, 1)
+
+
+def ensure_player_gpio(path: Path = Path("/etc/systemd/system/romini-core.service")) -> bool:
+    if not path.is_file():
+        return False
+    original = path.read_text()
+    updated = grant_gpio_to_player(original)
+    if updated == original:
+        return False
+    path.write_text(updated)
+    subprocess.run(["systemctl", "daemon-reload"], check=False)
+    subprocess.run(["systemctl", "restart", "romini-core"], check=False)
+    return True
+
+
 def boot_config_path() -> Path:
     firmware = Path("/boot/firmware/config.txt")
     if firmware.is_file():
@@ -178,6 +199,7 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "--apply-boot":
         if len(sys.argv) > 2:
             raise ValueError("refusing a boot config path from the command line")
+        ensure_player_gpio()
         raise SystemExit(10 if apply_boot_config(boot_config_path()) else 0)
     dest = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("provision")
     write_provision_files(dest)

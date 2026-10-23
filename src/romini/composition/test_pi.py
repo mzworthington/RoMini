@@ -15,7 +15,7 @@ def test_systemd_halt_runs_systemctl_poweroff(monkeypatch) -> None:
     monkeypatch.setattr("romini.composition.pi.subprocess.run", run)
     SystemdHalt().poweroff()
 
-    assert calls == [["systemctl", "poweroff"]]
+    assert calls == [["sudo", "-n", "systemctl", "poweroff"]]
 
 
 def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
