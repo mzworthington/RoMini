@@ -14,6 +14,7 @@ DISABLE_BT = "dtoverlay=disable-bt"
 ACT_LED_OFF = "dtparam=act_led_trigger=none"
 PWR_LED_OFF = "dtparam=pwr_led_trigger=none"
 GPIO_SHUTDOWN = "dtoverlay=gpio-shutdown,gpio_pin=26"
+INITIAL_TURBO = "initial_turbo=30"
 BOOT_CONFIG_LINES = (
     I2C_ARM,
     SPI_ARM,
@@ -24,6 +25,7 @@ BOOT_CONFIG_LINES = (
     DISABLE_BT,
     ACT_LED_OFF,
     PWR_LED_OFF,
+    INITIAL_TURBO,
     GPIO_SHUTDOWN,
 )
 
@@ -106,6 +108,18 @@ ROMINI_SUDOERS = """%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl restart romini
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff
 %sudo ALL=(root) NOPASSWD: /var/lib/romini/install/venv/bin/python -m romini.composition.provision --apply-boot
 """
+ROMINI_BOOT_CHIME_SERVICE = """[Unit]
+Description=RoMini boot chirp
+After=sound.target
+Before=romini-core.service
+
+[Service]
+Type=oneshot
+ExecStart=/var/lib/romini/install/venv/bin/python -m romini.features.boot.chime
+
+[Install]
+WantedBy=sound.target
+"""
 ROMINI_UPDATE_SERVICE = """[Unit]
 Description=RoMini GitHub Release updater
 After=network-online.target
@@ -156,6 +170,7 @@ def write_provision_files(dest: Path) -> None:
     systemd = dest / "systemd" / "system"
     systemd.mkdir(parents=True, exist_ok=True)
     (systemd / "romini-core.service").write_text(ROMINI_CORE_SERVICE)
+    (systemd / "romini-boot-chime.service").write_text(ROMINI_BOOT_CHIME_SERVICE)
     (systemd / "romini-update.service").write_text(ROMINI_UPDATE_SERVICE)
     (systemd / "romini-update.timer").write_text(ROMINI_UPDATE_TIMER)
     avahi = dest / "avahi" / "services"
@@ -173,6 +188,18 @@ def grant_gpio_to_player(unit_text: str) -> str:
     if granted in unit_text:
         return unit_text
     return unit_text.replace("SupplementaryGroups=systemd-journal", granted, 1)
+
+
+def ensure_boot_chime(directory: Path = Path("/etc/systemd/system")) -> bool:
+    if not (directory / "romini-core.service").is_file():
+        return False
+    path = directory / "romini-boot-chime.service"
+    if path.is_file() and path.read_text() == ROMINI_BOOT_CHIME_SERVICE:
+        return False
+    path.write_text(ROMINI_BOOT_CHIME_SERVICE)
+    subprocess.run(["systemctl", "daemon-reload"], check=False)
+    subprocess.run(["systemctl", "enable", "romini-boot-chime.service"], check=False)
+    return True
 
 
 def ensure_player_gpio(path: Path = Path("/etc/systemd/system/romini-core.service")) -> bool:
@@ -202,6 +229,7 @@ def main() -> None:
         if len(sys.argv) > 2:
             raise ValueError("refusing a boot config path from the command line")
         ensure_player_gpio()
+        ensure_boot_chime()
         raise SystemExit(10 if apply_boot_config(boot_config_path()) else 0)
     dest = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("provision")
     write_provision_files(dest)

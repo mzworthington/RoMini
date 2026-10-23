@@ -40,7 +40,7 @@ def test_romini_core_main_plays_a_chime_when_the_box_turns_on(tmp_path: Path, mo
     player = Chime()
     main(player=player, led=FakeLed())
 
-    assert player.chirps == ["romini/hello_romy.wav"]
+    assert player.chirps == ["romini/connect.mp3"]
 
 
 def test_romini_core_main_plays_a_chime_when_the_box_turns_off(tmp_path: Path, monkeypatch) -> None:
@@ -62,7 +62,7 @@ def test_romini_core_main_plays_a_chime_when_the_box_turns_off(tmp_path: Path, m
 
     box.halt.poweroff()
 
-    assert player.chirps == ["romini/halt.wav"]
+    assert player.chirps == ["romini/disconnect.mp3"]
 
 
 def test_romini_core_main_plays_a_chime_when_the_process_is_stopped(tmp_path: Path, monkeypatch) -> None:
@@ -99,7 +99,7 @@ def test_romini_core_main_plays_a_chime_when_the_process_is_stopped(tmp_path: Pa
     finally:
         signal.signal(signal.SIGTERM, previous)
 
-    assert player.chirps == ["romini/halt.wav"]
+    assert player.chirps == ["romini/disconnect.mp3"]
     assert led.went_out is False
 
 
@@ -156,7 +156,7 @@ def test_romini_core_main_plays_the_shutdown_chime_once(tmp_path: Path, monkeypa
     finally:
         signal.signal(signal.SIGTERM, previous)
 
-    assert player.chirps == ["romini/halt.wav"]
+    assert player.chirps == ["romini/disconnect.mp3"]
 
 
 def test_romini_core_main_does_not_start_http_unless_port_set(tmp_path: Path, monkeypatch) -> None:
@@ -859,7 +859,7 @@ def test_pi_boot_starts_the_ready_chime_after_the_dashboard_is_listening(tmp_pat
             if callable(close):
                 close()
 
-    assert order.index("dashboard") < order.index("romini/hello_romy.wav")
+    assert order.index("dashboard") < order.index("romini/connect.mp3")
 
 
 def test_pi_boot_binds_the_dashboard_before_opening_the_ups(tmp_path: Path, monkeypatch) -> None:

@@ -22,6 +22,50 @@ def test_romini_data_fstab_line_has_label_and_no_nofail() -> None:
     assert "nofail" not in ROMINI_DATA_FSTAB
 
 
+def test_updater_installs_the_boot_chirp_beside_the_player(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.provision import ROMINI_BOOT_CHIME_SERVICE, ensure_boot_chime
+
+    systemd = tmp_path / "systemd"
+    systemd.mkdir()
+    (systemd / "romini-core.service").write_text("[Service]\n")
+    commands: list[list[str]] = []
+    monkeypatch.setattr(
+        "romini.composition.provision.subprocess.run",
+        lambda cmd, check: commands.append(cmd),
+    )
+
+    assert ensure_boot_chime(systemd) is True
+    assert (systemd / "romini-boot-chime.service").read_text() == ROMINI_BOOT_CHIME_SERVICE
+    assert commands == [
+        ["systemctl", "daemon-reload"],
+        ["systemctl", "enable", "romini-boot-chime.service"],
+    ]
+    assert ensure_boot_chime(systemd) is False
+
+
+def test_boot_chirp_plays_once_sound_is_up_and_before_the_player(tmp_path: Path) -> None:
+    from romini.composition.provision import write_provision_files
+
+    dest = tmp_path / "etc"
+    write_provision_files(dest)
+    unit = (dest / "systemd/system/romini-boot-chime.service").read_text()
+
+    assert "After=sound.target" in unit
+    assert "Before=romini-core.service" in unit
+    assert "python -m romini.features.boot.chime" in unit
+    assert "WantedBy=sound.target" in unit
+
+
+def test_boot_config_runs_the_cpu_flat_out_for_the_first_30_seconds() -> None:
+    from romini.composition.provision import merge_boot_config
+
+    text = merge_boot_config("")
+    again = merge_boot_config(text)
+
+    assert text.count("initial_turbo=30") == 1
+    assert again == text
+
+
 def test_boot_config_blanks_hdmi_bluetooth_and_leds() -> None:
     from romini.composition.provision import merge_boot_config
 

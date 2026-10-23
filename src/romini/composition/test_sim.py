@@ -55,7 +55,7 @@ def test_sim_place_plays_the_connect_chirp(tmp_path: Path) -> None:
 
     box.place(FROG_UID)
 
-    assert player.chirps == ["romini/connect.wav"]
+    assert player.chirps == ["romini/connect.mp3"]
 
 
 def test_sim_place_skips_the_connect_chirp_when_nfc_beep_is_off(tmp_path: Path) -> None:

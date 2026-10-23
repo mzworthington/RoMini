@@ -56,7 +56,7 @@ class Halt(Protocol):
 
 PRESENCE_LIFT_GRACE_SEC = 2.0
 ASSIGN_IDLE_SEC = 60.0
-CONNECT_EARCON_PATH = "romini/connect.wav"
+CONNECT_EARCON_PATH = "romini/connect.mp3"
 
 
 class Earcon(Protocol):

@@ -18,6 +18,16 @@ def test_install_pi_shuts_down_on_gpio26_and_drops_other_shutdown_pins() -> None
     assert 'ensure_boot_line "dtoverlay=gpio-shutdown,gpio_pin=17"' not in script
 
 
+def test_install_pi_enables_the_boot_chirp() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "systemctl enable romini-boot-chime.service" in script
+
+
+def test_install_pi_runs_the_cpu_flat_out_for_the_first_30_seconds() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert 'ensure_boot_line "initial_turbo=30"' in script
+
+
 def test_install_pi_script_blanks_unused_peripherals() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "hdmi_blanking=2" in script

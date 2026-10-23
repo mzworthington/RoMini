@@ -77,6 +77,7 @@ if [ "${BOX_USER}" != pi ]; then
 fi
 
 sudo systemctl daemon-reload
+sudo systemctl enable romini-boot-chime.service
 sudo systemctl enable --now romini-core.service
 sudo systemctl enable --now romini-update.timer
 
@@ -112,6 +113,7 @@ ensure_boot_line "hdmi_blanking=2"
 ensure_boot_line "dtoverlay=disable-bt"
 ensure_boot_line "dtparam=act_led_trigger=none"
 ensure_boot_line "dtparam=pwr_led_trigger=none"
+ensure_boot_line "initial_turbo=30"
 if amixer -c Headphones scontents 2>/dev/null | grep -q "Simple mixer control 'PCM'"; then
   amixer -c Headphones sset PCM 100%
   sudo alsactl store

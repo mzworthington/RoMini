@@ -5,7 +5,8 @@ from datetime import datetime
 from importlib.resources import files
 from os import environ
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
+from time import sleep
 
 from romini.features.boot.ready import READY_EARCON_PATH
 
@@ -48,6 +49,7 @@ class MpvPlayer:
         self._started_at: datetime | None = None
         self._proc: object | None = None
         self._earcon: object | None = None
+        self._earcon_done: Event | None = None
         if quiet:
             self._silence_headphones()
 
@@ -198,28 +200,36 @@ class MpvPlayer:
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
         if path == READY_EARCON_PATH:
             self._earcon = proc
-            Thread(target=self._finish_earcon, args=(proc,), daemon=True).start()
+            self._earcon_done = Event()
+            Thread(target=self._finish_earcon, args=(proc, 15), daemon=True).start()
             return
         self._finish_earcon(proc)
 
     def _end_earcon(self) -> None:
-        previous = self._earcon
-        self._earcon = None
-        if previous is None:
+        if self._earcon is None:
             return
-        terminate = getattr(previous, "terminate", None)
-        if callable(terminate):
-            terminate()
+        done = self._earcon_done
+        if done is not None:
+            done.wait(timeout=15)
+        self._earcon = None
+        self._earcon_done = None
 
-    def _finish_earcon(self, proc: object) -> None:
+    def _finish_earcon(self, proc: object, timeout: float = 3) -> None:
+        finished = False
         try:
-            proc.wait(timeout=3)
+            proc.wait(timeout=timeout)
+            finished = True
         except subprocess.TimeoutExpired:
             kill = getattr(proc, "kill", None)
             if callable(kill):
                 kill()
             proc.wait(timeout=1)
         finally:
+            if finished and timeout > 3:
+                sleep(0.25)
+            done = self._earcon_done
+            if done is not None and proc is self._earcon:
+                done.set()
             if not self._playing:
                 self._silence_headphones()
 

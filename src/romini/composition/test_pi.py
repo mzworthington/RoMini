@@ -206,6 +206,34 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
     ]
 
 
+def test_story_waits_until_the_ready_chime_has_finished(monkeypatch) -> None:
+    from time import sleep
+
+    from romini.features.boot.ready import READY_EARCON_PATH
+
+    calls: list[str] = []
+
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            calls.append("wait")
+            return 0
+
+        def terminate(self) -> None:
+            calls.append("terminate")
+
+        def kill(self) -> None:
+            calls.append("kill")
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: Proc())
+    player = MpvPlayer(alsa=lambda cmd: None)
+    player.play_earcon(READY_EARCON_PATH)
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
+    sleep(0.05)
+
+    assert "terminate" not in calls
+    assert "kill" not in calls
+
+
 def test_ready_chime_leaves_a_story_playing_when_the_chime_ends(monkeypatch) -> None:
     from threading import Event
     from time import sleep
@@ -222,7 +250,7 @@ def test_ready_chime_leaves_a_story_playing_when_the_chime_ends(monkeypatch) -> 
             self.terminated = False
 
         def wait(self, timeout: float | None = None) -> int:
-            if any(part.endswith("hello_romy.wav") for part in self.cmd):
+            if any(part.endswith("connect.mp3") for part in self.cmd):
                 release.wait(timeout=0.5)
             return 0
 
@@ -234,7 +262,7 @@ def test_ready_chime_leaves_a_story_playing_when_the_chime_ends(monkeypatch) -> 
 
     def popen(cmd: list[str], *args, **kwargs) -> Proc:
         proc = Proc(cmd)
-        if any(part.endswith("hello_romy.wav") for part in cmd):
+        if any(part.endswith("connect.mp3") for part in cmd):
             chimes.append(proc)
         return proc
 
@@ -246,7 +274,7 @@ def test_ready_chime_leaves_a_story_playing_when_the_chime_ends(monkeypatch) -> 
     release.set()
     sleep(0.05)
 
-    assert chimes[0].terminated is True
+    assert chimes[0].terminated is False
     assert sent == []
 
 
@@ -299,17 +327,19 @@ def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
         return Proc()
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
-    MpvPlayer(alsa=lambda cmd: None).play_earcon("romini/connect.wav")
+    MpvPlayer(alsa=lambda cmd: None).play_earcon("romini/connect.mp3")
 
     assert calls[0][:3] == [
         "mpv",
         "--ao=alsa",
         "--audio-device=alsa/sysdefault:CARD=Headphones",
     ]
-    assert calls[0][-1].endswith("connect.wav")
+    assert calls[0][-1].endswith("connect.mp3")
 
 
 def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) -> None:
+    from time import sleep
+
     from romini.composition.mixer import MemoryMixer
 
     class Proc:
@@ -318,7 +348,8 @@ def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) ->
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: Proc())
     sent: list[list[str]] = []
-    MpvPlayer(mixer=MemoryMixer(level=42), alsa=sent.append).play_earcon("romini/connect.wav")
+    MpvPlayer(mixer=MemoryMixer(level=42), alsa=sent.append).play_earcon("romini/connect.mp3")
+    sleep(0.4)
 
     assert sent == [
         ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
@@ -342,7 +373,7 @@ def test_mpv_chime_releases_the_headphones_before_the_story_starts(monkeypatch) 
             return 0
 
     def popen(cmd: list[str], *args, **kwargs) -> object:
-        if str(cmd[-1]).endswith("connect.wav"):
+        if str(cmd[-1]).endswith("connect.mp3"):
             order.append("chime-start")
             return Proc()
         order.append("story-start")
@@ -350,7 +381,7 @@ def test_mpv_chime_releases_the_headphones_before_the_story_starts(monkeypatch) 
 
     monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
     player = MpvPlayer(alsa=lambda cmd: None)
-    player.play_earcon("romini/connect.wav")
+    player.play_earcon("romini/connect.mp3")
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04AABBCC")
 
     assert order.index("chime-done") < order.index("story-start")

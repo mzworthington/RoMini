@@ -58,7 +58,7 @@ def test_register_tag_plays_connect_and_pulses_led() -> None:
     register_tag(uid="04aabbccddeeff", catalog=catalog, led=led, earcon=earcon)
 
     assert led.pulses == 1
-    assert earcon.plays == ["romini/connect.wav"]
+    assert earcon.plays == ["romini/connect.mp3"]
 
 
 def test_name_tag_updates_registered_tag_name() -> None:

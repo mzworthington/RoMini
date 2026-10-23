@@ -66,7 +66,7 @@ def test_mapped_figure_plays_connect_earcon() -> None:
         earcon=earcon,
     )
 
-    assert earcon.plays == ["romini/connect.wav"]
+    assert earcon.plays == ["romini/connect.mp3"]
 
 
 def test_mapped_figure_stays_quiet_when_nfc_beep_is_off() -> None:
@@ -275,7 +275,7 @@ def test_tap_plays_the_connect_chime_when_a_story_starts() -> None:
         earcon=earcon,
     )
 
-    assert earcon.plays == ["romini/connect.wav"]
+    assert earcon.plays == ["romini/connect.mp3"]
     assert player.plays == [("/var/lib/romini/tracks/bear.mp3", 0.0)]
 
 
