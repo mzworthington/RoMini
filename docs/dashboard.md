@@ -2,7 +2,9 @@
 
 House-LAN UI. Laptop: `./bin/sim` → [http://127.0.0.1:8080](http://127.0.0.1:8080). Pi: `http://<hostname>.local`. Walkthrough: [guide.md](./guide.md) §1.4. Contract: [spec.md](./spec.md).
 
-Screenshots live in [`images/`](./images/). Refresh them with `make screenshots` (Playwright, not part of `make test`).
+Screenshots live in [`images/`](./images/). Refresh them with `make screenshots` (Playwright, not part of `make test`). Refresh the walkthrough with `make tour`.
+
+![Dashboard tour](./images/dashboard-tour.gif)
 
 ## Live player
 

@@ -1,6 +1,6 @@
 VENV := .venv
 
-.PHONY: help bootstrap lint format test build sim screenshots
+.PHONY: help bootstrap lint format test build sim screenshots tour
 
 help:
 	@echo "bootstrap    Install venv and hooks"
@@ -10,6 +10,7 @@ help:
 	@echo "build        sdist and wheel"
 	@echo "sim          Laptop sim (dashboard 8080, injectors 8081)"
 	@echo "screenshots  Playwright page shots into docs/images"
+	@echo "tour         Playwright walkthrough video into docs/images"
 
 bootstrap:
 	./bin/bootstrap
@@ -43,3 +44,8 @@ screenshots: $(VENV)/bin/python
 	./$(VENV)/bin/python -m pip install -e ".[screenshots]"
 	./$(VENV)/bin/python -m playwright install chromium
 	./$(VENV)/bin/python -m pytest e2e/test_dashboard_screenshots.py
+
+tour: $(VENV)/bin/python
+	./$(VENV)/bin/python -m pip install -e ".[screenshots]"
+	./$(VENV)/bin/python -m playwright install chromium
+	./$(VENV)/bin/python -m pytest e2e/test_dashboard_tour.py --import-mode=importlib
