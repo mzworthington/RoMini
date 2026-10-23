@@ -534,20 +534,33 @@ def test_mpv_player_records_when_playback_started(monkeypatch) -> None:
     assert player.started_at() == datetime(2026, 9, 19, 22, 33)
 
 
-def test_gpio_mem_wake_pin_sees_a_held_clock_line(tmp_path: Path) -> None:
-    from romini.composition.gpio import GpioMemWakePin
+def test_quiet_switch_pulls_up_bcm_17_and_reads_an_open_latch() -> None:
+    from romini.composition.gpio import GPIO_HALT, RpiQuietSwitch
 
-    path = tmp_path / "gpiomem"
-    path.write_bytes(bytes(4096))
+    class Gpio:
+        BCM = 11
+        IN = 1
+        PUD_UP = 2
+        setups: list[tuple[int, int, int | None]] = []
+        level = 1
 
-    assert GpioMemWakePin(str(path))() is True
+        def setmode(self, mode: int) -> None:
+            return
 
+        def setup(self, pin: int, mode: int, pull_up_down: int | None = None) -> None:
+            self.setups.append((pin, mode, pull_up_down))
 
-def test_wake_pin_is_low_when_the_i2c_clock_bit_is_clear() -> None:
-    from romini.composition.gpio import wake_pin_is_low
+        def input(self, pin: int) -> int:
+            assert pin == GPIO_HALT
+            return self.level
 
-    assert wake_pin_is_low(0) is True
-    assert wake_pin_is_low(1 << 3) is False
+    gpio = Gpio()
+    switch = RpiQuietSwitch(gpio)
+
+    assert gpio.setups == [(GPIO_HALT, Gpio.IN, Gpio.PUD_UP)]
+    assert switch.is_open() is True
+    gpio.level = 0
+    assert switch.is_open() is False
 
 
 def test_rpi_gpio_led_stays_on_while_awake_and_turns_off_for_sleep() -> None:

@@ -26,13 +26,11 @@ sudo reboot
 
 ## 3. Power switch and lamp
 
-Power off at the HAT slide before wiring. The panel control is a **latching** switch across the UPS HAT (D) **OFF/ON** slide’s two terminals. Leave that slide at **OFF**. Closed applies 5V through the pogos. Open cuts it. Do not use the BOOT button, and do not land the switch on the Pi header.
+Leave the UPS HAT (D) **OFF/ON** slide at **ON**. The panel control is a **latching** switch from **physical pin 11 (BCM 17)** to **physical pin 9 (GND)**. Closed is awake. Open pauses and ignores a new figure. Closing it again resumes the story that was on. The first box leaves the LED ring unwired.
 
-LED ring: **+ to physical pin 1 (3.3V)**, **− to physical pin 6 (GND)**. The ring lights while the 3.3V rail is up and goes dark as soon as the switch cuts power. It is not BCM 27.
+Leave **physical pin 5 (BCM 3)** free. That pin is the UPS I2C clock. Vol− BCM 22, vol+ BCM 23, play BCM 24 are later buttons.
 
-Sleep and wake is a **momentary** button from **physical pin 5 (BCM 3, SCL)** to **GND**. Press while the box is running and the player halts. Press again after `systemctl poweroff` and the Pi boots. The HAT slide stays the hard 5V cut. Holding the button grounds the UPS I2C clock for that moment. Vol− BCM 22, vol+ BCM 23, play BCM 24 are later buttons.
-
-`bin/install-pi` removes any `dtoverlay=gpio-shutdown` line. That overlay cannot claim pin 5 while the UPS clock is using it. The running player watches the pin level instead.
+`bin/install-pi` removes any `dtoverlay=gpio-shutdown` line. The latch is read by the player, with an internal pull-up. An unwired pin 11 stays awake until the switch has been closed once.
 
 ## 4. Speaker
 
@@ -75,7 +73,7 @@ Env: `ROMINI_PROFILE=pi`, `ROMINI_DATA=/var/lib/romini`, `ROMINI_DASHBOARD_PORT=
 | Brown-out | PSU ≥3A |
 | No sound | Aux cable, ALSA not HDMI-only, speaker powered |
 | Uploads vanish | Overlay on without `romini-data` |
-| Power stays on | HAT slide must stay OFF, and the latching switch must be across that slide’s two terminals. Pin 5 is I2C, not a wake pin |
+| Stories keep playing with the switch open | Pin 11 must reach pin 9 when the switch is closed, and the player must be the release that reads BCM 17. Pin 5 is I2C |
 | Catalog ignored | `catalog.yaml` on `romini-data`, UID hex, MP3 under `library/` |
 | OTA skipped | Track is playing (mpv IPC) |
 | `Permission denied` on venv | Tree still root-owned |
