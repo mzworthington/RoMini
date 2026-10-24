@@ -2451,6 +2451,65 @@ def test_dashboard_live_player_shows_how_far_through_the_story(tmp_path: Path) -
     assert deck.index('class="scrub"') < deck.index(">0:01<")
 
 
+def test_dashboard_lists_tracks_without_reading_every_audio_file(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Library(FakeStorage):
+        def __init__(self, **kwargs: object) -> None:
+            super().__init__(**kwargs)  # type: ignore[arg-type]
+            self.reads: list[str] = []
+
+        def get(self, filename: str) -> bytes | None:
+            self.reads.append(filename)
+            return super().get(filename)
+
+        def size(self, filename: str) -> int | None:
+            audio = self.files.get(filename)
+            return None if audio is None else len(audio)
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return ""
+
+        def playing_path(self) -> str:
+            return "stories/one.mp3"
+
+        def started_at(self) -> datetime | None:
+            return None
+
+        def position_sec(self) -> float:
+            return 0.0
+
+    storage = Library(
+        free_bytes=1024,
+        files={"stories/one.mp3": b"one" * 4000, "stories/two.mp3": b"two" * 8000},
+    )
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - path: "stories/one.mp3"\n    title: "One"\n  - path: "stories/two.mp3"\n    title: "Two"\n'
+    )
+    catalog = PathCatalog(catalog_path)
+    listed = TestClient(create_dashboard(storage=storage, assign_catalog=catalog)).get("/library")
+
+    assert listed.status_code == 200
+    assert "One" in listed.text
+    assert "Two" in listed.text
+    assert ">11.7 KB<" in listed.text
+    assert storage.reads == []
+
+    storage.reads.clear()
+    TestClient(create_dashboard(storage=storage, assign_catalog=catalog, player=Playing())).get("/")
+
+    assert storage.reads == ["stories/one.mp3"]
+
+
 def test_dashboard_play_pauses_when_a_story_is_playing() -> None:
     from fastapi.testclient import TestClient
 

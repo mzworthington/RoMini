@@ -1295,7 +1295,7 @@ def test_dashboard_figure_card_shows_the_story_bound_to_it(tmp_path: Path) -> No
     assert "Romy and the banana" in card
 
 
-def test_dashboard_figure_card_shows_the_length_of_its_story(tmp_path: Path) -> None:
+def test_dashboard_figure_card_shows_the_file_size_without_reading_the_audio(tmp_path: Path) -> None:
     import io
     import wave
 
@@ -1332,8 +1332,8 @@ def test_dashboard_figure_card_shows_the_length_of_its_story(tmp_path: Path) -> 
     card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
 
     assert "Romy" in card
-    assert "0:01" in card
     assert "15.7 KB" in card
+    assert "0:01" not in card
 
 
 def test_dashboard_figure_card_says_when_no_story_is_linked(tmp_path: Path) -> None:

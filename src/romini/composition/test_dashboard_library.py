@@ -751,7 +751,7 @@ def test_dashboard_library_file_spec_column_keeps_the_size_on_one_line() -> None
     assert "width: 100%" not in title
 
 
-def test_dashboard_library_row_shows_the_file_size_and_length(tmp_path: Path) -> None:
+def test_dashboard_library_row_shows_the_file_size_without_reading_the_audio(tmp_path: Path) -> None:
     import io
     import wave
 
@@ -781,8 +781,8 @@ def test_dashboard_library_row_shows_the_file_size_and_length(tmp_path: Path) ->
 
     assert "<th>Duration</th>" in html
     assert "<th>File Spec</th>" in html
-    assert ">0:01<" in row
     assert ">15.7 KB<" in row
+    assert ">0:01<" not in row
 
 
 def test_dashboard_library_search_keeps_the_matching_title(tmp_path: Path) -> None:

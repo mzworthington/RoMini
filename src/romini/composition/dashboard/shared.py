@@ -100,7 +100,7 @@ from romini.features.audit.record import KEEP, AuditLog
 from romini.features.battery.charge import Battery
 from romini.features.library.add_track import Catalog, Notices, Storage
 from romini.features.library.assign import CatalogFile
-from romini.features.library.track_facts import describe_audio
+from romini.features.library.track_facts import TrackFacts, describe_audio, format_size
 from romini.features.listening.log import PlayLog
 from romini.features.listening.today import format_listen_length, listening_today
 from romini.features.play_by_tag.now_playing import NowPlayingPlayer, describe_now_playing
@@ -397,6 +397,25 @@ class DiskStorage:
         return files
 
     def get(self, filename: str) -> bytes | None:
+        target = self._file(filename)
+        if target is None:
+            return None
+        return target.read_bytes()
+
+    def size(self, filename: str) -> int | None:
+        marked = self.stamp(filename)
+        if marked is None:
+            return None
+        return marked[0]
+
+    def stamp(self, filename: str) -> tuple[int, int] | None:
+        target = self._file(filename)
+        if target is None:
+            return None
+        info = target.stat()
+        return info.st_size, info.st_mtime_ns
+
+    def _file(self, filename: str) -> Path | None:
         target = (self._root / filename).resolve()
         try:
             target.relative_to(self._root.resolve())
@@ -404,7 +423,44 @@ class DiskStorage:
             return None
         if not target.is_file():
             return None
-        return target.read_bytes()
+        return target
+
+
+_AUDIO_FACTS: dict[tuple[str, int, int], TrackFacts] = {}
+
+
+def stored_size(storage: object, path: str) -> int | None:
+    sized = getattr(storage, "size", None)
+    if callable(sized):
+        value = sized(path)
+        if isinstance(value, int) and value >= 0:
+            return value
+    files = getattr(storage, "files", None)
+    if isinstance(files, dict):
+        audio = files.get(path)
+        if isinstance(audio, (bytes, bytearray)):
+            return len(audio)
+    return None
+
+
+def audio_facts(storage: object, path: str) -> TrackFacts | None:
+    stamp = getattr(storage, "stamp", None)
+    key: tuple[str, int, int] | None = None
+    if callable(stamp):
+        marked = stamp(path)
+        if isinstance(marked, tuple) and len(marked) == 2:
+            key = (path, int(marked[0]), int(marked[1]))
+            cached = _AUDIO_FACTS.get(key)
+            if cached is not None:
+                return cached
+    read = getattr(storage, "get", None)
+    audio = read(path) if callable(read) else None
+    if not isinstance(audio, bytes):
+        return None
+    facts = describe_audio(audio)
+    if key is not None:
+        _AUDIO_FACTS[key] = facts
+    return facts
 
 
 def dashboard_return(raw: object, fallback: str) -> str:
@@ -495,6 +551,12 @@ def render_page(
                 }
             )
         names = {tag["uid"]: tag["name"] for tag in tags}
+        playing_path = ""
+        if player is not None:
+            current = getattr(player, "playing_path", None)
+            if callable(current):
+                playing_path = current() or ""
+        measure_sizes = page in {"library", "figures"}
         tracks = []
         for track in data.get("tracks") or []:
             uid = str(track.get("uid") or "")
@@ -503,9 +565,8 @@ def render_page(
             artist = track.get("artist")
             artist_name = "" if artist is None else str(artist).strip()
             if uid.strip() or title.strip() or path.strip():
-                read = getattr(storage, "get", None)
-                audio = read(path) if callable(read) else None
-                facts = describe_audio(audio) if audio else None
+                facts = audio_facts(storage, path) if path and path == playing_path else None
+                size_bytes = None if facts is not None or not measure_sizes else stored_size(storage, path)
                 tracks.append(
                     {
                         "uid": uid,
@@ -515,7 +576,7 @@ def render_page(
                         "suffix": Path(path).suffix.lower().lstrip(".").upper(),
                         "figure": names.get(uid) or uid,
                         "length": facts.length if facts else "",
-                        "size": facts.size if facts else "",
+                        "size": facts.size if facts else (format_size(size_bytes) if size_bytes is not None else ""),
                         "duration_sec": str(facts.duration_sec) if facts else "",
                         "image": resolve_track_image(track, covers=covers),
                     }
@@ -564,7 +625,8 @@ def render_page(
         saved_characters = []
         spoken_file = ""
         voices = []
-    library_files = library_file_labels(stories, library_paths(storage)) if studio or page == "library" else []
+    on_disk = library_paths(storage) if studio or page == "library" else []
+    library_files = library_file_labels(stories, on_disk) if on_disk else []
     if page == "library":
         known = {track["path"] for track in tracks}
         for item in library_files:
@@ -580,7 +642,7 @@ def render_page(
                     "suffix": Path(path).suffix.lower().lstrip(".").upper(),
                     "figure": "",
                     "length": "",
-                    "size": "",
+                    "size": format_size(size_bytes) if (size_bytes := stored_size(storage, path)) is not None else "",
                     "duration_sec": "",
                     "image": "",
                 }
@@ -654,7 +716,7 @@ def render_page(
             "figure_query": request.query_params.get("q", "").strip(),
             "tracks": tracks,
             "tags": tags,
-            "library_paths": library_paths(storage),
+            "library_paths": on_disk,
             "library_files": library_files,
             "play_mode": play_mode,
             "nfc_beep": settings.nfc_beep() if settings is not None else True,
