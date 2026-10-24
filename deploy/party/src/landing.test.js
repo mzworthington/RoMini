@@ -19,6 +19,12 @@ test("the public page shows a circular romini, find out more, and a flagged demo
   assert.match(html, /class="flag"[^>]*>\s*coming soon\s*</);
 });
 
+test("the landing page fits the visible mobile screen", () => {
+  assert.match(html, /min-height:\s*100svh/);
+  assert.match(html, /width:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*9rem\)\)/);
+  assert.match(html, /height:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*9rem\)\)/);
+});
+
 test("cloudflare publishes the static page and not the demo container", () => {
   assert.equal(wrangler.assets.directory, "./public");
   assert.equal(wrangler.main, undefined);
