@@ -143,6 +143,8 @@ curl -sS -X POST http://127.0.0.1:8081/play
 curl -sS -X POST http://127.0.0.1:8081/halt
 ```
 
+![HTTP injectors](./images/test-harness-http.png)
+
 Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST /register-mode`, `POST /tags/<uid>/name`, `PUT`/`POST /play-mode`, `POST /volume`, on `sim` `POST /place/<uid>`. Assign, register, and upload write `catalog.yaml`. Play mode, volume, and the Audit log are SQLite, not YAML.
 
 ### 1.5 What `sim` covers

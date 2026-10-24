@@ -55,3 +55,5 @@ Audit log: last 1000 box events, newest first.
 `sim` only. Paste a UID, put it on the plate or tap, and press box buttons without GPIO.
 
 ![Sim harness](./images/test-harness.png)
+
+![HTTP injectors](./images/test-harness-http.png)

@@ -237,12 +237,24 @@ def test_dashboard_pages_are_saved_under_docs_images(tmp_path: Path) -> None:
             response = page.goto(f"http://127.0.0.1:{harness.port}/", wait_until="networkidle")
             assert response is not None and response.ok
             page.evaluate("document.fonts.ready")
-            _shot(page, IMAGES / "test-harness.png")
+            page.evaluate(
+                "() => {"
+                " document.getElementById('nfc-uid').value = '04aabbccddeeff';"
+                " document.getElementById('nfc-present').checked = true;"
+                "}"
+            )
+            harness_shot = IMAGES / "test-harness.png"
+            page.locator("main").screenshot(path=harness_shot)
+            assert harness_shot.read_bytes().startswith(PNG)
+            page.evaluate("() => { document.querySelector('details.injectors').open = true }")
+            http_shot = IMAGES / "test-harness-http.png"
+            page.locator("main").screenshot(path=http_shot)
+            assert http_shot.read_bytes().startswith(PNG)
             browser.close()
     finally:
         dashboard_shared.read_host_facts = original_host
         harness.close()
         dashboard.close()
 
-    saved = {name for _, name in PAGES} | {"audit.png", "ai-stories.png", "test-harness.png"}
+    saved = {name for _, name in PAGES} | {"audit.png", "ai-stories.png", "test-harness.png", "test-harness-http.png"}
     assert saved <= {path.name for path in IMAGES.glob("*.png")}
