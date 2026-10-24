@@ -353,6 +353,8 @@ HOME_NOTICES = {
     "image": "Cover image stored",
     "image-needed": "Choose a PNG, JPEG, GIF, or WebP image",
     "update": "Update check started",
+    "backup": "Backup restored",
+    "backup-needed": "Choose a RoMini backup file",
     "demo": "That control is turned off on this demo",
 }
 
@@ -434,6 +436,10 @@ def is_audio_track(filename: str) -> bool:
 class PathCatalog:
     def __init__(self, path: Path) -> None:
         self._path = path
+
+    @property
+    def path(self) -> Path:
+        return self._path
 
     def read_text(self) -> str:
         return self._path.read_text()

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -25,8 +26,54 @@ def import_catalog(
         rel = row["path"]
         if not audio_exists(rel):
             continue
-        uid = row["uid"]
+        uid = row.get("uid")
+        if not uid:
+            continue
         if uid in tracks:
             raise ValueError(f"duplicate uid: {uid}")
         tracks[uid] = f"{root}/{rel}"
     return CatalogLibrary(tracks)
+
+
+_AUDIO_SUFFIXES = {".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"}
+
+
+def library_audio_paths(root: Path) -> list[str]:
+    if not root.is_dir():
+        return []
+    found: list[str] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.is_symlink() or path.name.startswith("."):
+            continue
+        if path.suffix.lower() not in _AUDIO_SUFFIXES:
+            continue
+        found.append(path.relative_to(root).as_posix())
+    return found
+
+
+def include_library_tracks(text: str, paths: list[str]) -> str:
+    data = yaml.safe_load(text) or {}
+    rows = [row for row in (data.get("tracks") or []) if isinstance(row, dict)]
+    available = list(dict.fromkeys(paths))
+    present = set(available)
+    changed = False
+    for row in rows:
+        path = str(row.get("path") or "")
+        if not path or path in present:
+            continue
+        matches = [item for item in available if item.endswith(f"/{path}")]
+        if len(matches) == 1:
+            row["path"] = matches[0]
+            changed = True
+    known = {str(row.get("path") or "") for row in rows}
+    for path in available:
+        if path in known:
+            continue
+        title = PurePosixPath(path).stem.replace("-", " ").replace("_", " ")
+        rows.append({"path": path, "title": title})
+        known.add(path)
+        changed = True
+    if not changed:
+        return text
+    data["tracks"] = rows
+    return yaml.safe_dump(data, sort_keys=False)

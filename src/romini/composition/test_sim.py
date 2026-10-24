@@ -749,6 +749,18 @@ def test_load_sim_box_unmaps_removed_yaml_uid_and_keeps_position(tmp_path: Path)
     assert SqliteSessions(db).position_for(FROG_UID) == 14.5
 
 
+def test_catalog_poll_records_library_audio_the_yaml_left_out(tmp_path: Path) -> None:
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    previous_mtime = (data / "catalog.yaml").stat().st_mtime
+    (data / "library" / "little-drummer-girl.mp3").write_bytes(b"drum")
+
+    poll_catalog(box, data_dir=data, previous_mtime=previous_mtime)
+
+    assert "little-drummer-girl.mp3" in (data / "catalog.yaml").read_text()
+    assert SqliteCatalog(data / "state.sqlite").track_for("little-drummer-girl") is None
+
+
 def test_catalog_mtime_tick_unmaps_uid_without_restart(tmp_path: Path) -> None:
     data = write_frog_data(tmp_path)
     player = FakePlayer()

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from romini.adapters.sqlite.catalog import SqliteCatalog
 from romini.composition.sim import SimBox
-from romini.features.library.import_catalog import import_catalog
+from romini.features.library.import_catalog import import_catalog, include_library_tracks, library_audio_paths
 
 
 def poll_catalog(
@@ -14,11 +14,17 @@ def poll_catalog(
 ) -> float:
     path = data_dir / "catalog.yaml"
     mtime = path.stat().st_mtime
-    if previous_mtime is not None and mtime <= previous_mtime:
-        return previous_mtime
     library_root = data_dir / "library"
+    text = path.read_text()
+    recorded = include_library_tracks(text, library_audio_paths(library_root))
+    if recorded != text:
+        path.write_text(recorded)
+        text = recorded
+        mtime = path.stat().st_mtime
+    elif previous_mtime is not None and mtime <= previous_mtime:
+        return previous_mtime
     box.library = import_catalog(
-        path.read_text(),
+        text,
         library_root=str(library_root),
         audio_exists=lambda rel: (library_root / rel).is_file(),
     )

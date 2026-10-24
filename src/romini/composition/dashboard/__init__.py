@@ -17,6 +17,7 @@ from romini.features.play_by_tag.now_playing import NowPlayingPlayer
 from romini.features.play_by_tag.place_figure import Mixer
 from romini.features.power.host import DashboardTraffic
 
+from . import backup as backup_page
 from . import characters as characters_page
 from . import figures, home, library
 from . import settings as settings_page
@@ -152,4 +153,5 @@ def create_dashboard(
     stories_page.mount(app, ctx)
     characters_page.mount(app, ctx)
     settings_page.mount(app, ctx)
+    backup_page.mount(app, ctx)
     return app

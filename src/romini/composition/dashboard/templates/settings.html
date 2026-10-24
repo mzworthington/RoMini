@@ -218,6 +218,16 @@ sudo nmtui</pre>
 {% endif %}
 </section>
 </div>
+<section class="card span" id="backup">
+<h2>Backup</h2>
+<p class="hint">Download stories, characters, the catalog, and library audio before the card is formatted. Studio keys stay on the box. Restore replaces matching files and leaves everything else.</p>
+<form action="/backup" method="get"><button type="submit">Download backup</button></form>
+<form action="/backup" method="post" enctype="multipart/form-data" onsubmit="return confirm('Restore this backup? Matching stories, characters, catalog, and library files are replaced.')">
+<label for="backup-file">Backup file</label>
+<input id="backup-file" name="file" type="file" accept=".zip,application/zip" required>
+<button type="submit">Restore backup</button>
+</form>
+</section>
 <section class="card span" id="audit">
 <h2>Audit log</h2>
 <p class="hint">Newest first. The box keeps the last 1000 events.</p>

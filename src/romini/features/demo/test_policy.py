@@ -25,3 +25,8 @@ def test_public_demo_refuses_keys_uploads_and_other_changes() -> None:
     assert not demo_forbids("POST", "/volume")
     assert not demo_forbids("POST", "/library/play/04a1")
     assert not demo_forbids("POST", "/library/stop")
+
+
+def test_public_demo_refuses_backup_restore() -> None:
+    assert demo_forbids("POST", "/backup")
+    assert not demo_forbids("GET", "/backup")

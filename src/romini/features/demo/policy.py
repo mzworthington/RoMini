@@ -10,6 +10,7 @@ _BLOCKED = frozenset(
         "/library/cover",
         "/system/power",
         "/system/update",
+        "/backup",
         "/play-mode",
         "/safety/eject",
         "/safety/beep",
