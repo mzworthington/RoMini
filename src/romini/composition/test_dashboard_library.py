@@ -1302,6 +1302,50 @@ def test_dashboard_library_lets_you_listen_to_a_track() -> None:
     assert 'id="player"' in html
 
 
+def test_demo_library_serves_a_public_cover_without_a_directory() -> None:
+    from fastapi.testclient import TestClient
+
+    class Catalog:
+        def read_text(self) -> str:
+            return "tracks:\n  - uid: '04a1'\n    path: frog.mp3\n    title: Frog\n"
+
+    storage = FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})
+    storage.cover_url = lambda path: "https://media.example/covers/frog.png" if path == "frog.mp3" else None  # type: ignore[attr-defined]
+    client = TestClient(create_dashboard(storage=storage, assign_catalog=Catalog(), demo=True))
+
+    assert 'src="https://media.example/covers/frog.png"' in client.get("/library").text
+    response = client.get("/library/cover/frog.mp3", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["location"] == "https://media.example/covers/frog.png"
+
+
+def test_demo_library_plays_the_public_file_in_the_page() -> None:
+    from fastapi.testclient import TestClient
+
+    class Catalog:
+        def read_text(self) -> str:
+            return "tracks:\n  - uid: '04a1'\n    path: frog.mp3\n    title: Frog\n"
+
+    storage = FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})
+    storage.public_url = lambda path: "https://media.example/frog.mp3" if path == "frog.mp3" else None  # type: ignore[attr-defined]
+    html = TestClient(create_dashboard(storage=storage, assign_catalog=Catalog(), demo=True)).get("/library").text
+
+    assert 'data-demo-play="https://media.example/frog.mp3"' in html
+    assert 'value="https://media.example/frog.mp3"' in html
+    assert "/library/play/" not in html
+
+
+def test_dashboard_preview_redirects_to_a_public_track_url() -> None:
+    from fastapi.testclient import TestClient
+
+    storage = FakeStorage(free_bytes=1024, files={"frog.mp3": b"id3"})
+    storage.public_url = lambda path: "https://media.example/frog.mp3" if path == "frog.mp3" else None  # type: ignore[attr-defined]
+    response = TestClient(create_dashboard(storage=storage)).get("/library/file/frog.mp3", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["location"] == "https://media.example/frog.mp3"
+
+
 def test_dashboard_serves_a_library_file_for_preview() -> None:
     from fastapi.testclient import TestClient
 

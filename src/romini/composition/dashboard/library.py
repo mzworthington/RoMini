@@ -13,6 +13,7 @@ from romini.composition.dashboard.shared import (
     library_paths,
     locate_track_cover,
     notice,
+    public_https_url,
     remember_track_cover,
     save_track_cover,
 )
@@ -194,9 +195,16 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         ctx.note("upload", f"Stored cover for {path}")
         return notice("/library", "image")
 
-    @app.get("/library/cover/{path:path}")
-    def track_cover(path: str) -> FileResponse:
-        if ctx.covers is None or path not in library_paths(ctx.storage):
+    @app.get("/library/cover/{path:path}", response_model=None)
+    def track_cover(path: str) -> FileResponse | RedirectResponse:
+        if path not in library_paths(ctx.storage):
+            raise HTTPException(status_code=404)
+        locate = getattr(ctx.storage, "cover_url", None)
+        if callable(locate):
+            url = locate(path)
+            if isinstance(url, str) and url.startswith("https://"):
+                return RedirectResponse(url, status_code=302)
+        if ctx.covers is None:
             raise HTTPException(status_code=404)
         located = locate_track_cover(ctx.covers, path)
         if located is None:
@@ -208,6 +216,9 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     def preview_track(path: str) -> Response:
         if path not in library_paths(ctx.storage):
             raise HTTPException(status_code=404)
+        url = public_https_url(ctx.storage, path)
+        if url:
+            return RedirectResponse(url, status_code=302)
         read = getattr(ctx.storage, "get", None)
         if not callable(read):
             raise HTTPException(status_code=404)

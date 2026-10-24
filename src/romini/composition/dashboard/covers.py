@@ -59,8 +59,13 @@ def track_cover_url(audio_path: str) -> str:
     return "/library/cover/" + quote(audio_path, safe="/")
 
 
-def resolve_track_image(track: dict[str, object], *, covers: Path | None) -> str:
+def resolve_track_image(track: dict[str, object], *, covers: Path | None, storage: object | None = None) -> str:
     path = str(track.get("path") or "")
+    locate = getattr(storage, "cover_url", None)
+    if callable(locate):
+        url = locate(path)
+        if isinstance(url, str) and url.startswith("https://"):
+            return url
     if locate_track_cover(covers, path) is None:
         return ""
     return track_cover_url(path)

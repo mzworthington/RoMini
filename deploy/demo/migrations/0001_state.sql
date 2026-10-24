@@ -1,0 +1,33 @@
+CREATE TABLE IF NOT EXISTS schema_version (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    version INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sessions (
+    uid TEXT PRIMARY KEY,
+    position_sec REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS mixer (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    level INTEGER NOT NULL
+);
+INSERT OR IGNORE INTO mixer (id, level) VALUES (1, 0);
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS catalog (
+    uid TEXT PRIMARY KEY,
+    path TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    happened_at TEXT NOT NULL,
+    action TEXT NOT NULL,
+    summary TEXT NOT NULL
+);
+ALTER TABLE audit_log ADD COLUMN headline TEXT NOT NULL DEFAULT '';
+CREATE TABLE IF NOT EXISTS play_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at TEXT NOT NULL,
+    ended_at TEXT
+);

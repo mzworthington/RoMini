@@ -8,7 +8,9 @@
 </div>
 </div>
 {% include "deck.html" %}
+{% if not demo %}
 <script>
 {% include "live_player.js" %}
 </script>
+{% endif %}
 {% endblock %}

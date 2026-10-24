@@ -68,7 +68,14 @@ Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/
 
 ## Public site
 
-`romini.party` and `www.romini.party` are one page: a circular picture of RoMini, **find out more** linking to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy), and **demo dashboard** with a coming-soon flag.
+The demo Worker is `deploy/demo` (`demo.romini.party`). The Pi keeps its SQLite file and library disk. Create the D1 database and R2 bucket, put the database id and the bucket's public hostname into `deploy/demo/wrangler.jsonc`, apply `deploy/demo/migrations/0001_state.sql`, upload the sample audio, then seed the catalog:
+
+```bash
+python -m romini.adapters.cloudflare.seed path/to/catalog.yaml > seed.sql
+npx wrangler d1 execute romini-demo --remote --file=seed.sql
+```
+
+`romini.party` and `www.romini.party` are one page: a circular picture of RoMini, **find out more** linking to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy), and **demo dashboard** linking to `demo.romini.party`.
 
 The zone is `romini.party` in [edge-dns](https://github.com/mzworthington/edge-dns). After that zone is active, `cd deploy/party && npx wrangler deploy` (`CLOUDFLARE_API_TOKEN` set) attaches the hostnames and publishes the page.
 

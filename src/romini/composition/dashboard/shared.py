@@ -360,6 +360,16 @@ HOME_NOTICES = {
 }
 
 
+def public_https_url(storage: object, path: str) -> str:
+    locate = getattr(storage, "public_url", None)
+    if not callable(locate) or not path:
+        return ""
+    url = locate(path)
+    if isinstance(url, str) and url.startswith("https://"):
+        return url
+    return ""
+
+
 def library_paths(storage: object) -> list[str]:
     listing = getattr(storage, "paths", None)
     if not callable(listing):
@@ -584,7 +594,8 @@ def render_page(
                         "length": facts.length if facts else "",
                         "size": facts.size if facts else (format_size(size_bytes) if size_bytes is not None else ""),
                         "duration_sec": str(facts.duration_sec) if facts else "",
-                        "image": resolve_track_image(track, covers=covers),
+                        "image": resolve_track_image(track, covers=covers, storage=storage),
+                        "media": public_https_url(storage, path),
                     }
                 )
     play_mode = PlayMode.PRESENCE.value
@@ -633,6 +644,8 @@ def render_page(
         voices = []
     on_disk = library_paths(storage) if studio or page == "library" else []
     library_files = library_file_labels(stories, on_disk) if on_disk else []
+    for item in library_files:
+        item["media"] = public_https_url(storage, item["path"]) or f"/library/file/{item['path']}"
     if page == "library":
         known = {track["path"] for track in tracks}
         for item in library_files:
@@ -651,6 +664,7 @@ def render_page(
                     "size": format_size(size_bytes) if (size_bytes := stored_size(storage, path)) is not None else "",
                     "duration_sec": "",
                     "image": "",
+                    "media": public_https_url(storage, path),
                 }
             )
     keys = studio_keys(secrets, box_secrets) if studio or page == "settings" else {}

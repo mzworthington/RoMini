@@ -80,25 +80,7 @@
         gap: 0.75rem;
         margin: 1.75rem 0 0;
       }
-      .demo {
-        position: relative;
-        display: inline-block;
-      }
-      .flag {
-        position: absolute;
-        top: -0.85rem;
-        right: -0.35rem;
-        padding: 0.12rem 0.4rem;
-        background: var(--ink);
-        color: var(--paper);
-        font-family: ui-sans-serif, system-ui, sans-serif;
-        font-size: 0.68rem;
-        letter-spacing: 0.02em;
-        border-radius: 0.2rem;
-        transform: rotate(6deg);
-        pointer-events: none;
-      }
-      a, button {
+      a {
         display: inline-block;
         padding: 0.7rem 1.1rem;
         border: 1px solid var(--line);
@@ -110,11 +92,7 @@
         background: transparent;
       }
       a:hover { background: var(--ink); color: var(--paper); }
-      a:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-      button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
+      a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
     </style>
   </head>
   <body>
@@ -126,10 +104,7 @@
       </p>
       <p class="actions">
         <a href="https://mzworthington.co.uk/open-source/building-a-story-box-for-romy">find out more</a>
-        <span class="demo">
-          <button type="button" disabled>demo dashboard</button>
-          <span class="flag">coming soon</span>
-        </span>
+        <a href="https://demo.romini.party">demo dashboard</a>
       </p>
     </main>
   </body>

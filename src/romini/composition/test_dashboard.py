@@ -180,6 +180,14 @@ def test_dashboard_header_matches_the_prototype_top_bar() -> None:
     assert "72% charged" in header
 
 
+def test_demo_home_does_not_poll_the_server_player() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), demo=True)).get("/").text
+
+    assert 'fetch("/now-playing")' not in html
+
+
 def test_dashboard_home_renders_when_host_is_missing() -> None:
     from romini.composition.dashboard.shared import templates
 
