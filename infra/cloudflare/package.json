@@ -1,0 +1,19 @@
+{
+  "name": "romini-cloudflare",
+  "license": "MIT",
+  "private": true,
+  "packageManager": "pnpm@11.10.0",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test importIds.test.ts"
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "6.22.1",
+    "@pulumi/pulumi": "3.268.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "6.0.3"
+  }
+}

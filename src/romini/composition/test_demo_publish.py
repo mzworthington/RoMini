@@ -13,7 +13,8 @@ def test_demo_worker_is_published_on_the_party_zone() -> None:
     assert config["name"] == "romini-demo"
     assert config["main"].endswith("src/romini/composition/demo_worker.py")
     assert "python_workers" in config["compatibility_flags"]
-    assert config["routes"] == [{"pattern": "demo.romini.party", "custom_domain": True}]
+    assert "routes" not in config
+    assert config["d1_databases"][0]["database_id"] == "5948544a-74ae-4e4e-922c-908af99e4b9a"
     assert config["d1_databases"][0]["binding"] == "DB"
     assert config["d1_databases"][0]["database_name"] == "romini-demo"
     assert config["r2_buckets"][0]["binding"] == "LIBRARY"
@@ -21,3 +22,13 @@ def test_demo_worker_is_published_on_the_party_zone() -> None:
     assert config["vars"]["LIBRARY_BASE_URL"].startswith("https://")
     assert "CREATE TABLE IF NOT EXISTS settings" in migration
     assert "CREATE TABLE IF NOT EXISTS catalog" in migration
+
+
+def test_demo_worker_bundles_the_packages_the_script_imports() -> None:
+    text = (_REPO / "deploy/demo/pyproject.toml").read_text()
+
+    assert "fastapi" in text
+    assert "jinja2" in text
+    assert "pyyaml" in text
+    assert 'romini = { path = "../.." }' in text
+    assert "workers-py" in text

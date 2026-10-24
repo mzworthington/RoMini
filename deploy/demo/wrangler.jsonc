@@ -3,7 +3,9 @@
   "main": "../../src/romini/composition/demo_worker.py",
   "compatibility_date": "2026-10-24",
   "compatibility_flags": ["python_workers"],
-  // Replace database_id after `npx wrangler d1 create romini-demo`.
+  "workers_dev": false,
+  "preview_urls": false,
+  // The database and bucket are imported by infra/cloudflare. This id must match that database.
   // Point LIBRARY_BASE_URL at the bucket's public hostname before publishing audio.
   "vars": {
     "LIBRARY_BASE_URL": "https://media.romini.party"
@@ -12,7 +14,7 @@
     {
       "binding": "DB",
       "database_name": "romini-demo",
-      "database_id": "create-with-wrangler-d1-create"
+      "database_id": "5948544a-74ae-4e4e-922c-908af99e4b9a"
     }
   ],
   "r2_buckets": [
@@ -20,6 +22,5 @@
       "binding": "LIBRARY",
       "bucket_name": "romini-demo"
     }
-  ],
-  "routes": [{ "pattern": "demo.romini.party", "custom_domain": true }]
+  ]
 }

@@ -151,6 +151,8 @@ activemq-data/
 .env
 .envrc
 .venv
+.venv-workers
+deploy/demo/python_modules/
 node_modules/
 env/
 venv/

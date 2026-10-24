@@ -68,7 +68,12 @@ Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/
 
 ## Public site
 
-The demo Worker is `deploy/demo` (`demo.romini.party`). The Pi keeps its SQLite file and library disk. Create the D1 database and R2 bucket, put the database id and the bucket's public hostname into `deploy/demo/wrangler.jsonc`, apply `deploy/demo/migrations/0001_state.sql`, upload the sample audio, then seed the catalog:
+The demo hostname, D1 database, and R2 bucket live in `infra/cloudflare` (Pulumi stack `prod`). The database `5948544a-74ae-4e4e-922c-908af99e4b9a` and bucket `romini-demo` already exist and are imported there. Wrangler still uploads the Worker script from `deploy/demo` and applies `migrations/0001_state.sql`.
+
+```bash
+cd infra/cloudflare && pulumi up
+cd ../../deploy/demo && npx wrangler deploy
+```
 
 ```bash
 python -m romini.adapters.cloudflare.seed path/to/catalog.yaml > seed.sql

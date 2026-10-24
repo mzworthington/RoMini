@@ -1,3 +1,12 @@
+from pathlib import Path
+
+
+def test_default_fetch_registers_a_worker_entrypoint() -> None:
+    source = Path(__file__).with_name("demo_worker.py").read_text()
+
+    assert "class Default(WorkerEntrypoint)" in source
+
+
 def test_worker_env_builds_the_seeded_demo() -> None:
     import asyncio
 

@@ -1,0 +1,7 @@
+name: romini
+description: Cloudflare D1, R2, and the demo.romini.party hostname
+runtime:
+  name: nodejs
+  options:
+    packagemanager: pnpm
+    typescript: true

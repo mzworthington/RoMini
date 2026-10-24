@@ -1,0 +1,6 @@
+{
+  "disabled": false,
+  "lastTestOutcome": "fail",
+  "lastTestCommand": "pnpm test && pnpm typecheck",
+  "lastTestAt": "2026-10-24T21:44:07.222Z"
+}
