@@ -73,6 +73,13 @@ def test_install_pi_script_installs_ups_hat_smbus() -> None:
     assert "smbus2" in script
 
 
+def test_install_pi_keeps_wifi_awake_for_the_dashboard() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert " avahi-daemon iw " in script
+    assert "/etc/NetworkManager/conf.d/romini-wifi.conf" in script
+    assert "nmcli general reload" in script
+
+
 def test_install_pi_script_installs_lgpio_build_deps() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "swig" in script

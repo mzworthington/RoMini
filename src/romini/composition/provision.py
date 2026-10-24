@@ -106,7 +106,11 @@ ROMINI_SUDOERS = """%sudo ALL=(root) NOPASSWD: /usr/bin/systemctl restart romini
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl start --no-block romini-update.service
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl reboot
 %sudo ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff
+%sudo ALL=(root) NOPASSWD: /usr/sbin/iw dev wlan0 set power_save off
 %sudo ALL=(root) NOPASSWD: /var/lib/romini/install/venv/bin/python -m romini.composition.provision --apply-boot
+"""
+WIFI_POWERSAVE_OFF = """[connection]
+wifi.powersave = disable
 """
 ROMINI_BOOT_CHIME_SERVICE = """[Unit]
 Description=RoMini boot chirp
@@ -176,6 +180,9 @@ def write_provision_files(dest: Path) -> None:
     avahi = dest / "avahi" / "services"
     avahi.mkdir(parents=True, exist_ok=True)
     (avahi / "romini.service").write_text(AVAHI_HTTP_SERVICE)
+    nm = dest / "NetworkManager" / "conf.d"
+    nm.mkdir(parents=True, exist_ok=True)
+    (nm / "romini-wifi.conf").write_text(WIFI_POWERSAVE_OFF)
     sudoers = dest / "sudoers.d"
     sudoers.mkdir(parents=True, exist_ok=True)
     (sudoers / "romini").write_text(ROMINI_SUDOERS)
@@ -200,6 +207,28 @@ def ensure_boot_chime(directory: Path = Path("/etc/systemd/system")) -> bool:
     subprocess.run(["systemctl", "daemon-reload"], check=False)
     subprocess.run(["systemctl", "enable", "romini-boot-chime.service"], check=False)
     return True
+
+
+def lan_root_is_the_box(root: Path) -> bool:
+    return root == Path("/")
+
+
+def ensure_dashboard_lan(root: Path = Path("/")) -> None:
+    sudoers = root / "etc/sudoers.d/romini"
+    sudoers.parent.mkdir(parents=True, exist_ok=True)
+    if not sudoers.is_file() or sudoers.read_text() != ROMINI_SUDOERS:
+        sudoers.write_text(ROMINI_SUDOERS)
+        sudoers.chmod(0o440)
+    nm = root / "etc/NetworkManager/conf.d/romini-wifi.conf"
+    nm.parent.mkdir(parents=True, exist_ok=True)
+    if nm.is_file() and nm.read_text() == WIFI_POWERSAVE_OFF:
+        return
+    nm.write_text(WIFI_POWERSAVE_OFF)
+    if lan_root_is_the_box(root):
+        try:
+            subprocess.run(["nmcli", "general", "reload"], check=False)
+        except OSError:
+            return
 
 
 def ensure_player_gpio(path: Path = Path("/etc/systemd/system/romini-core.service")) -> bool:
@@ -228,6 +257,7 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "--apply-boot":
         if len(sys.argv) > 2:
             raise ValueError("refusing a boot config path from the command line")
+        ensure_dashboard_lan()
         ensure_player_gpio()
         ensure_boot_chime()
         raise SystemExit(10 if apply_boot_config(boot_config_path()) else 0)

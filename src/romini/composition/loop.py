@@ -58,4 +58,8 @@ def run_core_ticks(
                 playing=box.player.is_playing(),
                 radio_sleep=radio_should_sleep(seconds_since_request=since),
             )
+        dashboard = getattr(box, "dashboard", None)
+        ensure_serving = getattr(dashboard, "ensure_serving", None)
+        if callable(ensure_serving):
+            ensure_serving(now=monotonic())
         sleep(step)

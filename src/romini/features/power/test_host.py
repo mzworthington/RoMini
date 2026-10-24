@@ -15,7 +15,7 @@ def test_dashboard_traffic_remembers_the_latest_request() -> None:
     assert traffic.seconds_since(100.0) == 10.0
 
 
-def test_radio_sleeps_until_a_dashboard_request_is_recent() -> None:
-    assert radio_should_sleep(seconds_since_request=None) is True
-    assert radio_should_sleep(seconds_since_request=60) is True
+def test_radio_stays_awake_so_the_dashboard_is_reachable() -> None:
+    assert radio_should_sleep(seconds_since_request=None) is False
+    assert radio_should_sleep(seconds_since_request=60) is False
     assert radio_should_sleep(seconds_since_request=59) is False
