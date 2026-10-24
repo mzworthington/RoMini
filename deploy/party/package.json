@@ -3,10 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test src/route.test.js src/worker.test.js"
-  },
-  "dependencies": {
-    "@cloudflare/containers": "^0.3.7"
+    "test": "node --test src/landing.test.js"
   },
   "devDependencies": {
     "wrangler": "^4.152.0"

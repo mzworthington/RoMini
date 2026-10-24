@@ -1,0 +1,6 @@
+{
+  "disabled": false,
+  "lastTestOutcome": "fail",
+  "lastTestCommand": "node --test src/landing.test.js && TOKEN=\"$(cd /Users/worthington/Documents/dev/edge-dns && pulumi config get cloudflare:apiToken --stack romini.party)\" && ACCOUNT=\"$(cd /Users/worthington/Documents/dev/edge-dns && pulumi config get accountId --stack romini.party)\" && CLOUDFLARE_API_TOKEN=\"$TOKEN\" CLOUDFLARE_ACCOUNT_ID=\"$ACCOUNT\" npx wrangler deploy",
+  "lastTestAt": "2026-10-24T09:44:50.940Z"
+}

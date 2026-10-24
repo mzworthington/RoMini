@@ -9,6 +9,16 @@
 
 Screen-free NFC audio player for a Raspberry Pi. Figures start Tracks; the parent maps Tags on the house LAN.
 
+The built box is a 130 mm birch cube. A figure sits on the engraved lid. The speaker grille is the front. The red button and USB-C are on the side.
+
+<p align="center">
+  <img src="docs/images/romini/robot-on-box-front.jpeg" alt="Red figure on the birch cube. The speaker grille faces the camera." width="420">
+</p>
+
+<p align="center">
+  <img src="docs/images/romini/lid-logo-and-grille.jpeg" alt="Engraved RoMini lid and the front speaker grille." width="720">
+</p>
+
 ## Set up the Pi
 
 Use a **Raspberry Pi 4** with Lite OS, house Wi-Fi and SSH. The player is a GitHub Release **wheel** (`bin/install-pi`). There is no repo on the box. HAT jumpers, buttons, overlay and library disk: [docs/hardware.md](docs/hardware.md) and [docs/guide.md](docs/guide.md) §3.
@@ -58,9 +68,9 @@ Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/
 
 ## Public site
 
-`romini.party` and `www.romini.party` send `/` to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy). The companion demo is [demo.romini.party](https://demo.romini.party). That instance shows a banner and refuses studio keys, uploads, narration, and other changes. The container has no outbound internet.
+`romini.party` and `www.romini.party` are one page: a circular picture of RoMini, **find out more** linking to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy), and **demo dashboard** with a coming-soon flag.
 
-The zone is `romini.party` in [edge-dns](https://github.com/mzworthington/edge-dns). After that zone is active, `cd deploy/party && npx wrangler deploy` (Docker running, `CLOUDFLARE_API_TOKEN` set) attaches the hostnames and publishes the demo.
+The zone is `romini.party` in [edge-dns](https://github.com/mzworthington/edge-dns). After that zone is active, `cd deploy/party && npx wrangler deploy` (`CLOUDFLARE_API_TOKEN` set) attaches the hostnames and publishes the page.
 
 ## Parent dashboard
 
@@ -80,7 +90,7 @@ Tab-by-tab screens: [docs/dashboard.md](docs/dashboard.md).
 | [docs/guide.md](docs/guide.md) | Full laptop + Pi walkthrough |
 | [docs/dashboard.md](docs/dashboard.md) | Parent UI screenshots |
 | [docs/hardware.md](docs/hardware.md) | BOM, PN532 SPI, UPS, GPIO |
-| [docs/fabrication.md](docs/fabrication.md) | 3 mm birch cube, drawings and shop letter |
+| [docs/fabrication.md](docs/fabrication.md) | 3 mm birch cube, laser-cut by [Cutting Edge CNC](https://cuttingedgecnc.co.uk/) |
 | [docs/pi-setup.md](docs/pi-setup.md) | Headless flash checklist |
 | [docs/PRD_001.md](docs/PRD_001.md) | Product requirements |
 | [docs/spec.md](docs/spec.md) | Gherkin, glossary |

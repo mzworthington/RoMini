@@ -42,7 +42,7 @@ jobs:
           pre-commit: 'true'
 
       - name: Party routes
-        run: node --test deploy/party/src/route.test.js deploy/party/src/worker.test.js
+        run: node --test deploy/party/src/landing.test.js
 
       - name: Summary
         if: always()

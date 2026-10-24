@@ -2,6 +2,16 @@
 
 The wooden cube is one sheet of 3.0 mm Baltic birch. Outside it is 130 × 130 × 130 mm. The cut file, the logo master and the shop letter are in [`fabrication_package/`](../fabrication_package/RoMini_Storybox_Fabrication_Package/).
 
+[Cutting Edge CNC](https://cuttingedgecnc.co.uk/) in Lewes laser-cut the birch for the box we built. The service was good and they turned the file around quickly.
+
+<p align="center">
+  <img src="images/romini/enclosure-three-quarter.jpeg" alt="Assembled cube with finger joints, the lid logo and the speaker grille." width="720">
+</p>
+
+<p align="center">
+  <img src="images/romini/lid-logo-closeup.jpeg" alt="Engraved RoMini lid on the built cube." width="720">
+</p>
+
 ![One 3 mm sheet: lid, bottom, front, back, sides, speaker baffle and Pi shelf](images/fabrication/sheet.png)
 
 Top row, then bottom row: lid, bottom panel, front, back, left side, right side, speaker baffle and Pi shelf.

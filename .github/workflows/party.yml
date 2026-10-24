@@ -1,18 +1,13 @@
 name: Party
 
-# Apex and www send / to the story-box article. demo.romini.party runs the
-# companion with studio keys, uploads, and other changes turned off.
-# The romini.party zone must already exist (edge-dns) before custom domains attach.
+# romini.party and www serve one static page. The zone must already exist
+# (edge-dns) before the custom domains attach.
 
 on:
   push:
     branches: [main]
     paths:
       - 'deploy/party/**'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'src/**'
-      - 'pyproject.toml'
       - '.github/workflows/party.yml'
   workflow_dispatch:
 
@@ -21,7 +16,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy demo
+    name: Deploy page
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1

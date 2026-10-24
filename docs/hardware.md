@@ -77,7 +77,15 @@ Dashboard shows free space. Full Library → fail closed. **No `nofail`** on the
 
 ## Enclosure
 
-HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker magnets off the coil. First enclosure: one 16mm hole for the power switch and its lamp. Leave room for three more switches (vol±, play) later. The 130 mm birch cube, the sheet render and the shop letter are in [fabrication.md](fabrication.md).
+HAT coil under the **lid** (wood OK, metal not). Vent the Pi 4. Keep speaker magnets off the coil. First enclosure: one 16mm hole for the power switch and its lamp. Leave room for three more switches (vol±, play) later. The 130 mm birch cube was laser-cut by [Cutting Edge CNC](https://cuttingedgecnc.co.uk/). The sheet render and the shop letter are in [fabrication.md](fabrication.md).
+
+<p align="center">
+  <img src="images/romini/robot-on-box-controls.jpeg" alt="Figure on the lid. The red button and USB-C are on the side." width="420">
+</p>
+
+<p align="center">
+  <img src="images/romini/side-button-and-usb-c.jpeg" alt="Side panel: red button and USB-C. The speaker grille is the next face." width="420">
+</p>
 
 ## Software mapping
 

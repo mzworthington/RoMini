@@ -227,3 +227,4 @@ junit/
 # Local bedtime stories (keep the index)
 docs/stories/*
 !docs/stories/README.md
+deploy/party/.DS_Store
