@@ -11,12 +11,20 @@ const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf
 const BLOG = "https://mzworthington.co.uk/open-source/building-a-story-box-for-romy";
 const DEMO = "https://demo.romini.party";
 
-test("the public page shows a circular romini, find out more, and a flagged demo", () => {
-  assert.match(html, /<img[^>]*src="\/romini\.jpg"[^>]*alt="RoMini"/);
+test("the public page names RoMini, shows the box, and keeps the demo closed", () => {
+  assert.match(html, /<h1>\s*RoMini\s*<\/h1>/);
+  assert.match(html, /screen-free story box/);
+  assert.match(html, /<img[^>]*src="\/romini\.jpg"[^>]*alt="Wooden RoMini story box"/);
   assert.match(html, /border-radius:\s*50%/);
   assert.match(html, new RegExp(`href="${BLOG}"[^>]*>\\s*find out more\\s*<`));
-  assert.match(html, new RegExp(`href="${DEMO}"[^>]*>\\s*demo dashboard\\s*<`));
+  assert.match(html, /<button[^>]*disabled[^>]*>\s*demo dashboard\s*<\/button>/);
+  assert.doesNotMatch(html, new RegExp(`href="${DEMO}"`));
   assert.match(html, /class="flag"[^>]*>\s*coming soon\s*</);
+  assert.match(html, /rel="icon"[^>]*href="\/favicon\.svg"/);
+  assert.match(html, /property="og:title"[^>]*content="RoMini"/);
+  assert.match(html, /property="og:description"[^>]*content="[^"]*screen-free story box[^"]*"/);
+  assert.match(html, /property="og:image"[^>]*content="https:\/\/romini\.party\/romini\.jpg"/);
+  assert.match(html, /name="description"[^>]*content="[^"]*screen-free story box[^"]*"/);
 });
 
 test("cloudflare publishes the static page and not the demo container", () => {

@@ -4,6 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RoMini</title>
+    <meta
+      name="description"
+      content="A screen-free story box. Set a figure on it and the story plays. Record your own voice, or let it draft and narrate."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://romini.party/" />
+    <meta property="og:title" content="RoMini" />
+    <meta
+      property="og:description"
+      content="A screen-free story box. Set a figure on it and the story plays. Record your own voice, or let it draft and narrate."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://romini.party/" />
+    <meta property="og:image" content="https://romini.party/romini.jpg" />
+    <meta property="og:image:alt" content="Wooden RoMini story box" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RoMini" />
+    <meta
+      name="twitter:description"
+      content="A screen-free story box. Set a figure on it and the story plays. Record your own voice, or let it draft and narrate."
+    />
+    <meta name="twitter:image" content="https://romini.party/romini.jpg" />
     <style>
       :root {
         color-scheme: light;
@@ -22,15 +44,27 @@
         font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
       }
       main {
-        width: min(24rem, calc(100% - 2rem));
+        width: min(26rem, calc(100% - 2rem));
         text-align: center;
       }
       img {
         width: min(22rem, 78vw);
         height: min(22rem, 78vw);
         object-fit: cover;
-        object-position: 62% 42%;
+        object-position: center;
         border-radius: 50%;
+      }
+      h1 {
+        margin: 1.15rem 0 0.4rem;
+        font-size: 2.15rem;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.98rem;
+        line-height: 1.45;
       }
       .actions {
         display: flex;
@@ -58,7 +92,7 @@
         transform: rotate(6deg);
         pointer-events: none;
       }
-      a {
+      a, button {
         display: inline-block;
         padding: 0.7rem 1.1rem;
         border: 1px solid var(--line);
@@ -67,18 +101,27 @@
         text-decoration: none;
         font-family: ui-sans-serif, system-ui, sans-serif;
         font-size: 0.95rem;
+        background: transparent;
       }
       a:hover { background: var(--ink); color: var(--paper); }
-      a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      a:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
     <main>
-      <img src="/romini.jpg" alt="RoMini" />
+      <img src="/romini.jpg" alt="Wooden RoMini story box" />
+      <h1>RoMini</h1>
+      <p class="lede">
+        A screen-free story box. Set a figure on it and the story plays. Record your own voice, or let it draft and narrate.
+      </p>
       <p class="actions">
         <a href="https://mzworthington.co.uk/open-source/building-a-story-box-for-romy">find out more</a>
         <span class="demo">
-          <a href="https://demo.romini.party">demo dashboard</a>
+          <button type="button" disabled>demo dashboard</button>
           <span class="flag">coming soon</span>
         </span>
       </p>
