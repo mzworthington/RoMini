@@ -34,9 +34,12 @@
         --line: #231f20;
       }
       * { box-sizing: border-box; }
+      html { background: var(--paper); }
       body {
         margin: 0;
+        /* 100vh includes the mobile browser chrome, so the page scrolls. */
         min-height: 100vh;
+        min-height: 100svh;
         display: grid;
         place-items: center;
         background: var(--paper);
@@ -50,6 +53,9 @@
       img {
         width: min(22rem, 78vw);
         height: min(22rem, 78vw);
+        /* Keeps the circle inside a short screen. Ignored where svh is unsupported. */
+        width: min(22rem, 78vw, calc(100svh - 9rem));
+        height: min(22rem, 78vw, calc(100svh - 9rem));
         object-fit: cover;
         object-position: center;
         border-radius: 50%;
