@@ -1,4 +1,4 @@
-RADIO_QUIET_SEC = 60.0
+RADIO_HOLD_SEC = 30.0
 
 
 class DashboardTraffic:
@@ -15,9 +15,9 @@ class DashboardTraffic:
 
 
 def radio_should_sleep(*, seconds_since_request: float | None) -> bool:
-    if seconds_since_request is None:
-        return True
-    return seconds_since_request >= RADIO_QUIET_SEC
+    """The parent dashboard stays reachable on the house LAN, so the radio stays awake."""
+    del seconds_since_request
+    return False
 
 
 def cpu_governor(*, playing: bool) -> str:

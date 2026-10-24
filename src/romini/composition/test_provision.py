@@ -171,6 +171,7 @@ def test_provision_lets_the_dashboard_systemctl_without_a_password(tmp_path: Pat
     assert "NOPASSWD" in sudoers
     assert "/usr/bin/systemctl restart romini-core" in sudoers
     assert "/usr/bin/systemctl start --no-block romini-update.service" in sudoers
+    assert "/usr/sbin/iw dev wlan0 set power_save off" in sudoers
 
 
 def test_romini_update_timer_runs_installed_module() -> None:
@@ -203,6 +204,46 @@ def test_provision_refuses_the_public_tmp_directory_when_temp_is_private(tmp_pat
         assert "refusing" in str(exc)
         return
     raise AssertionError("expected the public /tmp directory to be refused")
+
+
+def test_apply_boot_keeps_the_dashboard_on_the_lan(monkeypatch, tmp_path: Path) -> None:
+    from romini.composition.provision import main
+
+    calls: list[str] = []
+    monkeypatch.setattr("sys.argv", ["provision", "--apply-boot"])
+    monkeypatch.setattr("romini.composition.provision.ensure_dashboard_lan", lambda: calls.append("lan"))
+    monkeypatch.setattr("romini.composition.provision.ensure_player_gpio", lambda: False)
+    monkeypatch.setattr("romini.composition.provision.ensure_boot_chime", lambda: False)
+    monkeypatch.setattr("romini.composition.provision.apply_boot_config", lambda path: False)
+    monkeypatch.setattr("romini.composition.provision.boot_config_path", lambda: tmp_path / "config.txt")
+
+    try:
+        main()
+    except SystemExit as exc:
+        assert exc.code == 0
+    else:
+        raise AssertionError("expected apply-boot to exit")
+    assert calls == ["lan"]
+
+
+def test_dashboard_lan_disables_wifi_powersave_and_reloads_on_the_box(tmp_path: Path, monkeypatch) -> None:
+    from romini.composition.provision import WIFI_POWERSAVE_OFF, ensure_dashboard_lan
+
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        "romini.composition.provision.subprocess.run",
+        lambda cmd, check: calls.append(cmd),
+    )
+    monkeypatch.setattr("romini.composition.provision.lan_root_is_the_box", lambda root: True)
+
+    ensure_dashboard_lan(tmp_path)
+    ensure_dashboard_lan(tmp_path)
+
+    sudoers = tmp_path / "etc/sudoers.d/romini"
+    assert sudoers.read_text().count("power_save off") == 1
+    assert oct(sudoers.stat().st_mode & 0o777) == "0o440"
+    assert (tmp_path / "etc/NetworkManager/conf.d/romini-wifi.conf").read_text() == WIFI_POWERSAVE_OFF
+    assert calls == [["nmcli", "general", "reload"]]
 
 
 def test_apply_boot_cli_refuses_a_config_path_outside_temp_and_boot(monkeypatch) -> None:
@@ -239,6 +280,7 @@ def test_apply_boot_cli_exits_10_until_the_overlay_is_present(tmp_path: Path, mo
     path = tmp_path / "config.txt"
     path.write_text("dtparam=audio=on\n")
     monkeypatch.setattr("romini.composition.provision.boot_config_path", lambda: path)
+    monkeypatch.setattr("romini.composition.provision.ensure_dashboard_lan", lambda: None)
     monkeypatch.setattr("sys.argv", ["provision", "--apply-boot"])
 
     try:
@@ -347,6 +389,7 @@ def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:
     assert (dest / "systemd/system/romini-update.service").is_file()
     assert (dest / "systemd/system/romini-update.timer").is_file()
     assert (dest / "avahi/services/romini.service").is_file()
+    assert "wifi.powersave = disable" in (dest / "NetworkManager/conf.d/romini-wifi.conf").read_text()
     assert "LABEL=romini-data" in (dest / "fstab.romini-data").read_text()
     cfg = (dest / "config.txt.romini").read_text()
     assert cfg.count("dtoverlay=gpio-shutdown,gpio_pin=26") == 1

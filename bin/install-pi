@@ -14,7 +14,7 @@ VENV="${DATA}/install/venv"
 API="https://api.github.com/repos/${REPO}/releases/latest"
 
 sudo apt-get update
-sudo apt-get install -y python3-venv python3-pip python3-dev swig avahi-daemon mpv alsa-utils curl
+sudo apt-get install -y python3-venv python3-pip python3-dev swig avahi-daemon iw mpv alsa-utils curl
 # Trixie can refresh the Raspberry Pi archive and still not offer liblgpio-dev.
 if apt-cache show liblgpio-dev >/dev/null 2>&1; then
   sudo apt-get install -y liblgpio-dev
@@ -66,8 +66,12 @@ PROV="$(mktemp -d)"
 sudo cp "${PROV}/systemd/system/"* /etc/systemd/system/
 sudo cp "${PROV}/sudoers.d/romini" /etc/sudoers.d/romini
 sudo chmod 440 /etc/sudoers.d/romini
-sudo mkdir -p /etc/avahi/services
+sudo mkdir -p /etc/avahi/services /etc/NetworkManager/conf.d
 sudo cp "${PROV}/avahi/services/romini.service" /etc/avahi/services/
+sudo cp "${PROV}/NetworkManager/conf.d/romini-wifi.conf" /etc/NetworkManager/conf.d/romini-wifi.conf
+if command -v nmcli >/dev/null 2>&1; then
+  sudo nmcli general reload || true
+fi
 rm -rf "${PROV}"
 
 if [ "${BOX_USER}" != pi ]; then

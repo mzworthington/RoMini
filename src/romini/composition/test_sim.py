@@ -870,7 +870,26 @@ def test_core_ticks_keep_the_field_up_while_waiting_for_a_figure(tmp_path: Path)
     assert nfc.rests == 0
 
 
-def test_core_ticks_idle_the_cpu_and_radio_when_the_shelf_is_quiet(tmp_path: Path) -> None:
+def test_core_ticks_keep_the_dashboard_listening(tmp_path: Path) -> None:
+    class Dashboard:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def ensure_serving(self, *, now: float) -> None:
+            self.calls += 1
+            assert now >= 0
+
+    data = write_empty_data(tmp_path)
+    box = load_sim_box(data_dir=data, player=FakePlayer(), led=FakeLed())
+    dashboard = Dashboard()
+    box.dashboard = dashboard
+
+    run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None], sleep=lambda _: None)
+
+    assert dashboard.calls == 1
+
+
+def test_core_ticks_idle_the_cpu_and_keep_the_radio_awake_when_the_shelf_is_quiet(tmp_path: Path) -> None:
     class Power:
         def __init__(self) -> None:
             self.calls: list[tuple[bool, bool]] = []
@@ -885,7 +904,7 @@ def test_core_ticks_idle_the_cpu_and_radio_when_the_shelf_is_quiet(tmp_path: Pat
 
     run_core_ticks(box, FakeNfc(), data_dir=data, ticks=[None], sleep=lambda _: None)
 
-    assert power.calls == [(False, True)]
+    assert power.calls == [(False, False)]
 
 
 def test_core_ticks_sleep_nfc_poll_interval(tmp_path: Path) -> None:

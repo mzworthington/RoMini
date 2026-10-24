@@ -106,6 +106,50 @@ def test_dashboard_pi_profile_may_bind_lan(monkeypatch) -> None:
         listener.close()
 
 
+def test_dashboard_on_the_lan_also_listens_on_ipv6(monkeypatch) -> None:
+    from urllib.error import HTTPError
+    from urllib.request import urlopen
+
+    from fastapi import FastAPI
+
+    from romini.composition.dashboard import start_dashboard
+
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    listener = start_dashboard(FastAPI(telemetry={"auto_configure": False}), host="0.0.0.0", port=0)
+    try:
+        try:
+            with urlopen(f"http://[::1]:{listener.port}/", timeout=2) as resp:
+                status = resp.status
+        except HTTPError as exc:
+            status = exc.code
+        assert status == 404
+    finally:
+        listener.close()
+
+
+def test_dashboard_starts_again_after_the_listener_stops(monkeypatch) -> None:
+    from urllib.error import HTTPError
+    from urllib.request import urlopen
+
+    from fastapi import FastAPI
+
+    from romini.composition.dashboard import start_dashboard
+
+    monkeypatch.setenv("ROMINI_PROFILE", "pi")
+    listener = start_dashboard(FastAPI(telemetry={"auto_configure": False}), host="0.0.0.0", port=0)
+    try:
+        listener.close()
+        listener.ensure_serving(now=10, wait=True)
+        with urlopen(f"http://127.0.0.1:{listener.port}/", timeout=2) as resp:
+            status = resp.status
+    except HTTPError as exc:
+        status = exc.code
+    finally:
+        listener.close()
+
+    assert status == 404
+
+
 def test_dashboard_settings_shows_volume_when_mixer_is_wired() -> None:
     from fastapi.testclient import TestClient
 
