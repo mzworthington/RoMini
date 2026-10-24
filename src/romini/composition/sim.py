@@ -205,7 +205,7 @@ def load_sim_box_from_env(
     sessions: Sessions | None = None,
 ) -> SimBox:
     profile = os.environ.get("ROMINI_PROFILE", "sim")
-    if profile not in {"sim", "pi"}:
+    if profile not in {"sim", "pi", "demo"}:
         raise ValueError(f"unsupported profile: {profile}")
     data = os.environ.get("ROMINI_DATA")
     if not data:

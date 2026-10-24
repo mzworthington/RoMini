@@ -1,0 +1,48 @@
+name: Party
+
+# Apex and www send / to the story-box article. demo.romini.party runs the
+# companion with studio keys, uploads, and other changes turned off.
+# The romini.party zone must already exist (edge-dns) before custom domains attach.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/party/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'src/**'
+      - 'pyproject.toml'
+      - '.github/workflows/party.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: deploy/party/package-lock.json
+
+      - name: Install worker dependencies
+        working-directory: deploy/party
+        run: npm ci
+
+      - name: Deploy
+        working-directory: deploy/party
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set. Skipping wrangler deploy."
+            exit 0
+          fi
+          npx wrangler deploy

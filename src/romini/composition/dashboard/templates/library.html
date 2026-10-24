@@ -49,6 +49,12 @@
 </li>
 </ul>
 <div class="board">
+{% if demo %}
+<section class="card" id="upload-well">
+<h2>Uploads are turned off</h2>
+<p>This public demo does not accept audio files.</p>
+</section>
+{% else %}
 <section class="card drop" id="upload-well">
 <div class="drop-mark" aria-hidden="true">
 <svg viewBox="0 0 24 24"><path d="M12 16V5m0 0 4 4M12 5 8 9"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
@@ -154,6 +160,7 @@
 <p class="quota-note">Local Wi-Fi</p>
 <div class="meter" id="sync-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Transfer progress"><span style="width: 0%"></span></div>
 </section>
+{% endif %}
 </div>
 <section class="card library-catalog">
 <h2 class="catalog-title">Library</h2>

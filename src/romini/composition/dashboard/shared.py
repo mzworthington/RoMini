@@ -353,6 +353,7 @@ HOME_NOTICES = {
     "image": "Cover image stored",
     "image-needed": "Choose a PNG, JPEG, GIF, or WebP image",
     "update": "Update check started",
+    "demo": "That control is turned off on this demo",
 }
 
 
@@ -466,6 +467,7 @@ def render_page(
     power: object | None = None,
     updates: object | None = None,
     listening: PlayLog | None = None,
+    demo: bool = False,
 ) -> HTMLResponse:
     studio = page in {"stories", "characters"}
     tracks: list[dict[str, str]] = []
@@ -687,6 +689,7 @@ def render_page(
             "library_root": str(library_root) if library_root else "",
             "can_power": power is not None,
             "can_update": updates is not None,
+            "demo": demo,
         },
     )
 
@@ -720,6 +723,7 @@ class DashboardCtx:
     updates: object | None = None
     listening: PlayLog | None = None
     mark_listening: Callable[[bool], None] = lambda _was_playing: None
+    demo: bool = False
 
     def page(self, request: Request, template: str, *, page: str, page_title: str) -> HTMLResponse:
         flash = getattr(self, "flash", "") or ""
@@ -748,4 +752,5 @@ class DashboardCtx:
             power=self.power,
             updates=self.updates,
             listening=self.listening,
+            demo=self.demo,
         )

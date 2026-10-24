@@ -174,6 +174,9 @@ sudo nmtui</pre>
 <div class="hw-pair">
 <section class="card" id="studio-keys">
 <h2>Studio keys</h2>
+{% if demo %}
+<p class="hint">Studio keys are turned off on this demo.</p>
+{% else %}
 <form action="/keys" method="post">
 <label for="gemini-key">Gemini key</label>
 <input id="gemini-key" name="gemini_key" type="password" autocomplete="off">
@@ -183,6 +186,7 @@ sudo nmtui</pre>
 {% if elevenlabs_key_set %}<p class="hint">ElevenLabs key is set{% if elevenlabs_key_mask %} · {{ elevenlabs_key_mask }}{% endif %}</p>{% elif elevenlabs_key_id %}<p class="hint">That is a key ID. Paste the secret that starts with sk_.</p>{% endif %}
 <button>Save keys</button>
 </form>
+{% endif %}
 </section>
 <section class="card">
 <h2>Play mode</h2>

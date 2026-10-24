@@ -3,12 +3,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from time import monotonic
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.story_audio import Speech
 from romini.features.audit.record import AuditLog, record_event
 from romini.features.battery.charge import Battery
+from romini.features.demo.policy import demo_forbids, demo_return_path
 from romini.features.library.add_track import Catalog, Notices, Storage
 from romini.features.library.assign import CatalogFile
 from romini.features.listening.log import PlayLog, sync_playback
@@ -28,6 +29,7 @@ from .shared import (
     PathCatalog,
     RegisterMode,
     ScriptDraft,
+    notice,
     templates,
 )
 
@@ -68,8 +70,17 @@ def create_dashboard(
     power: object | None = None,
     updates: object | None = None,
     traffic: DashboardTraffic | None = None,
+    demo: bool = False,
 ) -> FastAPI:
     app = FastAPI(telemetry={"auto_configure": False})
+    if demo:
+
+        @app.middleware("http")
+        async def refuse_demo_changes(request: Request, call_next: Callable) -> object:
+            if demo_forbids(request.method, request.url.path):
+                return notice(demo_return_path(request.headers.get("referer", "")), "demo")
+            return await call_next(request)
+
     if traffic is not None:
 
         @app.middleware("http")
@@ -133,6 +144,7 @@ def create_dashboard(
         updates=updates,
         listening=listening,
         mark_listening=mark_listening,
+        demo=demo,
     )
     home.mount(app, ctx)
     figures.mount(app, ctx)

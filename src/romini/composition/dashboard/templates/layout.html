@@ -13,6 +13,9 @@
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell"{% if poll %} data-poll{% endif %}{% if now_playing and now_playing.is_playing %} data-playing="on"{% endif %}>
+{% if demo %}
+<p class="demo-banner" role="status">Public demo. Studio keys, uploads, and other changes are turned off. <a href="https://mzworthington.co.uk/open-source/building-a-story-box-for-romy">Read how the box was built</a>.</p>
+{% endif %}
 <header>
 <div class="topbar">
 <div class="masthead">

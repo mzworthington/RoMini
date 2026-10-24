@@ -1,0 +1,9 @@
+.venv
+.git
+.github
+docs
+e2e
+deploy/party/node_modules
+**/__pycache__
+**/*.pyc
+node_modules

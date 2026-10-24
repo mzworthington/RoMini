@@ -1,0 +1,14 @@
+{
+  "name": "romini-party",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/route.test.js src/worker.test.js"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7"
+  },
+  "devDependencies": {
+    "wrangler": "^4.152.0"
+  }
+}

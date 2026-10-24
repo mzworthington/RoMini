@@ -72,7 +72,10 @@ function updateStoryLength(value) {
 <p class="hint" id="script-count"></p>
 <button>Save Blueprint</button>
 </form>
-{% if story_title %}
+{% if demo %}
+<p class="hint">Drafting and speaking are turned off on this demo.</p>
+{% endif %}
+{% if story_title and not demo %}
 <form action="/stories/draft" method="post" class="form-busy" data-busy="Writing the script…">
 <p id="draft-status" class="status" hidden role="status" aria-live="polite"></p>
 <button><svg class="spark-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>Draft Script with Gemini</button>
@@ -82,7 +85,7 @@ function updateStoryLength(value) {
 {% if story_title and not script %}
 <p class="hint">Save a script to speak it.</p>
 {% endif %}
-{% if story_title and script %}
+{% if story_title and script and not demo %}
 <section class="card">
 <form action="/stories/speak" method="post" class="form-busy" data-busy="Speaking the story…">
 <p id="speak-status" class="status" hidden role="status" aria-live="polite"></p>

@@ -56,6 +56,12 @@ make test
 
 Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/GPIO/player are fakes.
 
+## Public site
+
+`romini.party` and `www.romini.party` send `/` to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy). The companion demo is [demo.romini.party](https://demo.romini.party). That instance shows a banner and refuses studio keys, uploads, narration, and other changes. The container has no outbound internet.
+
+The zone is `romini.party` in [edge-dns](https://github.com/mzworthington/edge-dns). After that zone is active, `cd deploy/party && npx wrangler deploy` (Docker running, `CLOUDFLARE_API_TOKEN` set) attaches the hostnames and publishes the demo.
+
 ## Parent dashboard
 
 On the box, Avahi is `http://<hostname>.local` (usually [http://romini.local](http://romini.local)).

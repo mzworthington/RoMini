@@ -187,8 +187,13 @@ def serve_until_stopped(box: SimBox) -> None:
 
 
 def entry(*, player: Player | None = None, led: StatusLed | None = None) -> None:
-    if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
+    profile = os.environ.get("ROMINI_PROFILE", "sim")
+    if profile == "pi":
         main(player=player, led=led, ticks=default_ticks(), nfc_opener=default_nfc)
+        return
+    if profile == "demo":
+        box = main(player=player, led=led, lines=())
+        serve_until_stopped(box)
         return
     box = run(player=player, led=led)
     serve_until_stopped(box)
@@ -218,34 +223,37 @@ def main(
     dash_port = os.environ.get("ROMINI_DASHBOARD_PORT")
     if dash_port is not None:
         data = Path(os.environ["ROMINI_DATA"])
+        profile = os.environ.get("ROMINI_PROFILE", "sim")
+        demo = profile == "demo"
         traffic = DashboardTraffic()
         box.traffic = traffic
-        if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
+        if profile == "pi":
             box.host_power = HostPower()
         app = create_dashboard(
             storage=DiskStorage(data / "library"),
             assign_catalog=PathCatalog(data / "catalog.yaml"),
             settings=SqliteSettings(box.state),
-            pad=box if os.environ.get("ROMINI_PROFILE", "sim") == "sim" else None,
+            pad=box if profile == "sim" else None,
             register=box,
             mixer=box.mixer,
-            battery=DeferredUpsHat(open_ups_hat) if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else open_ups_hat(),
+            battery=None if demo else (DeferredUpsHat(open_ups_hat) if profile == "pi" else open_ups_hat()),
             stories=data / "stories",
             covers=data / "covers",
             characters=data / "characters",
-            secrets=data / "studio.env",
-            box_secrets=Path("/etc/romini/env"),
+            secrets=None if demo else data / "studio.env",
+            box_secrets=None if demo else Path("/etc/romini/env"),
             player=box.player,
             audit=getattr(box, "audit", None),
             listening=getattr(box, "listening", None),
             update_status=data / "update-check.json",
-            power=LocalPower(halt=box.halt, profile=os.environ.get("ROMINI_PROFILE", "sim")),
-            updates=LocalUpdate(profile=os.environ.get("ROMINI_PROFILE", "sim")),
+            power=None if demo else LocalPower(halt=box.halt, profile=profile),
+            updates=None if demo else LocalUpdate(profile=profile),
             traffic=traffic,
+            demo=demo,
         )
         box.dashboard = start_dashboard(
             app,
-            host="0.0.0.0" if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else "127.0.0.1",
+            host="0.0.0.0" if profile in {"pi", "demo"} else "127.0.0.1",
             port=int(dash_port),
         )
     quiet_idle = getattr(box.player, "quiet_idle", None)
