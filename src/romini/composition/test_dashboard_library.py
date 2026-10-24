@@ -513,7 +513,46 @@ def test_dashboard_assign_blank_title_does_not_write(tmp_path: Path) -> None:
     assert catalog_path.read_text() == "tracks: []\n"
 
 
-def test_dashboard_assign_blank_uid_does_not_write(tmp_path: Path) -> None:
+def test_dashboard_renames_a_track_without_selecting_a_figure(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    name: "Robot"\n'
+        "tracks:\n"
+        '  - path: "stories/gruffalo.mp3"\n'
+        '    title: "The Gruffalo"\n'
+        "    artist: Julia Donaldson\n"
+    )
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(catalog_path),
+        )
+    )
+    form = client.get("/library").text.split('action="/assign"', 1)[1].split("</form>", 1)[0]
+    radio = form.split('name="uid"', 1)[1].split(">", 1)[0]
+
+    assert "required" not in radio
+
+    response = client.post(
+        "/assign",
+        data={"path": "stories/gruffalo.mp3", "title": "The Gruffalo returns"},
+    )
+
+    assert response.status_code == 200
+    assert "Title saved" in response.text
+    saved = catalog_path.read_text()
+    assert "title: The Gruffalo returns" in saved or 'title: "The Gruffalo returns"' in saved
+    assert "Julia Donaldson" in saved
+    assert "04aabbccddeeff" not in saved.split("tracks:", 1)[1]
+
+
+def test_dashboard_assign_blank_uid_saves_the_title_without_a_figure(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     catalog_path = tmp_path / "catalog.yaml"
@@ -540,8 +579,10 @@ def test_dashboard_assign_blank_uid_does_not_write(tmp_path: Path) -> None:
         },
     )
 
-    assert "Fill in the required fields" in response.text
-    assert catalog_path.read_text() == "tracks: []\n"
+    assert "Title saved" in response.text
+    saved = catalog_path.read_text()
+    assert "The Frog Prince" in saved
+    assert "uid:" not in saved
 
 
 def test_dashboard_assign_blank_path_does_not_write(tmp_path: Path) -> None:

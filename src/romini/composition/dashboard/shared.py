@@ -323,6 +323,7 @@ class ScriptDraft(Protocol):
 
 HOME_NOTICES = {
     "assigned": "Figure assigned",
+    "retitled": "Title saved",
     "play-mode": "Play mode saved",
     "uploaded": "Track stored",
     "full": "Storage is full",

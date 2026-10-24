@@ -17,7 +17,7 @@ from romini.composition.dashboard.shared import (
     save_track_cover,
 )
 from romini.features.library.add_track import add_track
-from romini.features.library.assign import confirm_assign
+from romini.features.library.assign import confirm_assign, rename_track
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import PlayMode, on_figure_placed
 from romini.features.stories.cover import with_track_image
@@ -94,9 +94,16 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")
             return Response(status_code=204)
         form = await request.form()
-        body = AssignBody(uid=str(form["uid"]), path=str(form["path"]), title=str(form["title"]))
-        if not has_required(body.uid, body.path, body.title):
+        path = str(form.get("path") or "")
+        title = str(form.get("title") or "")
+        uid = str(form.get("uid") or "")
+        if not has_required(path, title):
             return notice("/library", "needed")
+        if not uid.strip():
+            rename_track(path=path, title=title, catalog=ctx.assign_catalog)
+            ctx.note("rename", f"Renamed {path} to {title}", headline="Title saved")
+            return notice("/library", "retitled")
+        body = AssignBody(uid=uid, path=path, title=title)
         confirm_assign(uid=body.uid, path=body.path, title=body.title, catalog=ctx.assign_catalog)
         remember_track_cover(ctx.covers, ctx.assign_catalog, body.path)
         ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")

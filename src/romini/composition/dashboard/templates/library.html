@@ -240,7 +240,7 @@
 <legend>Figure</legend>
 {% for tag in tags %}
 <label class="figure-tile">
-<input type="radio" name="uid" value="{{ tag.uid }}"{% if tag.uid == track.uid or (not track.uid and tag.uid == focus_uid) %} checked{% endif %} required>
+<input type="radio" name="uid" value="{{ tag.uid }}"{% if tag.uid == track.uid or (not track.uid and tag.uid == focus_uid) %} checked{% endif %}>
 {% if tag.image %}<img src="{{ tag.image }}" alt="">{% else %}<img src="/mark.svg" alt="">{% endif %}
 <span>{{ tag.name or tag.uid }}</span>
 </label>
