@@ -148,6 +148,44 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 """
+ROMINI_STATUS_SERVICE = """[Unit]
+Description=Write RoMini status onto the boot partition
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /usr/local/lib/romini/romini-status.sh
+"""
+ROMINI_STATUS_TIMER = """[Unit]
+Description=RoMini boot-partition status note
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=1min
+Unit=romini-status.service
+
+[Install]
+WantedBy=timers.target
+"""
+ROMINI_STATUS_SCRIPT = """#!/bin/sh
+BOOT="/boot/firmware/romini-status.txt"
+if [ ! -d /boot/firmware ]; then
+  BOOT="/boot/romini-status.txt"
+fi
+{
+  date -Is
+  echo "--- addr ---"
+  ip -br addr
+  echo "--- wifi ---"
+  iw dev wlan0 link
+  echo "--- units ---"
+  for unit in romini-core.service avahi-daemon.service rpi-connect.service; do
+    printf '%s %s\\n' "$unit" "$(systemctl is-active "$unit" 2>/dev/null || true)"
+  done
+  echo "--- journal ---"
+  journalctl -b -n 40 --no-pager -o short-iso
+} > "$BOOT" 2>&1
+sync
+"""
 AVAHI_HTTP_SERVICE = """<?xml version="1.0" standalone='no'?>
 <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
 <service-group>
@@ -177,6 +215,9 @@ def write_provision_files(dest: Path) -> None:
     (systemd / "romini-boot-chime.service").write_text(ROMINI_BOOT_CHIME_SERVICE)
     (systemd / "romini-update.service").write_text(ROMINI_UPDATE_SERVICE)
     (systemd / "romini-update.timer").write_text(ROMINI_UPDATE_TIMER)
+    (systemd / "romini-status.service").write_text(ROMINI_STATUS_SERVICE)
+    (systemd / "romini-status.timer").write_text(ROMINI_STATUS_TIMER)
+    (dest / "romini-status.sh").write_text(ROMINI_STATUS_SCRIPT)
     avahi = dest / "avahi" / "services"
     avahi.mkdir(parents=True, exist_ok=True)
     (avahi / "romini.service").write_text(AVAHI_HTTP_SERVICE)

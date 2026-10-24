@@ -379,6 +379,32 @@ def test_provision_config_routes_analogue_audio_to_gpio_18_and_19(tmp_path: Path
     assert "dtoverlay=audremap,pins_18_19" in cfg
 
 
+def test_provision_leaves_a_status_note_on_the_boot_partition(tmp_path: Path) -> None:
+    from romini.composition.provision import write_provision_files
+
+    dest = tmp_path / "provision"
+    write_provision_files(dest)
+    service = (dest / "systemd/system/romini-status.service").read_text()
+    timer = (dest / "systemd/system/romini-status.timer").read_text()
+    script = (dest / "romini-status.sh").read_text()
+
+    assert "Requires=romini-core" not in service
+    assert "After=romini-core" not in service
+    assert "network-online.target" not in service
+    assert "Type=oneshot" in service
+    assert "/usr/local/lib/romini/romini-status.sh" in service
+    assert "OnBootSec=15s" in timer
+    assert "OnUnitActiveSec=1min" in timer
+    assert "romini-status.service" in timer
+    assert "/boot/firmware/romini-status.txt" in script
+    assert "ip -br addr" in script
+    assert "iw dev wlan0 link" in script
+    assert "romini-core.service" in script
+    assert "avahi-daemon.service" in script
+    assert "rpi-connect.service" in script
+    assert "journalctl -b" in script
+
+
 def test_write_provision_files_drops_units_and_fstab(tmp_path: Path) -> None:
     from romini.composition.provision import write_provision_files
 

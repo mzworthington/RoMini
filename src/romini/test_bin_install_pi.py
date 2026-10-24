@@ -73,6 +73,15 @@ def test_install_pi_script_installs_ups_hat_smbus() -> None:
     assert "smbus2" in script
 
 
+def test_install_pi_writes_a_boot_partition_status_note_and_keeps_the_journal() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "/usr/local/lib/romini/romini-status.sh" in script
+    assert "systemctl enable --now romini-status.timer" in script
+    assert "Storage=persistent" in script
+    assert "/var/log/journal" in script
+    assert "/etc/systemd/journald.conf.d/romini.conf" in script
+
+
 def test_install_pi_keeps_wifi_awake_for_the_dashboard() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert " avahi-daemon iw " in script
