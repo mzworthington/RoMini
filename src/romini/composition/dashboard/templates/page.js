@@ -197,11 +197,24 @@
       if (!form || form.tagName !== "FORM") return;
       if (form.classList.contains("scrub-form") || form.hasAttribute("data-inject")) return;
       if (!form.getAttribute("action")) return;
+      if (typeof form.onsubmit === "function") {
+        var allowed = form.onsubmit.call(form, event);
+        if (allowed === false) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+      }
       event.preventDefault();
       event.stopPropagation();
       var submitter = event.submitter || null;
-      var method = (form.getAttribute("method") || "get").toUpperCase();
-      var target = new URL(form.action, location.href);
+      var method = (
+        (submitter && submitter.getAttribute("formmethod")) ||
+        form.getAttribute("method") ||
+        "get"
+      ).toUpperCase();
+      var action = (submitter && submitter.getAttribute("formaction")) || form.getAttribute("action");
+      var target = new URL(action, location.href);
       var status = form.querySelector("[role='status']");
       if (method === "GET") {
         var params = new URLSearchParams(submitter ? new FormData(form, submitter) : new FormData(form));
@@ -213,8 +226,8 @@
         status.hidden = false;
         status.textContent = form.getAttribute("data-busy") || "Working…";
       }
-      if (submitter) submitter.disabled = true;
       var body = submitter ? new FormData(form, submitter) : new FormData(form);
+      if (submitter) submitter.disabled = true;
       navigating = true;
       void fetch(target.href, { method: "POST", body: body, credentials: "same-origin" })
         .then(function (response) {

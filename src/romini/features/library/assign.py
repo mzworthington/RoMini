@@ -9,6 +9,16 @@ class CatalogFile(Protocol):
     def write_text(self, text: str) -> None: ...
 
 
+def remove_track(*, path: str, catalog: CatalogFile) -> None:
+    data = yaml.safe_load(catalog.read_text()) or {}
+    data["tracks"] = [
+        row
+        for row in list(data.get("tracks") or [])
+        if not (isinstance(row, dict) and str(row.get("path") or "") == path)
+    ]
+    catalog.write_text(yaml.safe_dump(data, sort_keys=False))
+
+
 def rename_track(*, path: str, title: str, catalog: CatalogFile) -> None:
     data = yaml.safe_load(catalog.read_text()) or {}
     rows = list(data.get("tracks") or [])

@@ -256,6 +256,7 @@
 {% if not tags %}<p class="hint">Register a figure first</p>{% endif %}
 {% if bind_prompt and not track.figure %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
 <button>Assign</button>
+<button type="submit" onclick="return confirm('Delete this track?')" formaction="/library/delete" formmethod="post">Delete track</button>
 </form>
 </details>
 </div>

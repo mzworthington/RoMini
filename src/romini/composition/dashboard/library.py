@@ -17,7 +17,7 @@ from romini.composition.dashboard.shared import (
     save_track_cover,
 )
 from romini.features.library.add_track import add_track
-from romini.features.library.assign import confirm_assign, rename_track
+from romini.features.library.assign import confirm_assign, remove_track, rename_track
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import PlayMode, on_figure_placed
 from romini.features.stories.cover import with_track_image
@@ -108,6 +108,20 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
         remember_track_cover(ctx.covers, ctx.assign_catalog, body.path)
         ctx.note("assign", f"Assigned {body.title} to {body.uid}", headline="Story assigned")
         return notice("/library", "assigned")
+
+    @app.post("/library/delete", response_model=None)
+    async def delete_library_track(request: Request) -> RedirectResponse:
+        form = await request.form()
+        path = str(form.get("path") or "")
+        if path not in library_paths(ctx.storage):
+            return notice("/library", "needed")
+        remove = getattr(ctx.storage, "delete", None)
+        if callable(remove):
+            remove(path)
+        if ctx.assign_catalog is not None:
+            remove_track(path=path, catalog=ctx.assign_catalog)
+        ctx.note("delete", f"Deleted {path}", headline="Track deleted")
+        return notice("/library", "deleted")
 
     @app.post("/place/{uid}")
     def place_figure(uid: str) -> RedirectResponse:

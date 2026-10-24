@@ -552,6 +552,50 @@ def test_dashboard_renames_a_track_without_selecting_a_figure(tmp_path: Path) ->
     assert "04aabbccddeeff" not in saved.split("tracks:", 1)[1]
 
 
+def test_dashboard_deletes_a_track_from_the_edit_form_after_confirm(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "gruffalo.mp3").write_bytes(b"gruffalo")
+    (library / "pond.mp3").write_bytes(b"pond")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "gruffalo.mp3"\n'
+        '    title: "The Gruffalo"\n'
+        '  - path: "pond.mp3"\n'
+        '    title: "The pond"\n'
+    )
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+        )
+    )
+    edit = client.get("/library").text.split(">The Gruffalo<", 1)[1].split("</details>", 1)[0]
+    delete_form = edit.split('action="/library/delete"', 1)[0].rsplit("<form", 1)[1]
+
+    assert "confirm(" in delete_form
+    assert "gruffalo.mp3" in delete_form
+
+    response = client.post("/library/delete", data={"path": "gruffalo.mp3"})
+
+    assert response.status_code == 200
+    assert "Track deleted" in response.text
+    assert "The Gruffalo" not in response.text
+    assert "The pond" in response.text
+    assert not (library / "gruffalo.mp3").exists()
+    assert (library / "pond.mp3").read_bytes() == b"pond"
+    saved = catalog_path.read_text()
+    assert "gruffalo.mp3" not in saved
+    assert "pond.mp3" in saved
+    assert "04aabbccddeeff" not in saved
+
+
 def test_dashboard_assign_blank_uid_saves_the_title_without_a_figure(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 

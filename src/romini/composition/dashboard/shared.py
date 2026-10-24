@@ -176,7 +176,7 @@ def read_player_log() -> str:
                 "-u",
                 "romini-update.service",
                 "-n",
-                "40",
+                "1000",
                 "--no-pager",
                 "-o",
                 "short-iso",
@@ -324,6 +324,7 @@ class ScriptDraft(Protocol):
 HOME_NOTICES = {
     "assigned": "Figure assigned",
     "retitled": "Title saved",
+    "deleted": "Track deleted",
     "play-mode": "Play mode saved",
     "uploaded": "Track stored",
     "full": "Storage is full",
@@ -414,6 +415,11 @@ class DiskStorage:
             return None
         info = target.stat()
         return info.st_size, info.st_mtime_ns
+
+    def delete(self, filename: str) -> None:
+        target = self._file(filename)
+        if target is not None:
+            target.unlink()
 
     def _file(self, filename: str) -> Path | None:
         target = (self._root / filename).resolve()

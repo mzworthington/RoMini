@@ -1108,6 +1108,38 @@ def test_dashboard_figures_volume_stays_on_the_figures_page() -> None:
     assert response.headers["location"] == "/figures?notice=volume"
 
 
+def test_dashboard_player_log_keeps_the_last_thousand_journal_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    from romini.composition.dashboard import shared
+
+    seen: list[list[str]] = []
+
+    def run(args: list[str], **_kwargs: object) -> object:
+        seen.append(args)
+
+        class Completed:
+            stdout = "line\n"
+            stderr = ""
+
+        return Completed()
+
+    monkeypatch.setattr(shared.subprocess, "run", run)
+    assert shared.read_player_log() == "line"
+    assert seen == [
+        [
+            "journalctl",
+            "-u",
+            "romini-core.service",
+            "-u",
+            "romini-update.service",
+            "-n",
+            "1000",
+            "--no-pager",
+            "-o",
+            "short-iso",
+        ]
+    ]
+
+
 def test_dashboard_player_log_previews_the_newest_lines_without_repeating_them(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

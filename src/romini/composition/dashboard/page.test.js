@@ -248,6 +248,79 @@ test("a failed visit falls back to a full page load", async () => {
   assert.deepEqual(page.assigned, ["http://romini.local/library"]);
 });
 
+test("deleting a saved story asks first and posts that story", async () => {
+  const page = boot(`
+    <div class="shell">
+      <form onsubmit="return confirm('Delete this story?')" action="/stories/delete" method="post">
+        <button name="slug" value="the-little-station">Delete</button>
+      </form>
+    </div>
+  `);
+  const asked = [];
+  page.window.confirm = (message) => {
+    asked.push(message);
+    return false;
+  };
+  const form = page.window.document.querySelector("form");
+  const button = form.querySelector("button");
+  const submit = () =>
+    form.dispatchEvent(new page.window.SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: button }));
+
+  submit();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(asked, ["Delete this story?"]);
+  assert.equal(page.fetches.length, 0);
+
+  page.window.confirm = (message) => {
+    asked.push(message);
+    return true;
+  };
+  page.respond(async () => ({
+    text: async () => pageHtml("<p>No saved stories yet</p>"),
+    url: "http://romini.local/stories?notice=story",
+  }));
+  submit();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(asked, ["Delete this story?", "Delete this story?"]);
+  assert.equal(page.fetches.length, 1);
+  assert.equal(page.fetches[0].url, "http://romini.local/stories/delete");
+  assert.equal(page.fetches[0].init.method, "POST");
+  assert.equal(page.fetches[0].init.body.get("slug"), "the-little-station");
+});
+
+test("deleting a library track asks first and posts that track", async () => {
+  const page = boot(`
+    <div class="shell">
+      <form method="post" action="/assign">
+        <input type="hidden" name="path" value="gruffalo.mp3">
+        <input name="title" value="The Gruffalo">
+        <button type="submit">Assign</button>
+        <button type="submit" onclick="return confirm('Delete this track?')" formaction="/library/delete" formmethod="post">Delete track</button>
+      </form>
+    </div>
+  `);
+  const asked = [];
+  page.window.confirm = (message) => {
+    asked.push(message);
+    return true;
+  };
+  page.respond(async () => ({
+    text: async () => pageHtml("<p>Track deleted</p>"),
+    url: "http://romini.local/library?notice=deleted",
+  }));
+  const button = page.window.document.querySelector("[formaction]");
+  button.click();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(asked, ["Delete this track?"]);
+  assert.equal(page.fetches.length, 1);
+  assert.equal(page.fetches[0].url, "http://romini.local/library/delete");
+  assert.equal(page.fetches[0].init.method, "POST");
+  assert.equal(page.fetches[0].init.body.get("path"), "gruffalo.mp3");
+});
+
 test("an open assign menu closes only when the click lands outside it", () => {
   const page = boot(`
     <div class="shell">
