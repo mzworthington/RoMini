@@ -122,7 +122,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v10.3.2
         with:
-          python-version: "3.13"
+          python-version: '3.13'
           working-directory: deploy/demo
 
       - name: Install demo dependencies

@@ -1,3 +1,33 @@
+def test_demo_catalog_shows_stories_figures_and_tracks() -> None:
+    from pathlib import Path
+
+    import yaml
+    from fastapi.testclient import TestClient
+
+    from romini.composition.demo_app import create_demo_app
+
+    catalog_path = Path(__file__).resolve().parents[3] / "deploy/demo/catalog.yaml"
+    catalog = catalog_path.read_text()
+    data = yaml.safe_load(catalog)
+    objects = [{"key": track["path"], "size": 128} for track in data["tracks"]]
+    app = create_demo_app(
+        settings_rows=[("catalog", catalog), ("play_mode", "presence")],
+        objects=objects,
+        base_url="https://media.example",
+    )
+    client = TestClient(app)
+    figures = client.get("/figures").text
+    library = client.get("/library").text
+    stories = client.get("/stories").text
+
+    assert "romys-birthday-party" not in catalog
+    assert "Blue Tag" in figures
+    assert "Romy and the banana" in figures
+    assert 'data-demo-play="https://media.example/romy-and-the-banana.mp3"' in library
+    assert "Romy and the brick tower" in stories
+    assert "Romy" in stories
+
+
 def test_demo_app_renders_the_seeded_library() -> None:
     from fastapi.testclient import TestClient
 
