@@ -133,7 +133,7 @@ function updateStoryLength(value) {
 <span class="roster-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="2.2"/><circle cx="16" cy="9.2" r="1.7"/><path d="M3.8 17.8a5.2 5.2 0 0 1 10.4 0"/><path d="M14.2 17.8a4 4 0 0 1 6-3.2"/></svg></span>
 <h2>Family Characters ({{ saved_characters|length }})</h2>
 </div>
-<form class="roster-add" action="/characters/new" method="post"><button type="submit" aria-label="Add a character"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg></button></form>
+<form class="roster-add" action="/characters/new" method="post"><button class="primary-pill" type="submit" aria-label="Add a character"><svg class="plus-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></form>
 </div>
 <p class="hint">Characters are automatically fed to Gemini for narrative consistency across all bedtime stories.</p>
 <p class="kicker"><a href="/characters">Characters</a></p>
@@ -170,7 +170,7 @@ function updateStoryLength(value) {
 <section class="card saved-stories">
 <div class="saved-head">
 <h2>Saved stories</h2>
-<form action="/stories/new" method="post"><button class="primary-pill" type="submit"><svg class="plus-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create New Story</button></form>
+<form class="roster-add" action="/stories/new" method="post"><button class="primary-pill" type="submit" aria-label="Create New Story"><svg class="plus-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></form>
 </div>
 {% if saved_stories %}
 <ul class="story-stack">

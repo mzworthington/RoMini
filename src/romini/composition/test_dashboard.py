@@ -580,7 +580,7 @@ def test_dashboard_home_lists_catalog_table(tmp_path: Path) -> None:
     )
     response = TestClient(app).get("/library")
 
-    assert "<table>" in response.text
+    assert '<table class="is-grid">' in response.text
     assert "<th>Figure</th>" in response.text
     assert "<th>Story Title</th>" in response.text
     assert "<th>Author / Narrator</th>" in response.text

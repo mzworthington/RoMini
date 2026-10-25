@@ -125,29 +125,17 @@
 <form class="search figure-search" action="/figures" method="get">
 <span class="figure-search-label">Search</span>
 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
-<input type="hidden" name="view" value="{{ figure_view }}">
 <input type="hidden" name="filter" value="{{ figure_filter }}">
 <label class="visually-hidden" for="figure-q">Search</label>
 <input id="figure-q" name="q" type="search" value="{{ figure_query }}" placeholder="Search figures, stories, tags">
 </form>
-<div class="display-mode">
-<span>Display Mode</span>
-<div class="view-switch" role="group" aria-label="Display mode">
-<a class="chip-btn" id="figure-view-list" href="/figures?view=list&amp;filter={{ figure_filter }}{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_view == 'list' else 'false' }}" aria-label="List view">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><circle cx="4.5" cy="7" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="17" r="1"/></svg>
-</a>
-<a class="chip-btn" id="figure-view-grid" href="/figures?view=grid&amp;filter={{ figure_filter }}{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_view == 'grid' else 'false' }}" aria-label="Grid view">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z"/></svg>
-</a>
-</div>
-</div>
 </div>
 <div class="filters" role="group" aria-label="Figure filters">
-<a class="chip-btn" href="/figures?view={{ figure_view }}&amp;filter=all{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_filter == 'all' else 'false' }}">All ({{ tags|length }})</a>
-<a class="chip-btn unmapped-filter" href="/figures?view={{ figure_view }}&amp;filter=open{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_filter == 'open' else 'false' }}">Unmapped ({{ unbound_tags|length }})</a>
+<a class="chip-btn" href="/figures?filter=all{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_filter == 'all' else 'false' }}">All ({{ tags|length }})</a>
+<a class="chip-btn unmapped-filter" href="/figures?filter=open{% if figure_query %}&amp;q={{ figure_query|urlencode }}{% endif %}" aria-pressed="{{ 'true' if figure_filter == 'open' else 'false' }}">Unmapped ({{ unbound_tags|length }})</a>
 </div>
 </div>
-<ul class="figures{% if figure_view == 'list' %} is-list{% endif %}" id="figure-list">
+<ul class="figures" id="figure-list">
 {% for tag in tags %}
 {% set bound = tracks|selectattr("uid", "equalto", tag.uid)|list %}
 {% set figure_label = (tag.name or tag.uid_label or tag.uid)|lower %}

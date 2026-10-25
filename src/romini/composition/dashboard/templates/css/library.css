@@ -181,52 +181,6 @@
   background: #fff;
   box-shadow: 0 1px 2px rgba(43, 40, 37, 0.05);
 }
-.display-mode {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  color: #887364;
-  font-size: 0.78rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.library-catalog .view-switch,
-.figure-library .view-switch {
-  display: flex;
-  gap: 0.15rem;
-  margin: 0;
-  padding: 0.2rem;
-  border-radius: 0.55rem;
-  background: #f4ece7;
-}
-.library-catalog .view-switch .chip-btn,
-.figure-library .view-switch .chip-btn {
-  width: 2rem;
-  height: 2rem;
-  min-height: 2rem;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0.4rem;
-  background: transparent;
-  color: #887364;
-}
-.library-catalog .view-switch .chip-btn svg,
-.figure-library .view-switch .chip-btn svg {
-  width: 1rem;
-  height: 1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.library-catalog .view-switch .chip-btn[aria-pressed="true"],
-.figure-library .view-switch .chip-btn[aria-pressed="true"] {
-  background: #fff;
-  color: #2b2825;
-  box-shadow: 0 1px 2px rgba(43, 40, 37, 0.12);
-}
 .library-toolbar .filters { margin: 0; }
 .library-catalog .filters a[aria-current="page"] { background: #2b2825; color: #fff; border-color: #2b2825; }
 .filter-dot {

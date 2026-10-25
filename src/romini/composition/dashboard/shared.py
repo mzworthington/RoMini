@@ -726,12 +726,6 @@ def render_page(
             "elevenlabs_key_mask": mask_secret(elevenlabs_api_key(keys.get("ELEVENLABS_API_KEY", ""))),
             "query": request.query_params.get("q", "").strip(),
             "unassigned": request.query_params.get("unassigned", "") == "1",
-            "library_view": request.query_params.get("view")
-            if request.query_params.get("view") in {"list", "grid"}
-            else "list",
-            "figure_view": request.query_params.get("view")
-            if request.query_params.get("view") in {"list", "grid"}
-            else "grid",
             "figure_filter": "open" if request.query_params.get("filter") == "open" else "all",
             "figure_query": request.query_params.get("q", "").strip(),
             "tracks": tracks,

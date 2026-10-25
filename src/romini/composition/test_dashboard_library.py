@@ -706,9 +706,10 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     search_row = catalog.split('class="library-search-row"', 1)[1].split('class="filters"', 1)[0]
 
     assert 'id="q"' in search_row
-    assert "Display Mode" in search_row
-    assert 'aria-label="List view"' in search_row
-    assert 'aria-label="Grid view"' in search_row
+    assert "Display Mode" not in search_row
+    assert 'aria-label="List view"' not in catalog
+    assert 'aria-label="Grid view"' not in catalog
+    assert 'class="is-grid"' in catalog.split("<table", 1)[1].split(">", 1)[0]
     assert catalog.index('class="filters"') < catalog.index('class="catalog-sheet"')
     playing = (
         catalog.split(">The Gruffalo<", 1)[0].rsplit("<tr", 1)[1]
@@ -1456,7 +1457,7 @@ def test_dashboard_library_rows_lead_with_the_story_title(tmp_path: Path) -> Non
     assert ">Banana<" in row
 
 
-def test_dashboard_library_keeps_display_mode_and_shows_the_filtered_count(tmp_path: Path) -> None:
+def test_dashboard_library_shows_tiles_and_the_filtered_count(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     from romini.composition.dashboard import PathCatalog
@@ -1480,25 +1481,26 @@ def test_dashboard_library_keeps_display_mode_and_shows_the_filtered_count(tmp_p
                 assign_catalog=PathCatalog(catalog_path),
             )
         )
-        .get("/library?view=grid&q=pond")
+        .get("/library?view=list&q=pond")
         .text
     )
+    plain = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    toolbar = html.split('class="library-toolbar"', 1)[1].split('class="catalog-sheet"', 1)[0]
 
-    assert 'id="view-grid"' in html
-    assert 'href="/library?view=grid' in html
-    assert 'aria-pressed="true"' in html.split('id="view-grid"', 1)[1].split(">", 1)[0]
+    assert 'class="is-grid"' in html
+    assert 'class="is-grid"' in plain
+    assert "view=" not in toolbar
     assert "Showing 1 of 2" in html
     assert ">The hill<" not in html.split("<tbody>", 1)[1].split("</tbody>", 1)[0]
-
-
-def test_dashboard_display_mode_marks_the_active_view_on_white() -> None:
-    from fastapi.testclient import TestClient
-
-    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
-    rule = html.split('.view-switch .chip-btn[aria-pressed="true"] {', 1)[1].split("}", 1)[0]
-
-    assert "background: #fff" in rule
-    assert "color: #2b2825" in rule
 
 
 def test_dashboard_library_assigns_a_figure_from_the_track_row(tmp_path: Path) -> None:

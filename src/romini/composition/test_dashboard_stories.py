@@ -251,10 +251,26 @@ def test_create_new_story_lives_in_saved_stories() -> None:
     toolbar = html.split('class="page-actions studio-toolbar"', 1)[1].split('class="studio"', 1)[0]
     saved = html.split("<h2>Saved stories</h2>", 1)[1].split("</section>", 1)[0]
 
-    assert ">Create New Story<" in saved
+    assert 'aria-label="Create New Story"' in saved
+    assert ">Create New Story<" not in saved
     assert 'action="/stories/new"' in saved
     assert 'class="plus-glyph"' in saved
     assert ">Create New Story<" not in toolbar
+
+
+def test_add_character_plus_uses_the_create_story_pill() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/stories").text
+    roster = html.split('class="roster-add"', 1)[1].split("</form>", 1)[0]
+    saved = html.split("<h2>Saved stories</h2>", 1)[1].split("</form>", 1)[0]
+
+    assert 'class="primary-pill"' in roster
+    assert 'class="plus-glyph"' in roster
+    assert 'd="M12 5v14M5 12h14"' in roster
+    assert "<circle" not in roster
+    assert 'class="primary-pill"' in saved
+    assert 'class="plus-glyph"' in saved
 
 
 def test_dashboard_story_bookmarks_keep_library_current_and_the_studio() -> None:
@@ -450,7 +466,7 @@ def test_dashboard_new_character_clears_the_form(tmp_path: Path) -> None:
     saved = client.get("/characters").text
     html = client.post("/characters/new").text
 
-    assert ">Create New Story<" in saved.split("<h2>Saved stories</h2>", 1)[1]
+    assert 'aria-label="Create New Story"' in saved.split("<h2>Saved stories</h2>", 1)[1]
     assert 'value="Romy"' not in html
     assert 'type="hidden" name="slug"' not in html
     assert ">Edit<" in html
@@ -737,7 +753,7 @@ def test_dashboard_new_story_clears_the_form(tmp_path: Path) -> None:
     saved = client.get("/stories").text
     html = client.post("/stories/new").text
 
-    assert ">Create New Story<" in saved.split("<h2>Saved stories</h2>", 1)[1]
+    assert 'aria-label="Create New Story"' in saved.split("<h2>Saved stories</h2>", 1)[1]
     assert 'value="The little station"' not in html
     assert ">a ride</textarea>" not in html
     assert ">Open<" in html

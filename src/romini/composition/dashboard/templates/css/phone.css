@@ -105,11 +105,6 @@
   .studio:has(.live-deck) > .live-deck { order: 2; }
   .studio:has(.live-deck) > .summary-cards { order: 3; }
   .studio:has(.live-deck) > .studio-main { order: 4; }
-  .figures.is-list .figure-specs,
-  .figures.is-list .figure-specs dd,
-  .figures.is-list .figure-sub { overflow: visible; white-space: normal; text-overflow: unset; }
-  .figures.is-list .figure-foot { justify-content: flex-start; flex-wrap: wrap; }
-  .figures.is-list .figure-foot .hint { min-width: 0; text-align: left; }
   .assign-audio,
   .figure-foot .chip-btn,
   .filters a,
@@ -117,8 +112,7 @@
   .cadence button { min-height: 2.75rem; }
   .checkline { min-height: 2.75rem; }
   .figure-search-row,
-  .library-search-row,
-  .display-mode { flex-wrap: wrap; }
+  .library-search-row { flex-wrap: wrap; }
 
   .studio:has(.quota-cards) > .board { order: 1; }
   .studio:has(.quota-cards) > .quota-cards { order: 2; }

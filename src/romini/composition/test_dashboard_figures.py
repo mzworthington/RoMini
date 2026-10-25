@@ -604,44 +604,33 @@ def test_dashboard_figure_library_uses_tag_cards(tmp_path: Path) -> None:
     assert 'href="/library?uid=0455a109#assign"' in unbound
 
 
-def test_dashboard_figure_library_switches_between_list_and_grid(tmp_path: Path) -> None:
+def test_dashboard_figure_library_shows_tiles_without_a_list_view(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     from romini.composition.dashboard import PathCatalog
 
     catalog_path = tmp_path / "catalog.yaml"
     catalog_path.write_text("tags:\n  - uid: 04aabbccddeeff\n    name: Frog\ntracks: []\n")
-    html = (
-        TestClient(
-            create_dashboard(
-                storage=FakeStorage(free_bytes=1024),
-                assign_catalog=PathCatalog(catalog_path),
-            )
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            assign_catalog=PathCatalog(catalog_path),
         )
-        .get("/figures")
-        .text
     )
+    html = client.get("/figures").text
+    forced = client.get("/figures?view=list").text
     toolbar = html.split('class="figure-toolbar"', 1)[1].split('id="figure-list"', 1)[0]
-    list_rule = html.split(".figures.is-list {", 1)[1].split("}", 1)[0]
-    switch = html.split(".figure-library .view-switch {", 1)[1].split("}", 1)[0]
-    pressed = html.split('.figure-library .view-switch .chip-btn[aria-pressed="true"] {', 1)[1].split("}", 1)[0]
-    grid = toolbar.split('id="figure-view-grid"', 1)[1].split(">", 1)[0]
-    listing = toolbar.split('id="figure-view-list"', 1)[1].split(">", 1)[0]
+    tiles = html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
+    forced_tiles = forced.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
 
-    assert "Display Mode" in toolbar
-    assert 'aria-label="Display mode"' in toolbar
-    assert 'aria-label="List view"' in listing
-    assert 'aria-pressed="false"' in listing
-    assert 'aria-label="Grid view"' in grid
-    assert 'aria-pressed="true"' in grid
-    assert 'class="figures"' in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
-    assert "is-list" not in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
-    assert 'href="/figures?view=list' in listing
-    assert 'href="/figures?view=grid' in grid
-    assert "grid-template-columns: 1fr" in list_rule
-    assert "background: #f4ece7" in switch
-    assert "background: #fff" in pressed
-    assert "color: #2b2825" in pressed
+    assert "Display Mode" not in toolbar
+    assert 'aria-label="List view"' not in html
+    assert 'aria-label="Grid view"' not in html
+    assert "view=" not in toolbar
+    assert 'class="figures"' in tiles
+    assert "is-list" not in tiles
+    assert "is-list" not in forced_tiles
+    assert ".figures.is-list" not in html
 
 
 def test_dashboard_figure_does_not_borrow_a_picture_from_its_track(tmp_path: Path) -> None:
@@ -845,9 +834,11 @@ def test_dashboard_figures_search_and_display_stay_in_the_url(tmp_path: Path) ->
         .text
     )
     figures = html.split('id="figure-list"', 1)[1].split("</ul>", 1)[0]
+    toolbar = html.split('class="figure-toolbar"', 1)[1].split('id="figure-list"', 1)[0]
 
-    assert "is-list" in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
-    assert 'href="/figures?view=list&amp;filter=open' in html
+    assert "is-list" not in html.split('id="figure-list"', 1)[0].rsplit("<ul", 1)[1]
+    assert "view=" not in toolbar
+    assert 'href="/figures?filter=open&amp;q=bear"' in html
     assert ">Bear<" in figures
     assert ">Frog<" not in figures
 
@@ -941,22 +932,6 @@ def test_dashboard_figures_live_deck_matches_the_player_sheet(tmp_path: Path) ->
     assert 'class="edit-mapping"' in deck
     sheet = html.split(".player-sheet {", 1)[1].split("}", 1)[0]
     assert "border-radius" in sheet
-
-
-def test_dashboard_figure_list_keeps_each_row_on_one_line() -> None:
-    from fastapi.testclient import TestClient
-
-    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/figures").text
-    specs = html.split(".figures.is-list .figure-specs {", 1)[1].split("}", 1)[0]
-    values = html.split(".figures.is-list .figure-specs dd {", 1)[1].split("}", 1)[0]
-    foot = html.split(".figures.is-list .figure-foot {", 1)[1].split("}", 1)[0]
-    hint = html.split(".figures.is-list .figure-foot .hint {", 1)[1].split("}", 1)[0]
-
-    assert "min-width: 0" in specs
-    assert "overflow: hidden" in specs
-    assert "text-overflow: ellipsis" in values
-    assert "justify-content: flex-end" in foot
-    assert "text-align: right" in hint
 
 
 def test_dashboard_figures_deck_mark_shrinks_and_the_sheet_fills_the_reader() -> None:

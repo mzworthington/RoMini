@@ -169,30 +169,18 @@
 <form class="search" action="/library" method="get">
 <label for="q">Search</label>
 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
-<input type="hidden" name="view" value="{{ library_view }}">
 {% if unassigned %}<input type="hidden" name="unassigned" value="1">{% endif %}
 <input id="q" name="q" type="search" value="{{ query }}" placeholder="Search audio titles, authors, narrators, or figure links">
 </form>
-<div class="display-mode">
-<span>Display Mode</span>
-<div class="view-switch" role="group" aria-label="Display mode">
-<a class="chip-btn" id="view-list" href="/library?view=list{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if unassigned %}&amp;unassigned=1{% endif %}" aria-pressed="{{ 'false' if library_view == 'grid' else 'true' }}" aria-label="List view">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><circle cx="4.5" cy="7" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="17" r="1"/></svg>
-</a>
-<a class="chip-btn" id="view-grid" href="/library?view=grid{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if unassigned %}&amp;unassigned=1{% endif %}" aria-pressed="{{ 'true' if library_view == 'grid' else 'false' }}" aria-label="Grid view">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z"/></svg>
-</a>
-</div>
-</div>
 </div>
 <p class="filters">
-<a href="/library?view={{ library_view }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if not unassigned %} aria-current="page"{% endif %}>All Tracks ({{ tracks|length }})</a>
-<a href="/library?view={{ library_view }}&amp;unassigned=1{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if unassigned %} aria-current="page"{% endif %}><span class="filter-dot" aria-hidden="true"></span>Unassigned to Figures ({{ tracks|rejectattr("uid")|list|length }})</a>
+<a href="/library{% if query %}?q={{ query|urlencode }}{% endif %}"{% if not unassigned %} aria-current="page"{% endif %}>All Tracks ({{ tracks|length }})</a>
+<a href="/library?unassigned=1{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if unassigned %} aria-current="page"{% endif %}><span class="filter-dot" aria-hidden="true"></span>Unassigned to Figures ({{ tracks|rejectattr("uid")|list|length }})</a>
 </p>
 </div>
 <div class="catalog-sheet">
 <div class="table-wrap" id="library-table">
-<table{% if library_view == 'grid' %} class="is-grid"{% endif %}>
+<table class="is-grid">
 <caption>Library</caption>
 <thead><tr><th>#</th><th>Story Title</th><th>Author / Narrator</th><th>Duration</th><th>File Spec</th><th>Figure</th><th>Actions</th></tr></thead>
 <tbody>
@@ -274,21 +262,6 @@
 </div>
 <p class="hint catalog-count">Showing {{ shown.count }}{% if shown.count != tracks|length %} of {{ tracks|length }}{% endif %} registered audio files</p>
 {% if bind_prompt %}<p class="status" role="status">Link the new track to a figure.</p>{% endif %}
-<script>
-(function () {
-  var table = document.querySelector("#library-table table");
-  var list = document.getElementById("view-list");
-  var grid = document.getElementById("view-grid");
-  if (!table || !list || !grid) return;
-  function show(mode) {
-    table.classList.toggle("is-grid", mode === "grid");
-    list.setAttribute("aria-pressed", mode === "list" ? "true" : "false");
-    grid.setAttribute("aria-pressed", mode === "grid" ? "true" : "false");
-  }
-  list.addEventListener("click", function () { show("list"); });
-  grid.addEventListener("click", function () { show("grid"); });
-})();
-</script>
 </section>
 {% if library_paths %}
 <section class="audition-bar" id="audition" aria-label="In-browser audition">
