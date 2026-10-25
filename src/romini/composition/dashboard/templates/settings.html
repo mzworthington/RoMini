@@ -220,13 +220,19 @@ sudo nmtui</pre>
 </div>
 <section class="card span" id="backup">
 <h2>Backup</h2>
+{% if demo %}
+<p class="hint">Download the seeded stories, characters, and catalog. Restore is turned off on this demo.</p>
+{% else %}
 <p class="hint">Download stories, characters, the catalog, and library audio before the card is formatted. Studio keys stay on the box. Restore replaces matching files and leaves everything else.</p>
+{% endif %}
 <form action="/backup" method="get"><button type="submit">Download backup</button></form>
+{% if not demo %}
 <form action="/backup" method="post" enctype="multipart/form-data" onsubmit="return confirm('Restore this backup? Matching stories, characters, catalog, and library files are replaced.')">
 <label for="backup-file">Backup file</label>
 <input id="backup-file" name="file" type="file" accept=".zip,application/zip" required>
 <button type="submit">Restore backup</button>
 </form>
+{% endif %}
 </section>
 <section class="card span" id="audit">
 <h2>Audit log</h2>

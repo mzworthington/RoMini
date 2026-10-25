@@ -42,6 +42,7 @@ def test_dashboard_import_restores_stories_and_catalog(tmp_path: Path) -> None:
     with zipfile.ZipFile(archive, "w") as saved:
         saved.writestr("catalog.yaml", "tracks:\n  - uid: aa\n")
         saved.writestr("stories/frog/story.yaml", "title: Frog\n")
+        saved.writestr("characters/romy/character.yaml", "name: Romy\nbackground: The main character\n")
     client = TestClient(
         create_dashboard(
             storage=DiskStorage(tmp_path / "library"),
@@ -61,6 +62,8 @@ def test_dashboard_import_restores_stories_and_catalog(tmp_path: Path) -> None:
     assert response.headers["location"].startswith("/settings?notice=backup")
     assert catalog.read_text() == "tracks:\n  - uid: aa\n"
     assert (stories / "frog" / "story.yaml").read_text() == "title: Frog\n"
+    character = tmp_path / "characters" / "romy" / "character.yaml"
+    assert character.read_text() == "name: Romy\nbackground: The main character\n"
 
 
 def test_settings_page_offers_backup_download_and_restore(tmp_path: Path) -> None:

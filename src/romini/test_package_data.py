@@ -21,3 +21,23 @@ def test_wheel_package_data_includes_dashboard_css_partials() -> None:
     matched = {Path(path).resolve() for pattern in patterns for path in glob(str(PACKAGE / pattern))}
     css = PACKAGE / "composition" / "dashboard" / "templates" / "css" / "base.css"
     assert css.resolve() in matched
+
+
+def test_wheel_package_data_includes_the_demo_studio() -> None:
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    patterns = config["tool"]["setuptools"]["package-data"]["romini"]
+    matched = {Path(path).resolve() for pattern in patterns for path in glob(str(PACKAGE / pattern))}
+    studio = PACKAGE / "composition" / "demo_content"
+    expected = {
+        studio / "characters" / "romy" / "character.yaml",
+        studio / "characters" / "mama" / "character.yaml",
+        studio / "characters" / "baba" / "character.yaml",
+        studio / "characters" / "current",
+        studio / "stories" / "romy-and-the-banana" / "story.yaml",
+        studio / "stories" / "romy-and-the-brick-tower" / "story.yaml",
+        studio / "stories" / "romy-and-the-little-station" / "story.yaml",
+        studio / "stories" / "romy-and-the-red-helmet" / "story.yaml",
+        studio / "stories" / "romy-and-the-robot" / "story.yaml",
+        studio / "stories" / "current",
+    }
+    assert expected <= matched
