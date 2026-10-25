@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <script>
 {% include "form_busy.js" %}
 </script>
@@ -52,6 +52,22 @@
 <p>Made for Romy, with ❤️ by <a href="https://mzworthington.co.uk/" target="_blank">Matthew Z Worthington</a> </p>
 <p>Screen-free domestic audio for growing minds. Local network hosted.</p>
 </footer>
+{% if now_playing and page != "home" %}
+<a class="now-strip" href="/">
+<img src="{{ now_playing.image if now_playing.image else '/mark.svg' }}" alt="" width="36" height="36">
+<span class="now-strip-copy">
+<strong>{{ now_playing.story or now_playing.trigger }}</strong>
+<span>{% if now_playing.is_playing %}Playing{% else %}Paused{% endif %}{% if now_playing.place %} · {{ now_playing.place }}{% endif %}</span>
+</span>
+</a>
+{% endif %}
+<nav class="phone-tabs" aria-label="Sections">
+<a href="/"{% if page == "home" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Live Player</span></a>
+<a href="/figures"{% if page == "figures" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.7 0-8 1.3-8 4v1h16v-1c0-2.7-5.3-4-8-4z"/></svg><span>Figures &amp; Tags</span></a>
+<a href="/library"{% if page == "library" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4z"/></svg><span>Audio Library</span></a>
+<a href="/stories"{% if page == "stories" or page == "characters" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h12a2 2 0 0 1 2 2v12H6a2 2 0 0 0-2 2V5zm4 4h6M8 13h6"/></svg><span>Story Studio</span></a>
+<a href="/settings"{% if page == "settings" %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7z"/></svg><span>System &amp; Hardware</span></a>
+</nav>
 </div>
 <div class="toast-stack" data-toast-stack>
 {% if notice %}

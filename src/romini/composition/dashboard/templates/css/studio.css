@@ -557,12 +557,6 @@
   overflow-wrap: anywhere;
 }
 .journal:hover { background: #e8e1dc; }
-@media (max-width: 960px) {
-  .topbar { flex-wrap: wrap; border-radius: 1.5rem; }
-  .topbar .top-actions { flex: 1 0 100%; max-width: 100%; margin-left: 0; overflow-x: auto; }
-  .topbar nav[aria-label="Dashboard"] { flex: 1 0 100%; order: 1; min-width: 0; max-width: 100%; }
-  .topbar nav[aria-label="Dashboard"] ul { width: 100%; overflow-x: auto; }
-}
 @media (max-width: 800px) {
   .studio-main,
   .studio:has(> .plate),

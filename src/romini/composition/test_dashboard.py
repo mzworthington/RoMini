@@ -200,17 +200,78 @@ def test_dashboard_home_renders_when_host_is_missing() -> None:
     assert "Wi-Fi Not reported" not in pills
 
 
-def test_dashboard_mobile_nav_scrolls_inside_the_card() -> None:
+def _phone_css(html: str) -> str:
+    start = html.index("@media (max-width: 960px) {")
+    rest = html[start:]
+    depth = 0
+    for index, char in enumerate(rest):
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return rest[: index + 1]
+    raise AssertionError("phone media query was not closed")
+
+
+def test_dashboard_mobile_nav_is_a_tab_bar_of_the_same_pages() -> None:
     from fastapi.testclient import TestClient
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
-    narrow = html.split("@media (max-width: 960px) {", 1)[1].split("@media", 1)[0]
-    nav = narrow.split('.topbar nav[aria-label="Dashboard"] {', 1)[1].split("}", 1)[0]
-    track = narrow.split('.topbar nav[aria-label="Dashboard"] ul {', 1)[1].split("}", 1)[0]
+    narrow = _phone_css(html)
+    tabs = html.split('<nav class="phone-tabs"', 1)[1].split("</nav>", 1)[0]
+    hidden = narrow.split('.topbar nav[aria-label="Dashboard"] {', 1)[1].split("}", 1)[0]
 
-    assert "min-width: 0" in nav
-    assert "max-width: 100%" in nav
-    assert "width: 100%" in track
+    assert "display: none" in hidden
+    assert ".phone-tabs {" in narrow
+    assert "display: flex" in narrow.split(".phone-tabs {", 1)[1].split("}", 1)[0]
+    assert tabs.index('href="/"') < tabs.index('href="/figures"')
+    assert tabs.index('href="/figures"') < tabs.index('href="/library"')
+    assert tabs.index('href="/library"') < tabs.index('href="/stories"')
+    assert tabs.index('href="/stories"') < tabs.index('href="/settings"')
+    assert ">Live Player<" in tabs
+    assert ">Figures &amp; Tags<" in tabs
+    assert ">Audio Library<" in tabs
+    assert ">Story Studio<" in tabs
+    assert ">System &amp; Hardware<" in tabs
+
+
+def test_phone_layout_keeps_every_section_on_the_page() -> None:
+    from fastapi.testclient import TestClient
+
+    client = TestClient(
+        create_dashboard(
+            storage=FakeStorage(free_bytes=1024),
+            battery=FakeBattery(percent=72),
+            mixer=FakeMixer(level=40, ceiling=75),
+        )
+    )
+    home = client.get("/").text
+    figures = client.get("/figures").text
+    library = client.get("/library").text
+    stories = client.get("/stories").text
+    settings = client.get("/settings").text
+    narrow = _phone_css(home)
+
+    assert narrow.count("display: none") == 1
+    assert "On the box" in home or "No figure yet" in home
+    assert "Track and story" in home
+    assert "Volume cap" in home
+    assert "72% charged" in home
+    assert "Cap 75" in home
+    assert "Quick Reader Sensor" in figures
+    assert "Mapped figures" in figures
+    assert "Activity Stream" in figures
+    assert "Drag audio files directly onto this panel" in library
+    assert "HiFiBerry" in library
+    assert ">API Keys<" in stories
+    assert "Save Blueprint" in stories
+    assert "Safe power down" in settings
+    assert "Play mode" in settings
+    assert "Audit log" in settings
+    assert "Parental audio safety" in settings
+    assert 'class="site-foot"' in home
+    assert 'class="status-pills"' in home
 
 
 def test_dashboard_mobile_nav_labels_stay_on_one_line() -> None:
@@ -218,11 +279,11 @@ def test_dashboard_mobile_nav_labels_stay_on_one_line() -> None:
 
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
     link = html.split('nav[aria-label="Dashboard"] a {', 1)[1].split("}", 1)[0]
-    narrow = html.split("@media (max-width: 960px) {", 1)[1].split("@media", 1)[0]
+    narrow = _phone_css(html)
 
     assert "white-space: nowrap" in link
     assert "flex: none" in link
-    assert "overflow-x: auto" in narrow
+    assert "overflow-x: auto" not in narrow.split(".status-pills", 1)[0]
 
 
 def test_dashboard_header_has_no_scan_tag_button() -> None:
@@ -245,13 +306,12 @@ def test_dashboard_header_keeps_each_cluster_on_one_line() -> None:
     html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/figures").text
     nav = html.split('nav[aria-label="Dashboard"] ul {\n  display: flex;', 1)[1].split("}", 1)[0]
     pills = html.split(".status-pills {", 1)[1].split("}", 1)[0]
-    narrow = html.split("@media (max-width: 960px) {", 1)[1].split("@media", 1)[0]
+    narrow = _phone_css(html)
 
     assert "flex-wrap: nowrap" in nav
     assert "flex-wrap: nowrap" in pills
-    assert 'nav[aria-label="Dashboard"]' in narrow
-    assert "flex: 1 0 100%" in narrow
-    assert "overflow-x: auto" in narrow
+    assert ".status-pills { flex-wrap: wrap; }" in narrow
+    assert "overflow: visible" in narrow
 
 
 def test_dashboard_header_pills_are_charge_cap_and_wifi() -> None:
