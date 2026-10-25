@@ -51,5 +51,13 @@ def test_demo_hides_key_upload_and_narration_controls() -> None:
     assert "Drafting and speaking are turned off" in stories
     assert 'action="/stories/draft"' not in stories
     assert 'action="/stories/speak"' not in stories
+    assert "Download backup" in settings
+    assert "Restore is turned off on this demo" in settings
+    assert 'id="backup-file"' not in settings
+    restored = client.post(
+        "/backup",
+        files={"file": ("romini-backup.zip", b"PK", "application/zip")},
+    )
+    assert "turned off on this demo" in restored.text
     assert "turned off on this demo" in client.post("/keys", data={"gemini_key": "secret"}).text
     assert "turned off on this demo" in client.post("/stories/draft").text

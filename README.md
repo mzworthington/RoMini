@@ -87,6 +87,8 @@ python -m romini.adapters.cloudflare.seed path/to/catalog.yaml > seed.sql
 cd deploy/demo && uv run pywrangler d1 execute romini-demo --remote --file=../../seed.sql
 ```
 
+Story Studio characters and stories ship with the demo worker from `src/romini/composition/demo_content`. A backup download from the demo includes that studio and the catalog. Restore stays off on the public demo.
+
 ## Parent dashboard
 
 On the box, Avahi is `http://<hostname>.local` (usually [http://romini.local](http://romini.local)).
