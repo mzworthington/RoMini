@@ -40,13 +40,17 @@
         /* 100vh includes the mobile browser chrome, so the page scrolls. */
         min-height: 100vh;
         min-height: 100svh;
-        display: grid;
-        place-items: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         background: var(--paper);
         color: var(--ink);
         font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
       }
       main {
+        flex: 1;
+        display: grid;
+        place-items: center;
         width: min(26rem, calc(100% - 2rem));
         text-align: center;
       }
@@ -54,8 +58,8 @@
         width: min(22rem, 78vw);
         height: min(22rem, 78vw);
         /* Keeps the circle inside a short screen. Ignored where svh is unsupported. */
-        width: min(22rem, 78vw, calc(100svh - 9rem));
-        height: min(22rem, 78vw, calc(100svh - 9rem));
+        width: min(22rem, 78vw, calc(100svh - 13rem));
+        height: min(22rem, 78vw, calc(100svh - 13rem));
         object-fit: cover;
         object-position: center;
         border-radius: 50%;
@@ -80,7 +84,7 @@
         gap: 0.75rem;
         margin: 1.75rem 0 0;
       }
-      a {
+      .actions a {
         display: inline-block;
         padding: 0.7rem 1.1rem;
         border: 1px solid var(--line);
@@ -91,8 +95,33 @@
         font-size: 0.95rem;
         background: transparent;
       }
-      a:hover { background: var(--ink); color: var(--paper); }
-      a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      .actions a:hover { background: var(--ink); color: var(--paper); }
+      .actions a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      .site-foot {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.4rem 1.25rem;
+        width: 100%;
+        margin-top: auto;
+        padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) calc(1.25rem + env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+        color: #78736b;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.8rem;
+      }
+      .site-foot p { margin: 0; }
+      .site-foot a {
+        display: inline;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        color: inherit;
+        font: inherit;
+        text-decoration: underline;
+        background: transparent;
+      }
+      .site-foot a:hover { color: var(--ink); background: transparent; }
+      .site-foot a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
     </style>
   </head>
   <body>
@@ -107,5 +136,10 @@
         <a href="https://demo.romini.party">demo dashboard</a>
       </p>
     </main>
+    <footer class="site-foot">
+      <p>RoMini</p>
+      <p>Made for Romy, with ❤️ by <a href="https://mzworthington.co.uk/" target="_blank" rel="noreferrer">Matthew Z Worthington</a></p>
+      <p>Screen-free domestic audio for growing minds. Local network hosted.</p>
+    </footer>
   </body>
 </html>

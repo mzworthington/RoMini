@@ -27,10 +27,20 @@ test("the public page names RoMini, shows the box, and links the demo dashboard"
   assert.match(html, /name="description"[^>]*content="[^"]*screen-free story box[^"]*"/);
 });
 
+test("the landing page carries the dashboard footer", () => {
+  assert.match(html, /<footer class="site-foot">/);
+  assert.match(html, /Made for Romy, with ❤️ by\s*<a href="https:\/\/mzworthington\.co\.uk\/" target="_blank"[^>]*>Matthew Z Worthington<\/a>/);
+  assert.match(html, /Screen-free domestic audio for growing minds\. Local network hosted\./);
+  assert.match(html, /\.site-foot\s*\{[^}]*display:\s*flex/);
+  assert.match(html, /\.site-foot\s*\{[^}]*justify-content:\s*space-between/);
+  assert.match(html, /\.site-foot a\s*\{[^}]*text-decoration:\s*underline/);
+  assert.match(html, /\.site-foot a\s*\{[^}]*border:\s*0/);
+});
+
 test("the landing page fits the visible mobile screen", () => {
   assert.match(html, /min-height:\s*100svh/);
-  assert.match(html, /width:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*9rem\)\)/);
-  assert.match(html, /height:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*9rem\)\)/);
+  assert.match(html, /width:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*13rem\)\)/);
+  assert.match(html, /height:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*13rem\)\)/);
 });
 
 test("cloudflare publishes the static page and not the demo container", () => {
