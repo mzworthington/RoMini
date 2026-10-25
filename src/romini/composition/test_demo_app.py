@@ -1,3 +1,63 @@
+def test_demo_story_page_opens_when_the_pointer_cannot_be_saved(monkeypatch) -> None:
+    from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.demo_app import create_demo_app
+
+    real_write = Path.write_text
+
+    def read_only_pointer(self: Path, *args: object, **kwargs: object) -> int:
+        if self.name == "current":
+            raise OSError(30, "Read-only file system")
+        return real_write(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", read_only_pointer)
+    client = TestClient(
+        create_demo_app(
+            settings_rows=[("catalog", "tracks: []\n"), ("play_mode", "presence")],
+            objects=[],
+            base_url="https://media.example",
+        )
+    )
+
+    banana = client.get("/stories/romy-and-the-banana")
+    robot = client.get("/stories/romy-and-the-robot")
+    character = client.get("/characters/baba")
+
+    assert banana.status_code == 200
+    assert 'value="Romy and the banana"' in banana.text
+    assert robot.status_code == 200
+    assert "A small robot visits at bedtime." in robot.text
+    assert character.status_code == 200
+    assert 'value="Baba"' in character.text
+
+
+def test_writable_studio_can_update_a_read_only_seed(tmp_path) -> None:
+    from romini.composition.demo_app import _writable_studio
+
+    seed = tmp_path / "seed"
+    story = seed / "stories" / "tale"
+    story.mkdir(parents=True)
+    notes = story / "story.yaml"
+    pointer = seed / "stories" / "current"
+    notes.write_text("title: Tale\n")
+    pointer.write_text("tale\n")
+    notes.chmod(0o444)
+    pointer.chmod(0o444)
+    (seed / "stories").chmod(0o555)
+    (seed / "characters").mkdir()
+    try:
+        copied = _writable_studio(seed)
+        current = copied / "stories" / "current"
+        current.write_text("next\n")
+        assert current.read_text() == "next\n"
+    finally:
+        (seed / "stories").chmod(0o755)
+        notes.chmod(0o644)
+        pointer.chmod(0o644)
+
+
 def test_demo_backup_keeps_the_seeded_studio_and_catalog() -> None:
     import io
     import zipfile

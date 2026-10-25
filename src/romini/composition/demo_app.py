@@ -29,13 +29,30 @@ def create_demo_app(
     )
 
 
+def _copy_writable(source: str, dest: str) -> str:
+    shutil.copyfile(source, dest)
+    _allow_write(Path(dest))
+    return dest
+
+
+def _allow_write(path: Path) -> None:
+    try:
+        path.chmod(0o755 if path.is_dir() else 0o644)
+    except OSError:
+        return
+
+
 def _writable_studio(content: Path) -> Path:
     root = Path(tempfile.mkdtemp(prefix="romini-demo-"))
     for name in ("stories", "characters"):
         source = content / name
         dest = root / name
         if source.is_dir():
-            shutil.copytree(source, dest)
+            shutil.copytree(source, dest, copy_function=_copy_writable)
+            _allow_write(dest)
+            for path in dest.rglob("*"):
+                if path.is_dir():
+                    _allow_write(path)
         else:
             dest.mkdir()
     return root
