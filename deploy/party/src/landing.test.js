@@ -37,6 +37,13 @@ test("the landing page carries the dashboard footer", () => {
   assert.match(html, /\.site-foot a\s*\{[^}]*border:\s*0/);
 });
 
+test("the landing footer puts each part on its own line on a narrow screen", () => {
+  const [desktop, narrow] = html.split("@media (max-width: 960px)");
+  const desktopFoot = desktop.match(/\.site-foot\s*\{[^}]*\}/)[0];
+  assert.match(narrow, /\.site-foot\s*\{[^}]*flex-direction:\s*column/);
+  assert.doesNotMatch(desktopFoot, /flex-direction:\s*column/);
+});
+
 test("the landing page fits the visible mobile screen", () => {
   assert.match(html, /min-height:\s*100svh/);
   assert.match(html, /width:\s*min\(22rem,\s*78vw,\s*calc\(100svh\s*-\s*13rem\)\)/);
