@@ -68,21 +68,24 @@ Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/
 
 ## Public site
 
-The demo hostname, D1 database, and R2 bucket live in `infra/cloudflare` (Pulumi stack `prod`). The database `5948544a-74ae-4e4e-922c-908af99e4b9a` and bucket `romini-demo` already exist and are imported there. Wrangler still uploads the Worker script from `deploy/demo` and applies `migrations/0001_state.sql`.
+The zone `romini.party` is owned by [edge-dns](https://github.com/mzworthington/edge-dns). This repo owns the product resources and the deploys. Preview and apply for the Pulumi stack live in the [edge-dns reusable workflow](https://github.com/mzworthington/edge-dns/blob/main/docs/reusable-cloudflare-ci.md).
 
-```bash
-cd infra/cloudflare && pulumi up
-cd ../../deploy/demo && npx wrangler deploy
-```
+| What | Where | Pipeline |
+|------|--------|----------|
+| D1 `romini-demo`, R2 `romini-demo`, Worker shell, `demo.romini.party` | `infra/cloudflare` (Pulumi stack `prod`) | `.github/workflows/pulumi-cloudflare.yml` previews on pull requests and applies on `main` after the `pulumi-prod` environment approves |
+| Demo dashboard script and `migrations/0001_state.sql` | `deploy/demo` | `deploy-demo` in `.github/workflows/ci.yml` on `main`, after verify (`uv run pywrangler deploy`) |
+| Landing page on `romini.party` and `www` | `deploy/party` | `.github/workflows/party.yml` when that directory changes on `main` |
 
-```bash
-python -m romini.adapters.cloudflare.seed path/to/catalog.yaml > seed.sql
-npx wrangler d1 execute romini-demo --remote --file=seed.sql
-```
+The database `5948544a-74ae-4e4e-922c-908af99e4b9a` and bucket `romini-demo` already exist and are protected in the Pulumi stack. Repository secrets are `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`, and `PULUMI_ACCESS_TOKEN`. `bin/setup-cloudflare-hosting.sh` copies them from a gitignored `.env` (see `.env.example`).
 
 `romini.party` and `www.romini.party` are one page: a circular picture of RoMini, **find out more** linking to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy), and **demo dashboard** linking to `demo.romini.party`.
 
-The zone is `romini.party` in [edge-dns](https://github.com/mzworthington/edge-dns). After that zone is active, `cd deploy/party && npx wrangler deploy` (`CLOUDFLARE_API_TOKEN` set) attaches the hostnames and publishes the page.
+Catalog content is a separate seed:
+
+```bash
+python -m romini.adapters.cloudflare.seed path/to/catalog.yaml > seed.sql
+cd deploy/demo && uv run pywrangler d1 execute romini-demo --remote --file=../../seed.sql
+```
 
 ## Parent dashboard
 

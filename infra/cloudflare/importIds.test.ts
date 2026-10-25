@@ -24,5 +24,7 @@ test("the Pulumi program adopts that database and bucket and attaches the demo h
   assert.doesNotMatch(source, /import:/);
   assert.match(source, /new cloudflare\.Worker\(/);
   assert.match(source, /new cloudflare\.WorkersCustomDomain\(/);
+  assert.match(source, /new cloudflare\.ObservatoryScheduledTest\(/);
   assert.match(source, /DEMO_HOSTNAME/);
+  assert.match(source, /pywrangler deploy/);
 });

@@ -17,6 +17,7 @@ def test_demo_worker_is_published_on_the_party_zone() -> None:
     assert config["d1_databases"][0]["database_id"] == "5948544a-74ae-4e4e-922c-908af99e4b9a"
     assert config["d1_databases"][0]["binding"] == "DB"
     assert config["d1_databases"][0]["database_name"] == "romini-demo"
+    assert config["d1_databases"][0]["migrations_dir"] == "migrations"
     assert config["r2_buckets"][0]["binding"] == "LIBRARY"
     assert config["r2_buckets"][0]["bucket_name"] == "romini-demo"
     assert config["vars"]["LIBRARY_BASE_URL"].startswith("https://")

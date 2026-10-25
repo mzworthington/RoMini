@@ -1,3 +1,10 @@
+// Demo dashboard resources for romini.party.
+// The Worker script is uploaded by the deploy-demo job
+// (`uv run pywrangler deploy` in deploy/demo). This stack owns the D1
+// database, the R2 bucket, the Worker shell, and the demo.romini.party
+// hostname. romini.party and www stay on the romini-party Worker config
+// (deploy/party) so this stack does not attach those names a second time.
+// The zone itself stays in edge-dns.
 import * as cloudflare from "@pulumi/cloudflare";
 import * as pulumi from "@pulumi/pulumi";
 
@@ -46,6 +53,11 @@ new cloudflare.WorkersCustomDomain("demo", {
   zoneName: zone.name,
   hostname: DEMO_HOSTNAME,
   service: worker.name,
+});
+
+new cloudflare.ObservatoryScheduledTest("observatory-demo", {
+  zoneId,
+  url: DEMO_HOSTNAME,
 });
 
 export const databaseName = database.name;
