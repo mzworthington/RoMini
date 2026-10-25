@@ -25,6 +25,14 @@ def test_demo_worker_is_published_on_the_party_zone() -> None:
     assert "CREATE TABLE IF NOT EXISTS catalog" in migration
 
 
+def test_demo_state_migration_creates_headline_instead_of_adding_it_again() -> None:
+    migration = (_REPO / "deploy/demo/migrations/0001_state.sql").read_text()
+    audit = migration.split("CREATE TABLE IF NOT EXISTS audit_log", 1)[1].split(");", 1)[0]
+
+    assert "headline TEXT NOT NULL DEFAULT ''" in audit
+    assert "ALTER TABLE audit_log ADD COLUMN headline" not in migration
+
+
 def test_demo_worker_bundles_the_packages_the_script_imports() -> None:
     text = (_REPO / "deploy/demo/pyproject.toml").read_text()
 
