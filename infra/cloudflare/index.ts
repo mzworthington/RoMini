@@ -8,7 +8,7 @@
 import * as cloudflare from "@pulumi/cloudflare";
 import * as pulumi from "@pulumi/pulumi";
 
-import { DEMO_BUCKET_NAME, DEMO_HOSTNAME, DEMO_WORKER_NAME } from "./importIds";
+import { DEMO_BUCKET_NAME, DEMO_HOSTNAME, DEMO_MEDIA_HOST, DEMO_WORKER_NAME } from "./importIds";
 
 const config = new pulumi.Config();
 const accountId = config.require("accountId");
@@ -46,6 +46,16 @@ const worker = new cloudflare.Worker(
 );
 
 const zone = cloudflare.getZoneOutput({ zoneId });
+
+new cloudflare.R2CustomDomain("media", {
+  accountId,
+  bucketName: library.name,
+  domain: DEMO_MEDIA_HOST,
+  enabled: true,
+  jurisdiction: "default",
+  minTls: "1.2",
+  zoneId,
+});
 
 new cloudflare.WorkersCustomDomain("demo", {
   accountId,

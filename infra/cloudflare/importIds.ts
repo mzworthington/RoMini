@@ -6,6 +6,8 @@ export const DEMO_WORKER_NAME = "romini-demo";
 
 export const DEMO_HOSTNAME = "demo.romini.party";
 
+export const DEMO_MEDIA_HOST = "media.romini.party";
+
 export function d1ImportId(accountId: string): string {
   return `${accountId}/${DEMO_DATABASE_ID}`;
 }

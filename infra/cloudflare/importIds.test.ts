@@ -28,3 +28,13 @@ test("the Pulumi program adopts that database and bucket and attaches the demo h
   assert.match(source, /DEMO_HOSTNAME/);
   assert.match(source, /pywrangler deploy/);
 });
+
+test("the library bucket is readable at the media hostname", async () => {
+  const ids = await import("./importIds.ts");
+  const source = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+
+  assert.equal(ids.DEMO_MEDIA_HOST, "media.romini.party");
+  assert.match(source, /new cloudflare\.R2CustomDomain\(/);
+  assert.match(source, /DEMO_MEDIA_HOST/);
+  assert.match(source, /enabled: true/);
+});
