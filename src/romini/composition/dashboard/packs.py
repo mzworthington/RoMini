@@ -6,6 +6,9 @@ from romini.composition.story_draft import parse_duration_seconds
 
 STORY_NOTE_KEYS = ("title", "characters", "interests", "outline", "script", "character_slugs", "duration_seconds")
 
+# The demo Worker ships this tree read-only. Remember the open pack when the file cannot be updated.
+_OPEN: dict[Path, str | None] = {}
+
 
 def story_slug(title: str) -> str:
     parts: list[str] = []
@@ -22,10 +25,33 @@ def open_story_pack(root: Path, slug: str) -> None:
         return
     if not (root / slug / "story.yaml").is_file():
         return
-    (root / "current").write_text(f"{slug}\n")
+    _remember_current(root, slug)
+
+
+def _remember_current(root: Path, slug: str | None) -> None:
+    pointer = root / "current"
+    try:
+        if slug is None:
+            if pointer.is_file():
+                pointer.unlink()
+        else:
+            text = f"{slug}\n"
+            if not pointer.is_file() or pointer.read_text() != text:
+                pointer.write_text(text)
+    except OSError:
+        _OPEN[root] = slug
+        return
+    _OPEN.pop(root, None)
 
 
 def current_pack(root: Path) -> Path:
+    if root in _OPEN:
+        slug = _OPEN[root] or ""
+        pack = root / slug if slug else root
+        if not slug:
+            return root
+        if pack.is_dir():
+            return pack
     pointer = root / "current"
     if pointer.is_file():
         slug = pointer.read_text().strip()
@@ -67,7 +93,7 @@ def write_story_notes(
     pack = root / slug if slug else root
     pack.mkdir(parents=True, exist_ok=True)
     if slug:
-        (root / "current").write_text(f"{slug}\n")
+        _remember_current(root, slug)
     existing = {}
     yaml_path = pack / "story.yaml"
     if yaml_path.is_file():
@@ -202,7 +228,7 @@ def write_character(root: Path, *, name: str, background: str, slug: str = "") -
     pack = root / target if target else root
     pack.mkdir(parents=True, exist_ok=True)
     if target:
-        (root / "current").write_text(f"{target}\n")
+        _remember_current(root, target)
     (pack / "character.yaml").write_text(yaml.safe_dump({"name": name, "background": background}, sort_keys=True))
     return pack
 
@@ -225,13 +251,11 @@ def open_character_pack(root: Path, slug: str) -> None:
         return
     if not (root / slug / "character.yaml").is_file():
         return
-    (root / "current").write_text(f"{slug}\n")
+    _remember_current(root, slug)
 
 
 def clear_current(root: Path) -> None:
-    pointer = root / "current"
-    if pointer.is_file():
-        pointer.unlink()
+    _remember_current(root, None)
 
 
 def load_open_character(root: Path | None) -> dict[str, str]:
