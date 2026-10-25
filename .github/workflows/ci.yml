@@ -91,3 +91,54 @@ jobs:
           force-level: ${{ github.event.inputs.force_release == 'true' && github.event.inputs.force_level || '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-demo:
+    name: Deploy demo
+    needs: verify
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://demo.romini.party
+    concurrency:
+      group: romini-demo-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Require Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ]; then
+            echo "::error::Demo deploy needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.13"
+          working-directory: deploy/demo
+
+      - name: Install demo dependencies
+        working-directory: deploy/demo
+        run: uv sync --frozen
+
+      - name: Apply D1 migrations
+        working-directory: deploy/demo
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run pywrangler d1 migrations apply romini-demo --remote
+
+      - name: Deploy demo Worker
+        working-directory: deploy/demo
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run pywrangler deploy

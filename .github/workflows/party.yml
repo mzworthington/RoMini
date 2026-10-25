@@ -18,8 +18,24 @@ jobs:
   deploy:
     name: Deploy page
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://romini.party
+    concurrency:
+      group: romini-party-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7.0.1
+
+      - name: Require Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ]; then
+            echo "::error::Party deploy needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
 
       - uses: actions/setup-node@v7
         with:
@@ -35,9 +51,5 @@ jobs:
         working-directory: deploy/party
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          if [ -z "${CLOUDFLARE_API_TOKEN}" ]; then
-            echo "::notice::CLOUDFLARE_API_TOKEN is not set. Skipping wrangler deploy."
-            exit 0
-          fi
-          npx wrangler deploy
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
