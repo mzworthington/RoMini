@@ -177,4 +177,10 @@
   #script { min-height: 14rem; }
   .story-studio section.card > form > button { width: 100%; align-self: stretch; }
   pre { max-width: 100%; overflow-x: auto; }
+
+  .site-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
 }

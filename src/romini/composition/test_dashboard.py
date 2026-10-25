@@ -274,6 +274,20 @@ def test_phone_layout_keeps_every_section_on_the_page() -> None:
     assert 'class="status-pills"' in home
 
 
+def test_dashboard_mobile_footer_puts_each_part_on_its_own_line() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/").text
+    narrow = _phone_css(html)
+    foot = narrow.split(".site-foot {", 1)[1].split("}", 1)[0]
+    footer = html.split('<footer class="site-foot">', 1)[1].split("</footer>", 1)[0]
+    desktop = html.split(".site-foot {", 1)[1].split("}", 1)[0]
+
+    assert footer.count("<p>") == 3
+    assert "flex-direction: column" in foot
+    assert "flex-direction: column" not in desktop
+
+
 def test_dashboard_mobile_nav_labels_stay_on_one_line() -> None:
     from fastapi.testclient import TestClient
 
