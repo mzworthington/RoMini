@@ -122,6 +122,14 @@
       }
       .site-foot a:hover { color: var(--ink); background: transparent; }
       .site-foot a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      @media (max-width: 960px) {
+        .site-foot {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          gap: 0.45rem;
+        }
+      }
     </style>
   </head>
   <body>
