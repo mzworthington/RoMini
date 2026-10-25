@@ -1,0 +1,186 @@
+/* Narrow layout. Reflow only: every section stays on the page.
+   The top nav is the one exception, and the tab bar repeats those same links. */
+.phone-tabs,
+.now-strip { display: none; }
+
+@media (max-width: 960px) {
+  :root { --phone-bar: calc(5.25rem + env(safe-area-inset-bottom)); }
+  .shell { padding-bottom: calc(var(--phone-bar) + 1rem); }
+  body:has(.now-strip) .shell { padding-bottom: calc(var(--phone-bar) + 4.25rem); }
+  .toast-stack { bottom: calc(var(--phone-bar) + 0.5rem); }
+  body:has(.now-strip) .toast-stack { bottom: calc(var(--phone-bar) + 4rem); }
+
+  .topbar { flex-wrap: wrap; align-items: center; border-radius: 1rem; }
+  .topbar nav[aria-label="Dashboard"] { display: none; }
+  .topbar .top-actions {
+    flex: 1 0 100%;
+    max-width: 100%;
+    margin-left: 0;
+    overflow: visible;
+  }
+  .status-pills { flex-wrap: wrap; }
+  .page-head { flex-direction: column; align-items: stretch; }
+  .page-actions { width: 100%; align-items: stretch; }
+  .page-actions form { flex: 1 1 100%; }
+  .page-actions .soft-pill,
+  .page-actions .danger-pill,
+  .page-actions a.soft-pill,
+  .model-pill { width: 100%; justify-content: center; }
+  .studio-toolbar,
+  .studio-toolbar .model-row { align-items: stretch; justify-content: flex-start; width: 100%; }
+
+  .phone-tabs {
+    display: flex;
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0.3rem 0.15rem calc(0.3rem + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid var(--line);
+  }
+  .phone-tabs a {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 2.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0.15rem 0.1rem;
+    border-radius: 0.7rem;
+    color: var(--muted);
+    background: transparent;
+    text-decoration: none;
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.15;
+    white-space: normal;
+  }
+  .phone-tabs a[aria-current="page"] { color: var(--coral-press); background: #fff4e5; }
+  .phone-tabs svg { width: 1.15rem; height: 1.15rem; fill: currentColor; flex: none; }
+
+  .now-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    position: fixed;
+    z-index: 30;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: var(--phone-bar);
+    min-height: 2.75rem;
+    padding: 0.4rem 0.75rem;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .now-strip img { width: 2rem; height: 2rem; border-radius: 999px; object-fit: cover; }
+  .now-strip-copy { min-width: 0; display: flex; flex-direction: column; }
+  .now-strip-copy strong,
+  .now-strip-copy span { overflow-wrap: anywhere; }
+  .now-strip-copy span { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+
+  .deck-layout { display: flex; flex-direction: column; }
+  .deck-layout > .deck { order: 1; }
+  .deck-layout > .plate { order: 2; }
+  .deck-layout > .story-facts { order: 3; }
+  .deck-layout > .hw-strip { order: 4; }
+  .transport .seek,
+  .transport button.seek,
+  .transport .play-main { width: 2.75rem; height: 2.75rem; }
+  .transport .play-main { width: 3.5rem; height: 3.5rem; }
+  .guard-volume { min-height: 2.75rem; }
+  .guard-thumb { top: 50%; width: 1.35rem; height: 1.35rem; }
+
+  .studio:has(.live-deck) { display: flex; flex-direction: column; }
+  .studio:has(.live-deck) > .scan-dock { order: 1; }
+  .studio:has(.live-deck) > .live-deck { order: 2; }
+  .studio:has(.live-deck) > .summary-cards { order: 3; }
+  .studio:has(.live-deck) > .studio-main { order: 4; }
+  .figures.is-list .figure-specs,
+  .figures.is-list .figure-specs dd,
+  .figures.is-list .figure-sub { overflow: visible; white-space: normal; text-overflow: unset; }
+  .figures.is-list .figure-foot { justify-content: flex-start; flex-wrap: wrap; }
+  .figures.is-list .figure-foot .hint { min-width: 0; text-align: left; }
+  .assign-audio,
+  .figure-foot .chip-btn,
+  .filters a,
+  .chip-btn,
+  .cadence button { min-height: 2.75rem; }
+  .checkline { min-height: 2.75rem; }
+  .figure-search-row,
+  .library-search-row,
+  .display-mode { flex-wrap: wrap; }
+
+  .studio:has(.quota-cards) > .board { order: 1; }
+  .studio:has(.quota-cards) > .quota-cards { order: 2; }
+  .studio:has(.quota-cards) > .library-catalog { order: 3; }
+  .studio:has(.quota-cards) > .audition-bar { order: 4; }
+  .drop-copy .browse {
+    flex: 1 1 100%;
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .audition-bar { flex-wrap: wrap; }
+  .audition-bar audio,
+  .audition-bar select { flex: 1 1 100%; width: 100%; min-width: 0; }
+  .library-catalog .table-wrap { overflow: visible; }
+  .library-catalog table { display: block; }
+  .library-catalog thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .library-catalog tbody { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+  .library-catalog tr {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 0.9rem;
+  }
+  .library-catalog td,
+  .library-catalog td:last-child {
+    width: auto;
+    border: 0;
+    background: transparent;
+    padding: 0.2rem 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .library-catalog button.play-dot { width: 2.75rem; height: 2.75rem; min-height: 2.75rem; }
+  .row-assign[open] form { position: static; width: 100%; }
+
+  .studio:has(.telemetry) { display: flex; flex-direction: column; }
+  .studio:has(.telemetry) > .hw-split { display: contents; }
+  .studio:has(.telemetry) .hw-main { order: 1; }
+  .studio:has(.telemetry) > .hw-care { order: 2; }
+  .studio:has(.telemetry) .hw-side { order: 3; }
+  .studio:has(.telemetry) > .telemetry { order: 4; }
+  .studio:has(.telemetry) > .firmware { order: 5; }
+  .studio:has(.telemetry) .hw-pair { display: flex; flex-direction: column; }
+  .studio:has(.telemetry) .hw-pair > section:has(.play-modes) { order: -1; }
+  .safety-tools { grid-template-columns: 1fr; }
+  .safety-row button[role="switch"] { width: 3.25rem; min-height: 1.75rem; }
+
+  .story-studio .cast label { min-height: 2.75rem; }
+  .cadence { flex-wrap: wrap; }
+  #script { min-height: 14rem; }
+  .story-studio section.card > form > button { width: 100%; align-self: stretch; }
+  pre { max-width: 100%; overflow-x: auto; }
+}
