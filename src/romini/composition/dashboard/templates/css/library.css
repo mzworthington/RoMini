@@ -269,7 +269,18 @@
 .library-catalog tr.unlinked td { background: #fff6f3; }
 .story-cell { display: flex; align-items: center; gap: 0.7rem; }
 .cover-pick { position: relative; display: inline-flex; margin: 0; cursor: pointer; }
-.cover-pick input { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; }
+.cover-pick input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  opacity: 0;
+}
 .library-catalog .cover {
   width: 2.75rem;
   height: 2.75rem;
@@ -316,6 +327,7 @@
 }
 button.play-dot {
   position: relative;
+  z-index: 2;
   width: 2rem;
   height: 2rem;
   min-height: 2rem;
