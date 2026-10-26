@@ -189,4 +189,3 @@ def _character_line(item: dict[str, str] | None) -> str:
     if background:
         return f"{item['name']}: {background}"
     return item["name"]
-
