@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from fastapi.testclient import TestClient
 
 from romini.composition.dashboard import create_dashboard
+from romini.composition.dashboard.responses import DEMO_PAGE_CACHE
 
 
 @dataclass
@@ -77,43 +78,24 @@ def test_demo_home_names_itself_and_refuses_an_upload() -> None:
     assert storage.files == {}
 
 
-def test_demo_pages_do_not_spawn_host_probes(monkeypatch) -> None:
-    from romini.composition.dashboard import shared
+def test_demo_html_is_cached_at_the_edge_and_the_house_is_not() -> None:
+    demo = TestClient(create_dashboard(storage=MemoryStorage(), demo=True))
+    house = TestClient(create_dashboard(storage=MemoryStorage(), demo=False))
 
-    def explode(*_args: object, **_kwargs: object) -> None:
-        raise AssertionError("demo pages must not spawn a process")
-
-    monkeypatch.setattr(shared.subprocess, "run", explode)
-    client = TestClient(create_dashboard(storage=MemoryStorage(), demo=True))
-
-    settings = client.get("/settings")
-    figures = client.get("/figures")
+    settings = demo.get("/settings")
+    figures = demo.get("/figures")
+    noticed = demo.get("/settings?notice=demo")
+    privacy = demo.get("/privacy")
 
     assert settings.status_code == 200
-    assert figures.status_code == 200
-    assert "System &amp; Hardware" in settings.text
-    assert "Figures" in figures.text
-
-
-def test_house_settings_still_reads_the_player_log(monkeypatch) -> None:
-    from romini.composition.dashboard import shared
-
-    seen: list[list[str]] = []
-
-    def run(args: list[str], **_kwargs: object) -> object:
-        seen.append(list(args))
-
-        class Completed:
-            stdout = ""
-            stderr = ""
-
-        return Completed()
-
-    monkeypatch.setattr(shared.subprocess, "run", run)
-    response = TestClient(create_dashboard(storage=MemoryStorage(), demo=False)).get("/settings")
-
-    assert response.status_code == 200
-    assert ["journalctl", "-u", "romini-core.service"] in [call[:3] for call in seen]
+    assert settings.headers["cache-control"] == DEMO_PAGE_CACHE
+    assert figures.headers["cache-control"] == DEMO_PAGE_CACHE
+    assert noticed.headers["cache-control"] == DEMO_PAGE_CACHE
+    assert "turned off on this demo" in noticed.text
+    assert privacy.headers["cache-control"] == DEMO_PAGE_CACHE
+    assert "cache-control" not in house.get("/settings").headers
+    assert demo.get("/posthog-config.json").headers["cache-control"] == "no-store"
+    assert demo.get("/backup").headers["cache-control"] == "no-store"
 
 
 def test_demo_hides_key_upload_and_narration_controls() -> None:

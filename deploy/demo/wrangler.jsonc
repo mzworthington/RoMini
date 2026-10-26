@@ -5,10 +5,11 @@
   "compatibility_flags": ["python_workers"],
   "workers_dev": false,
   "preview_urls": false,
-  // Workers left on the old bundled plan stay capped at 50 ms until this is set.
-  // A Python render then dies with error 1102. 30000 ms is the paid-plan ceiling.
-  "limits": {
-    "cpu_ms": 30000
+  // Free-plan CPU is 10 ms, so a Python render can die with error 1102.
+  // A hit is served from this cache without starting the worker. The key is
+  // the path, the query string, and the deployed version.
+  "cache": {
+    "enabled": true
   },
   // The database and bucket are imported by infra/cloudflare. This id must match that database.
   // Point LIBRARY_BASE_URL at the bucket's public hostname before publishing audio.

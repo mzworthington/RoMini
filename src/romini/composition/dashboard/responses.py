@@ -1,7 +1,7 @@
 from pathlib import Path
 from urllib.parse import unquote, urlencode
 
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 HOME_NOTICES = {
     "assigned": "Figure assigned",
@@ -41,6 +41,9 @@ HOME_NOTICES = {
     "demo": "That control is turned off on this demo",
 }
 
+# The browser always revalidates. The edge keeps the page for a day and
+# serves a hit without starting the worker. The free plan allows 10 ms of CPU.
+DEMO_PAGE_CACHE = "public, max-age=0, s-maxage=86400"
 AUDIO_SUFFIXES = {".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus"}
 ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 
@@ -48,6 +51,11 @@ ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 class QuietNotices:
     def tell(self, message: str) -> None:
         return
+
+
+def cache_demo_page(response: HTMLResponse) -> HTMLResponse:
+    response.headers["Cache-Control"] = DEMO_PAGE_CACHE
+    return response
 
 
 def notice(path: str, key: str, detail: str = "") -> RedirectResponse:
