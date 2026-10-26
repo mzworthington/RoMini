@@ -1648,7 +1648,7 @@ def test_dashboard_story_picture_is_set_from_the_row(tmp_path: Path) -> None:
     assert 'aria-label="Reassign figurine"' not in row
     assert 'action="/library/cover"' in row
     assert 'aria-label="Change picture"' in row
-    assert 'onchange="this.form.submit()"' in row
+    assert 'onchange="this.form.requestSubmit()"' in row
     assert 'class="cover"' in row.split('aria-label="Change picture"', 1)[0]
     assert ">Edit<" in row
     assert 'data-path="bedtime.mp3"' in row

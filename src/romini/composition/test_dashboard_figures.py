@@ -781,7 +781,7 @@ def test_dashboard_figure_picture_changes_from_the_image(tmp_path: Path) -> None
     assert 'aria-label="Save picture"' not in card
     assert 'action="/figures/cover"' in card
     assert 'aria-label="Change picture"' in card
-    assert 'onchange="this.form.submit()"' in card
+    assert 'onchange="this.form.requestSubmit()"' in card
     assert 'name="uid" value="04aabbccddeeff"' in card
 
 
