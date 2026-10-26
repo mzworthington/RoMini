@@ -44,7 +44,7 @@ def render_page(
     library = library_context(page, source.storage, source.stories, tracks, removed)
     shown = library["tracks"]
     now = seams.datetime.now().astimezone()
-    host = seams.read_host_facts()
+    host = seams.read_demo_host_facts() if source.demo else seams.read_host_facts()
     update = update_report(source.update_status)
     play_mode, sleep_at = play_settings(source.settings)
     context: dict[str, object] = {
@@ -54,7 +54,7 @@ def render_page(
         "play_mode": play_mode,
         "host": host,
         "update": update,
-        "player_log": _player_log(page),
+        "player_log": _player_log(page, demo=source.demo),
         "memory_fill": memory_fill(host["memory"]),
         "listen_today": listen_today_label(page, source.listening, now),
         "audit_entries": audit_rows(source.audit, page),
@@ -73,7 +73,7 @@ def render_page(
     return templates.TemplateResponse(request, template, context)
 
 
-def _player_log(page: str) -> str:
-    if page != "settings":
+def _player_log(page: str, *, demo: bool) -> str:
+    if page != "settings" or demo:
         return ""
     return seams.read_player_log()

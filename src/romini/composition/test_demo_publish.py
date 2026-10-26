@@ -22,6 +22,7 @@ def test_demo_worker_is_published_on_the_party_zone() -> None:
     assert config["r2_buckets"][0]["bucket_name"] == "romini-demo"
     assert config["vars"]["LIBRARY_BASE_URL"].startswith("https://")
     assert config["vars"]["POSTHOG_HOST"] == "https://a.mzworthington.co.uk"
+    assert config["limits"]["cpu_ms"] == 30000
     assert "POSTHOG_TOKEN" not in text
     assert "phc_" not in text
     assert "CREATE TABLE IF NOT EXISTS settings" in migration
