@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy · RoMini</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root { color-scheme: light; --ink: #231f20; --paper: #f6f1e8; }
+      html { background: var(--paper); }
+      body {
+        margin: 0 auto;
+        max-width: 40rem;
+        padding: 2.5rem 1.25rem 4rem;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: "Iowan Old Style", Palatino, Georgia, serif;
+        line-height: 1.5;
+      }
+      a { color: inherit; }
+      .meta, footer { font-family: ui-sans-serif, system-ui, sans-serif; color: #78736b; font-size: 0.85rem; }
+    </style>
+  </head>
+  <body>
+    <p class="meta"><time datetime="2026-10-26">Last updated 26 October 2026</time></p>
+    <h1>Privacy</h1>
+    <p>This page says what the public RoMini site and the public demo do with information. It is a plain-language notice, not legal advice.</p>
+    <h2>Product analytics (PostHog)</h2>
+    <p><a href="https://romini.party/">romini.party</a> and <a href="https://demo.romini.party/">demo.romini.party</a> use <a href="https://posthog.com">PostHog</a> Cloud EU, via the first-party ingest host <a href="https://a.mzworthington.co.uk">a.mzworthington.co.uk</a>, so I can see which pages people open. PostHog is configured with <strong>cookieless tracking</strong>: it does not write PostHog cookies or use local or session storage for identity, and these sites do not call <code>identify()</code>. Counts use a privacy-preserving hash on PostHog's servers. Session replay is off.</p>
+    <p>That is why these sites do not show a cookie banner for PostHog. Cloudflare or the browser may still use their own cookies for hosting or security.</p>
+    <p>The story box on the house LAN (<code>romini.local</code>) does not send these events. Playback stays on the home network.</p>
+    <p>PostHog's own terms and privacy policy apply to data they process for these sites.</p>
+    <h2>Hosting</h2>
+    <p>The public pages are on Cloudflare. Those systems receive normal web-request metadata, such as an IP address at the edge, as part of serving the site.</p>
+    <h2>What these sites do not do</h2>
+    <p>I do not sell your data. I do not run ads. You do not need an account to read the page or open the demo.</p>
+    <h2>Asking to delete something</h2>
+    <p>If you think I hold personal data about you in PostHog or elsewhere, open an issue on <a href="https://github.com/mzworthington/RoMini/issues">github.com/mzworthington/RoMini</a> and say what you want removed. I will use PostHog's deletion tools where they apply.</p>
+    <footer><p><a href="/">RoMini</a></p></footer>
+  </body>
+</html>

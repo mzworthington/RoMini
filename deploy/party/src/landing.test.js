@@ -27,6 +27,25 @@ test("the public page names RoMini, shows the box, and links the demo dashboard"
   assert.match(html, /name="description"[^>]*content="[^"]*screen-free story box[^"]*"/);
 });
 
+test("the landing page boots cookieless PostHog and links the privacy notice", () => {
+  const script = readFileSync(new URL("../public/posthog.js", import.meta.url), "utf8");
+  const config = JSON.parse(readFileSync(new URL("../public/posthog-config.json", import.meta.url), "utf8"));
+  const privacy = readFileSync(new URL("../public/privacy/index.html", import.meta.url), "utf8");
+
+  assert.match(html, /<script src="\/posthog\.js"><\/script>/);
+  assert.match(html, /href="\/privacy"/);
+  assert.equal(config.enabled, false);
+  assert.equal(config.apiKey, undefined);
+  assert.match(script, /cookieless_mode:\s*"always"/);
+  assert.match(script, /person_profiles:\s*"never"/);
+  assert.match(script, /disable_session_recording:\s*true/);
+  assert.match(script, /capture_pageview:\s*"history_change"/);
+  assert.match(privacy, /Session replay is off/);
+  assert.match(privacy, /romini\.local/);
+  assert.doesNotMatch(html, /phc_/);
+  assert.doesNotMatch(script, /phc_/);
+});
+
 test("the landing page carries the dashboard footer", () => {
   assert.match(html, /<footer class="site-foot">/);
   assert.match(html, /Made for Romy, with ❤️ by\s*<a href="https:\/\/mzworthington\.co\.uk\/" target="_blank"[^>]*>Matthew Z Worthington<\/a>/);

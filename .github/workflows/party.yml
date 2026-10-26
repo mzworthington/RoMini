@@ -47,6 +47,28 @@ jobs:
         working-directory: deploy/party
         run: npm ci
 
+      - name: Bake PostHog config
+        working-directory: deploy/party
+        env:
+          POSTHOG_TOKEN: ${{ secrets.POSTHOG_TOKEN }}
+          POSTHOG_HOST: https://a.mzworthington.co.uk
+        run: |
+          if [ -z "${POSTHOG_TOKEN}" ]; then
+            echo "::warning::POSTHOG_TOKEN is unset. romini.party will skip PostHog until the secret exists."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          host = os.environ.get("POSTHOG_HOST", "").strip() or "https://a.mzworthington.co.uk"
+          Path("public/posthog-config.json").write_text(
+              json.dumps({"enabled": True, "apiKey": os.environ["POSTHOG_TOKEN"].strip(), "apiHost": host}) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Deploy
         working-directory: deploy/party
         env:
