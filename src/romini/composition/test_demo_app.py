@@ -150,6 +150,37 @@ def test_demo_catalog_shows_stories_figures_and_tracks() -> None:
     assert 'name="character" value="romy" checked' in stories
 
 
+def test_demo_delete_hides_that_track_and_keeps_the_figures() -> None:
+    from pathlib import Path
+
+    import yaml
+    from fastapi.testclient import TestClient
+
+    from romini.composition.demo_app import create_demo_app
+
+    catalog_path = Path(__file__).resolve().parents[3] / "deploy/demo/catalog.yaml"
+    catalog = catalog_path.read_text()
+    data = yaml.safe_load(catalog)
+    objects = [{"key": track["path"], "size": 128} for track in data["tracks"]]
+    client = TestClient(
+        create_demo_app(
+            settings_rows=[("catalog", catalog), ("play_mode", "presence")],
+            objects=objects,
+            base_url="https://media.example",
+        )
+    )
+
+    deleted = client.post("/library/delete", data={"path": "romy-and-the-banana.mp3"})
+
+    assert "Track deleted" in deleted.text
+    assert "romy-and-the-banana.mp3" not in deleted.text
+    assert "Romy and the robot" in deleted.text
+    figures = client.get("/figures").text
+    assert "Blue Tag" in figures
+    assert "Red Robot" in figures
+    assert "Brick Tower" in figures
+
+
 def test_demo_app_renders_the_seeded_library() -> None:
     from fastapi.testclient import TestClient
 

@@ -1,3 +1,4 @@
+import fcntl
 import os
 import socket
 import subprocess
@@ -8,7 +9,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from shutil import disk_usage
 from typing import Protocol
-from urllib.parse import unquote, urlencode
+from urllib.parse import quote, unquote, urlencode
 
 import yaml
 from fastapi import Request
@@ -493,6 +494,27 @@ def notice(path: str, key: str, detail: str = "") -> RedirectResponse:
     return RedirectResponse(f"{path}?{urlencode(params)}", status_code=303)
 
 
+_HIDDEN_TRACKS = "romini-hidden"
+
+
+def hidden_track_paths(request: Request) -> set[str]:
+    raw = unquote(request.cookies.get(_HIDDEN_TRACKS, ""))
+    return {part for part in raw.split("\n") if part.strip() and ".." not in Path(part).parts}
+
+
+def remember_hidden_track(response: RedirectResponse, request: Request, path: str) -> None:
+    hidden = hidden_track_paths(request)
+    hidden.add(path.strip())
+    response.set_cookie(
+        _HIDDEN_TRACKS,
+        quote("\n".join(sorted(hidden))),
+        max_age=60 * 60 * 24 * 365,
+        httponly=True,
+        samesite="lax",
+        path="/",
+    )
+
+
 def has_required(*values: str) -> bool:
     return all(value.strip() for value in values)
 
@@ -517,7 +539,23 @@ class PathCatalog:
         return self._path.read_text()
 
     def write_text(self, text: str) -> None:
-        self._path.write_text(text)
+        self.exclusive(lambda _current: text)
+
+    def exclusive(self, change: Callable[[str], str]) -> None:
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = Path(str(self._path) + ".lock")
+        handle = lock_path.open("a+")
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            current = self._path.read_text() if self._path.is_file() else ""
+            updated = change(current)
+            if updated != current:
+                temporary = Path(f"{self._path}.{os.getpid()}.tmp")
+                temporary.write_text(updated)
+                os.replace(temporary, self._path)
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            handle.close()
 
 
 def render_page(
@@ -550,8 +588,13 @@ def render_page(
     studio = page in {"stories", "characters"}
     tracks: list[dict[str, str]] = []
     tags: list[dict[str, str]] = []
+    removed: set[str] = set()
     if assign_catalog is not None and not studio:
         data = yaml.safe_load(assign_catalog.read_text()) or {}
+        if not isinstance(data, dict):
+            data = {}
+        removed = {str(item) for item in list(data.get("removed") or []) if str(item).strip()}
+        removed |= hidden_track_paths(request)
         tags = []
         for tag in data.get("tags") or []:
             uid = str(tag.get("uid") or "")
@@ -578,6 +621,8 @@ def render_page(
             uid = str(track.get("uid") or "")
             title = str(track.get("title") or "")
             path = str(track.get("path") or "")
+            if path in removed:
+                continue
             artist = track.get("artist")
             artist_name = "" if artist is None else str(artist).strip()
             if uid.strip() or title.strip() or path.strip():
@@ -642,15 +687,18 @@ def render_page(
         saved_characters = []
         spoken_file = ""
         voices = []
-    on_disk = library_paths(storage) if studio or page == "library" else []
-    library_files = library_file_labels(stories, on_disk) if on_disk else []
+    on_disk = [path for path in library_paths(storage) if path not in removed] if studio or page == "library" else []
+    catalog_titles = {
+        track["path"]: track["title"] for track in tracks if track["path"].strip() and track["title"].strip()
+    }
+    library_files = library_file_labels(stories, on_disk, catalog_titles) if on_disk else []
     for item in library_files:
         item["media"] = public_https_url(storage, item["path"]) or f"/library/file/{item['path']}"
     if page == "library":
         known = {track["path"] for track in tracks}
         for item in library_files:
             path = item["path"]
-            if path in known:
+            if path in known or path in removed:
                 continue
             tracks.append(
                 {

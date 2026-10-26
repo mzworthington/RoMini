@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import yaml
+
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.dashboard import DiskStorage, create_dashboard
 from romini.features.library.import_catalog import import_catalog
@@ -387,6 +389,17 @@ def test_dashboard_library_grid_lays_tracks_in_four_columns() -> None:
     assert "grid-template-columns: repeat(4, minmax(0, 1fr))" in rule
 
 
+def test_dashboard_audio_and_figures_stay_a_grid_on_a_narrow_screen() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/library").text
+
+    assert ".library-catalog table.is-grid tbody { grid-template-columns: 1fr" not in html
+    assert ".library-catalog tbody { display: grid; grid-template-columns: 1fr" not in html
+    assert ".figures { grid-template-columns: 1fr" not in html
+    assert html.count("grid-template-columns: repeat(2, minmax(0, 1fr))") >= 2
+
+
 def test_dashboard_sync_queue_reports_the_file_being_transferred() -> None:
     from fastapi.testclient import TestClient
 
@@ -590,10 +603,79 @@ def test_dashboard_deletes_a_track_from_the_edit_form_after_confirm(tmp_path: Pa
     assert "The pond" in response.text
     assert not (library / "gruffalo.mp3").exists()
     assert (library / "pond.mp3").read_bytes() == b"pond"
-    saved = catalog_path.read_text()
-    assert "gruffalo.mp3" not in saved
-    assert "pond.mp3" in saved
-    assert "04aabbccddeeff" not in saved
+    saved = yaml.safe_load(catalog_path.read_text())
+    assert "gruffalo.mp3" not in {row.get("path") for row in saved["tracks"]}
+    assert saved["removed"] == ["gruffalo.mp3"]
+    assert "pond.mp3" in {row.get("path") for row in saved["tracks"]}
+    assert "04aabbccddeeff" not in catalog_path.read_text()
+
+
+def test_deleting_a_track_hides_it_when_the_file_remains_and_keeps_figures(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        "  - uid: aaaa\n"
+        "    name: Blue Tag\n"
+        "  - uid: bbbb\n"
+        "    name: Red Robot\n"
+        "tracks:\n"
+        "  - uid: aaaa\n"
+        "    path: banana.mp3\n"
+        "    title: Banana story\n"
+        "  - uid: bbbb\n"
+        "    path: robot.mp3\n"
+        "    title: Robot story\n"
+    )
+    storage = FakeStorage(free_bytes=1024, files={"banana.mp3": b"banana", "robot.mp3": b"robot"})
+    client = TestClient(create_dashboard(storage=storage, assign_catalog=PathCatalog(catalog_path)))
+
+    response = client.post("/library/delete", data={"path": "banana.mp3"})
+
+    assert response.status_code == 200
+    assert "Banana story" not in response.text
+    assert "banana.mp3" not in response.text
+    assert "Robot story" in response.text
+    assert storage.files["banana.mp3"] == b"banana"
+    saved = yaml.safe_load(catalog_path.read_text())
+    assert [row["name"] for row in saved["tags"]] == ["Blue Tag", "Red Robot"]
+    assert [row["path"] for row in saved["tracks"]] == ["robot.mp3"]
+
+
+def test_deleting_a_track_removes_the_catalog_row_when_the_file_is_already_gone(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        "  - uid: aaaa\n"
+        "    name: Blue Tag\n"
+        "  - uid: bbbb\n"
+        "    name: Red Robot\n"
+        "tracks:\n"
+        "  - uid: aaaa\n"
+        "    path: banana.mp3\n"
+        "    title: Banana story\n"
+        "  - uid: bbbb\n"
+        "    path: robot.mp3\n"
+        "    title: Robot story\n"
+    )
+    client = TestClient(
+        create_dashboard(storage=FakeStorage(free_bytes=1024), assign_catalog=PathCatalog(catalog_path))
+    )
+
+    response = client.post("/library/delete", data={"path": "banana.mp3"})
+
+    assert "Track deleted" in response.text
+    assert "Banana story" not in response.text
+    saved = yaml.safe_load(catalog_path.read_text())
+    assert [row["name"] for row in saved["tags"]] == ["Blue Tag", "Red Robot"]
+    assert [row["path"] for row in saved["tracks"]] == ["robot.mp3"]
 
 
 def test_dashboard_assign_blank_uid_saves_the_title_without_a_figure(tmp_path: Path) -> None:
@@ -734,8 +816,8 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     assert "unlinked" in catalog.split(">The Very Hungry Caterpillar<", 1)[0].rsplit("<tr", 1)[1]
     assert 'class="chip missing"' in waiting
     assert "No figure linked" in waiting
-    assert 'class="link-tag"' in waiting
-    assert "Link figure" in waiting
+    assert 'class="link-tag"' not in waiting
+    assert "Link figure" not in waiting
 
 
 def test_dashboard_library_play_stays_disabled_when_no_figure_is_linked(tmp_path: Path) -> None:
@@ -1283,6 +1365,35 @@ def test_dashboard_library_audition_controls_share_one_row() -> None:
     assert 'id="preview"' in bar
     assert 'id="player"' in bar
     assert "flex-wrap: nowrap" in rule
+
+
+def test_dashboard_audition_player_names_a_track_by_its_title(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    catalog = tmp_path / "catalog.yaml"
+    catalog.write_text('tracks:\n  - path: romy-and-the-brick-tower.mp3\n    title: "Romy and the brick tower"\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(
+                    free_bytes=1024,
+                    files={
+                        "romy-and-the-brick-tower.mp3": b"id3",
+                        "stories/romy-and-the-brick-tower.mp3": b"id3",
+                        "AUD-20261024-WA0001.m4a": b"id3",
+                    },
+                ),
+                assign_catalog=catalog,
+            )
+        )
+        .get("/library")
+        .text
+    )
+    options = html.split('id="preview"', 1)[1].split("</select>", 1)[0]
+
+    assert options.count(">Romy and the brick tower<") == 2
+    assert "romy-and-the-brick-tower.mp3<" not in options
+    assert ">AUD-20261024-WA0001.m4a<" in options
 
 
 def test_dashboard_library_lets_you_listen_to_a_track() -> None:

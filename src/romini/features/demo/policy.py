@@ -8,7 +8,6 @@ _BLOCKED = frozenset(
         "/register-mode",
         "/figures/cover",
         "/library/cover",
-        "/library/delete",
         "/system/power",
         "/system/update",
         "/backup",

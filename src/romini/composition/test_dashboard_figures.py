@@ -347,6 +347,53 @@ def test_dashboard_scan_icon_goes_green_when_a_new_tag_is_registered() -> None:
     assert "#1f7a3a" in rule
 
 
+def test_dashboard_scan_icon_stays_green_after_the_catalog_notes_the_new_tag() -> None:
+    from datetime import UTC, datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.features.audit.memory import MemoryAuditLog
+    from romini.features.audit.record import AuditEntry
+
+    class Listening:
+        assign_mode = True
+
+    saved = MemoryAuditLog()
+    saved.record(
+        AuditEntry(
+            happened_at=datetime(2026, 10, 23, 22, 0, tzinfo=UTC),
+            action="register",
+            summary="Register on",
+            headline="Register on",
+        )
+    )
+    saved.record(
+        AuditEntry(
+            happened_at=datetime(2026, 10, 23, 22, 1, tzinfo=UTC),
+            action="register",
+            summary="Registered 04aabbccddeeff",
+            headline="Figure registered",
+        )
+    )
+    saved.record(
+        AuditEntry(
+            happened_at=datetime(2026, 10, 23, 22, 1, tzinfo=UTC),
+            action="catalog",
+            summary="Updated catalog",
+            headline="Catalog updated",
+        )
+    )
+    html = (
+        TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024), register=Listening(), audit=saved))
+        .get("/figures")
+        .text
+    )
+    scan = html.split('aria-label="Quick reader sensor"', 1)[1].split("</section>", 1)[0]
+
+    assert "is-registered" in scan
+    assert "Figure registered" in scan
+
+
 def test_dashboard_assign_uid_lists_registered_tags(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -1331,3 +1378,26 @@ def test_dashboard_figure_card_says_when_no_story_is_linked(tmp_path: Path) -> N
     card = html.split('class="figure"', 1)[1].split("</li>", 1)[0]
 
     assert "No story linked" in card
+
+
+def test_figure_picture_posts_through_the_page_so_a_saved_image_is_not_a_leave_warning(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tags:\n  - uid: "04aabbccddeeff"\n    name: "Banana"\ntracks: []\n')
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/figures")
+        .text
+    )
+    picture = html.split('class="figure-photo"', 1)[1].split("</form>", 1)[0]
+
+    assert 'onchange="this.form.requestSubmit()"' in picture
+    assert "this.form.submit()" not in picture

@@ -180,6 +180,23 @@ test("a quiet polling page waits before refreshing", async () => {
   assert.equal(page.window.document.getElementById("now").textContent, "2");
 });
 
+test("a registering reader refreshes as soon as a tag can turn the mark green", async () => {
+  const page = boot(
+    `<div class="shell" data-poll><div class="scan-target"></div><p id="now">1</p></div>`,
+    "http://romini.local/figures",
+  );
+  page.respond(async () => ({
+    text: async () =>
+      `<!DOCTYPE html><html><body><div class="shell" data-poll><div class="scan-target is-registered"></div><p id="now">2</p></div></body></html>`,
+    url: "http://romini.local/figures",
+  }));
+
+  await page.time.tick(1000);
+
+  assert.equal(page.fetches.length, 1);
+  assert.equal(page.window.document.querySelector(".scan-target").classList.contains("is-registered"), true);
+});
+
 test("a polling page refreshes until the form is dirty or polling stops", async () => {
   const page = boot(`<div class="shell" data-poll data-playing="on"><input name="title" value="Frog"><p id="now">1</p></div>`);
   page.respond(async () => ({
@@ -413,6 +430,37 @@ test("a select asks only after its saved choice changes", async () => {
   }, preview);
   assert.equal(picked.asked, 1);
   assert.equal(picked.fetches, 0);
+});
+
+test("submitting a chosen picture does not warn that the saved change will be lost", async () => {
+  const page = boot(`
+    <div class="shell">
+      <form action="/figures/cover" method="post">
+        <input type="hidden" name="uid" value="abc">
+        <input name="image" type="file">
+      </form>
+      <a href="/library">Library</a>
+    </div>
+  `);
+  const input = page.window.document.querySelector("[name=image]");
+  Object.defineProperty(input, "files", { configurable: true, value: { length: 1 } });
+  const blocked = [];
+  page.window.addEventListener("beforeunload", (event) => {
+    if (event.defaultPrevented) blocked.push(true);
+  });
+  page.respond(async () => ({
+    text: async () => pageHtml("<p>Stored</p><a href='/stories'>Stories</a>"),
+    url: "http://romini.local/figures?notice=image",
+  }));
+
+  page.window.document.querySelector("form").requestSubmit();
+  page.window.dispatchEvent(new page.window.Event("beforeunload", { cancelable: true }));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(blocked, []);
+  assert.equal(page.fetches.length, 1);
+  assert.equal(page.fetches[0].url, "http://romini.local/figures/cover");
+  assert.equal(page.window.document.querySelector(".shell p").textContent, "Stored");
 });
 
 test("a focused field that still matches its saved value does not ask before leaving", async () => {

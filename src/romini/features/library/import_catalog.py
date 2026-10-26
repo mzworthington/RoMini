@@ -53,10 +53,15 @@ def library_audio_paths(root: Path) -> list[str]:
 
 def include_library_tracks(text: str, paths: list[str]) -> str:
     data = yaml.safe_load(text) or {}
-    rows = [row for row in (data.get("tracks") or []) if isinstance(row, dict)]
-    available = list(dict.fromkeys(paths))
+    if not isinstance(data, dict):
+        data = {}
+    removed = {str(item) for item in list(data.get("removed") or []) if str(item).strip()}
+    rows = [
+        row for row in (data.get("tracks") or []) if isinstance(row, dict) and str(row.get("path") or "") not in removed
+    ]
+    available = [path for path in dict.fromkeys(paths) if path not in removed]
     present = set(available)
-    changed = False
+    changed = rows != [row for row in (data.get("tracks") or []) if isinstance(row, dict)]
     for row in rows:
         path = str(row.get("path") or "")
         if not path or path in present:

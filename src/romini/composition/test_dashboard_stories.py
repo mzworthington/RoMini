@@ -1034,7 +1034,7 @@ def test_dashboard_speak_links_the_library_track_back_to_the_story(tmp_path: Pat
 
     assert notes["spoken_file"] == "the-little-station.mp3"
     assert notes["library_path"] == "the-little-station.mp3"
-    assert ">the-little-station.mp3 · The little station<" in library
+    assert ">The little station<" in library
 
 
 def test_dashboard_speak_saves_the_spoken_file_as_a_unique_title_slug(tmp_path: Path) -> None:

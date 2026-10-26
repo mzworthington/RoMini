@@ -9,7 +9,7 @@ def test_public_demo_refuses_keys_uploads_and_other_changes() -> None:
     assert demo_forbids("POST", "/stories/speak")
     assert demo_forbids("POST", "/stories")
     assert demo_forbids("POST", "/stories/delete")
-    assert demo_forbids("POST", "/library/delete")
+    assert not demo_forbids("POST", "/library/delete")
     assert demo_forbids("POST", "/characters")
     assert demo_forbids("POST", "/characters/new")
     assert demo_forbids("POST", "/assign")

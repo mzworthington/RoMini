@@ -57,7 +57,14 @@
 <span class="scan-live" aria-hidden="true"></span>
 </div>
 
-{% set just_registered = assign_mode and audit_entries and audit_entries[0].headline == 'Figure registered' %}
+{% set registered = namespace(on=false, closed=false) %}
+{% if assign_mode %}
+{% for entry in audit_entries if not registered.closed %}
+{% if entry.headline == 'Figure registered' %}{% set registered.on = true %}{% set registered.closed = true %}{% endif %}
+{% if entry.headline == 'Register on' or entry.headline == 'Register off' %}{% set registered.closed = true %}{% endif %}
+{% endfor %}
+{% endif %}
+{% set just_registered = registered.on %}
 <div class="scan-target{% if assign_mode %} is-registering{% endif %}{% if just_registered %} is-registered{% endif %}">
 <div class="scan-mark" aria-hidden="true">
 <span class="scan-ping"></span>
@@ -156,7 +163,7 @@
 <svg viewBox="0 0 48 48"><circle class="blank-disc" cx="24" cy="24" r="15"/><circle class="blank-chip" cx="16.5" cy="24" r="1.7"/><path d="M20.4 19.4A6 6 0 0 1 20.4 28.6"/><path d="M22.3 17.1A9 9 0 0 1 22.3 30.9"/><path d="M24.2 14.8A12 12 0 0 1 24.2 33.2"/></svg>
 </span>
 {% endif %}
-<input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Change picture" onchange="this.form.submit()">
+<input name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Change picture" onchange="this.form.requestSubmit()">
 </label>
 </form>
 </div>

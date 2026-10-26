@@ -1,6 +1,6 @@
 import yaml
 
-from romini.features.library.assign import confirm_assign
+from romini.features.library.assign import confirm_assign, remove_track
 from romini.features.library.import_catalog import import_catalog
 
 
@@ -96,3 +96,32 @@ def test_assign_confirm_drops_the_cover_when_the_audio_changes() -> None:
     )
 
     assert "image" not in (yaml.safe_load(catalog.text) or {})["tracks"][0]
+
+
+def test_remove_track_keeps_every_figure_and_does_not_list_that_path_again() -> None:
+    catalog = FakeCatalogFile()
+    catalog.text = (
+        "tags:\n"
+        "  - uid: aaaa\n"
+        "    name: Blue Tag\n"
+        "  - uid: bbbb\n"
+        "    name: Red Robot\n"
+        "tracks:\n"
+        "  - uid: aaaa\n"
+        "    path: banana.mp3\n"
+        "    title: Banana\n"
+        "  - uid: bbbb\n"
+        "    path: robot.mp3\n"
+        "    title: Robot\n"
+    )
+
+    remove_track(path="banana.mp3", catalog=catalog)
+    remove_track(path="", catalog=catalog)
+
+    data = yaml.safe_load(catalog.text) or {}
+    assert [row["path"] for row in data["tracks"]] == ["robot.mp3"]
+    assert data["tags"] == [
+        {"uid": "aaaa", "name": "Blue Tag"},
+        {"uid": "bbbb", "name": "Red Robot"},
+    ]
+    assert data["removed"] == ["banana.mp3"]

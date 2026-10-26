@@ -35,9 +35,6 @@
 .bound { margin: 0.35rem 0 0; font-weight: 700; }
 .figure button { margin-top: 0.7rem; }
 .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 720px) {
-  .figures { grid-template-columns: 1fr; }
-}
 .studio-main > section.figure-library {
   background: transparent;
   border: 0;

@@ -210,7 +210,11 @@ def list_saved_stories(root: Path | None) -> list[dict[str, str]]:
     return found
 
 
-def library_file_labels(root: Path | None, paths: list[str]) -> list[dict[str, str]]:
+def library_file_labels(
+    root: Path | None,
+    paths: list[str],
+    catalog_titles: dict[str, str] | None = None,
+) -> list[dict[str, str]]:
     titles: dict[str, str] = {}
     for story in list_saved_stories(root):
         yaml_path = (root or Path()) / story["slug"] / "story.yaml"
@@ -220,7 +224,23 @@ def library_file_labels(root: Path | None, paths: list[str]) -> list[dict[str, s
             path = str(data.get(key) or "").strip()
             if path:
                 titles[path] = story["title"]
-    return [{"path": path, "label": f"{path} · {titles[path]}" if path in titles else path} for path in paths]
+    for path, title in (catalog_titles or {}).items():
+        cleaned = title.strip()
+        if path.strip() and cleaned:
+            titles[path] = cleaned
+    return [{"path": path, "label": _audition_label(path, titles)} for path in paths]
+
+
+def _audition_label(path: str, titles: dict[str, str]) -> str:
+    exact = titles.get(path, "").strip()
+    if exact:
+        return exact
+    name = Path(path).name
+    for key, title in titles.items():
+        cleaned = title.strip()
+        if cleaned and Path(key).name == name:
+            return cleaned
+    return path
 
 
 def write_character(root: Path, *, name: str, background: str, slug: str = "") -> Path:

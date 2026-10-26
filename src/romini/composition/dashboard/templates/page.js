@@ -1,6 +1,7 @@
 (function () {
   var pollTimer = 0;
   var navigating = false;
+  var saving = false;
 
   function dismiss(toast) {
     if (!toast || toast.classList.contains("is-leaving")) return;
@@ -120,6 +121,7 @@
   }
 
   function dirty() {
+    if (saving) return false;
     var fields = document.querySelectorAll("input, textarea, select");
     for (var i = 0; i < fields.length; i++) {
       var field = fields[i];
@@ -144,10 +146,11 @@
     var polling = document.querySelector("[data-poll]");
     if (polling && !pollTimer) {
       var live = document.querySelector("[data-playing='on']");
+      var registering = document.querySelector(".scan-target");
       pollTimer = window.setInterval(function () {
         if (!document.querySelector("[data-poll]") || editing() || navigating) return;
         void visit(location.href, false);
-      }, live ? 2000 : 10000);
+      }, live ? 2000 : registering ? 1000 : 10000);
     }
     if (!polling && pollTimer) {
       window.clearInterval(pollTimer);
@@ -205,6 +208,7 @@
           return;
         }
       }
+      saving = true;
       event.preventDefault();
       event.stopPropagation();
       var submitter = event.submitter || null;
@@ -240,6 +244,7 @@
           if (status) status.textContent = "Could not reach the box";
         })
         .then(function () {
+          saving = false;
           navigating = false;
         });
     },

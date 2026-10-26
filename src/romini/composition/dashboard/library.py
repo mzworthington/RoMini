@@ -14,11 +14,12 @@ from romini.composition.dashboard.shared import (
     locate_track_cover,
     notice,
     public_https_url,
+    remember_hidden_track,
     remember_track_cover,
     save_track_cover,
 )
 from romini.features.library.add_track import add_track
-from romini.features.library.assign import confirm_assign, remove_track, rename_track
+from romini.features.library.assign import catalog_without_track, confirm_assign, rename_track
 from romini.features.library.import_catalog import import_catalog
 from romini.features.play_by_tag.place_figure import PlayMode, on_figure_placed
 from romini.features.stories.cover import with_track_image
@@ -113,14 +114,35 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
     @app.post("/library/delete", response_model=None)
     async def delete_library_track(request: Request) -> RedirectResponse:
         form = await request.form()
-        path = str(form.get("path") or "")
-        if path not in library_paths(ctx.storage):
+        path = str(form.get("path") or "").strip()
+        if not path or any(part == ".." for part in Path(path).parts):
             return notice("/library", "needed")
-        remove = getattr(ctx.storage, "delete", None)
-        if callable(remove):
-            remove(path)
-        if ctx.assign_catalog is not None:
-            remove_track(path=path, catalog=ctx.assign_catalog)
+
+        def drop_file() -> None:
+            remove = getattr(ctx.storage, "delete", None)
+            if path in library_paths(ctx.storage) and callable(remove):
+                try:
+                    remove(path)
+                except PermissionError:
+                    return
+
+        def change(text: str) -> str:
+            drop_file()
+            return catalog_without_track(text, path)
+
+        if ctx.assign_catalog is None:
+            drop_file()
+        else:
+            exclusive = getattr(ctx.assign_catalog, "exclusive", None)
+            try:
+                if callable(exclusive):
+                    exclusive(change)
+                else:
+                    ctx.assign_catalog.write_text(change(ctx.assign_catalog.read_text()))
+            except PermissionError:
+                response = notice("/library", "deleted")
+                remember_hidden_track(response, request, path)
+                return response
         ctx.note("delete", f"Deleted {path}", headline="Track deleted")
         return notice("/library", "deleted")
 

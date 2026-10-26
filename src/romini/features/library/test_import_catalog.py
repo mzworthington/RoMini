@@ -100,3 +100,25 @@ tags:
     assert rows["library/little-drummer-girl.mp3"]["title"] == "little drummer girl"
     assert "uid" not in rows["library/little-drummer-girl.mp3"]
     assert data["tags"][0]["name"] == "Skateboard"
+
+
+def test_a_removed_track_stays_out_when_its_file_is_still_on_disk() -> None:
+    catalog = """
+tracks:
+- uid: bbbb
+  path: robot.mp3
+  title: Robot
+tags:
+- uid: aaaa
+  name: Blue Tag
+- uid: bbbb
+  name: Red Robot
+removed:
+- banana.mp3
+"""
+    updated = include_library_tracks(catalog, ["banana.mp3", "robot.mp3"])
+    data = yaml.safe_load(updated)
+
+    assert [row["path"] for row in data["tracks"]] == ["robot.mp3"]
+    assert data["tags"][0]["name"] == "Blue Tag"
+    assert data["removed"] == ["banana.mp3"]

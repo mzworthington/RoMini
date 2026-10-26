@@ -9,14 +9,31 @@ class CatalogFile(Protocol):
     def write_text(self, text: str) -> None: ...
 
 
-def remove_track(*, path: str, catalog: CatalogFile) -> None:
-    data = yaml.safe_load(catalog.read_text()) or {}
+def catalog_without_track(text: str, path: str) -> str:
+    wanted = path.strip()
+    data = yaml.safe_load(text) or {}
+    if not wanted or not isinstance(data, dict):
+        return text
     data["tracks"] = [
         row
         for row in list(data.get("tracks") or [])
-        if not (isinstance(row, dict) and str(row.get("path") or "") == path)
+        if not (isinstance(row, dict) and str(row.get("path") or "") == wanted)
     ]
-    catalog.write_text(yaml.safe_dump(data, sort_keys=False))
+    removed = [item for item in list(data.get("removed") or []) if str(item).strip() and str(item) != wanted]
+    removed.append(wanted)
+    data["removed"] = removed
+    return yaml.safe_dump(data, sort_keys=False)
+
+
+def remove_track(*, path: str, catalog: CatalogFile) -> None:
+    def change(text: str) -> str:
+        return catalog_without_track(text, path)
+
+    exclusive = getattr(catalog, "exclusive", None)
+    if callable(exclusive):
+        exclusive(change)
+        return
+    catalog.write_text(change(catalog.read_text()))
 
 
 def rename_track(*, path: str, title: str, catalog: CatalogFile) -> None:
