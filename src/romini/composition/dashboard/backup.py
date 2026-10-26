@@ -7,7 +7,8 @@ from fastapi.responses import FileResponse, RedirectResponse
 from starlette.background import BackgroundTask
 from starlette.requests import ClientDisconnect
 
-from romini.composition.dashboard.shared import DashboardCtx, notice
+from romini.composition.dashboard.ctx import DashboardCtx
+from romini.composition.dashboard.responses import notice
 from romini.features.library.backup import restore_backup, write_backup
 
 

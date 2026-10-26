@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from pathlib import Path
 
+from romini.adapters.files.catalog import PathCatalog
 from romini.adapters.sqlite.catalog import SqliteCatalog
-from romini.composition.dashboard.shared import PathCatalog
 from romini.composition.sim import SimBox
 from romini.features.library.import_catalog import import_catalog, include_library_tracks, library_audio_paths
 

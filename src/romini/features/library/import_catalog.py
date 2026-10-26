@@ -52,16 +52,44 @@ def library_audio_paths(root: Path) -> list[str]:
 
 
 def include_library_tracks(text: str, paths: list[str]) -> str:
-    data = yaml.safe_load(text) or {}
+    loaded = yaml.safe_load(text) or {}
+    data = loaded if isinstance(loaded, dict) else {}
+    removed, rows = _kept_rows(data)
+    if _apply_library(data, rows, paths, removed):
+        return yaml.safe_dump(data, sort_keys=False)
+    return text
+
+
+def _apply_library(data: dict, rows: list, paths: list[str], removed: set[str]) -> bool:
+    available = [path for path in dict.fromkeys(paths) if path not in removed]
+    changed = rows != _dict_rows(data.get("tracks") or [])
+    if _retarget_moved(rows, available):
+        changed = True
+    if _append_missing(rows, available):
+        changed = True
+    if not changed:
+        return False
+    data["tracks"] = rows
+    return True
+
+
+def _dict_rows(tracks: list) -> list:
+    return [row for row in tracks if isinstance(row, dict)]
+
+
+def _kept_rows(data: object) -> tuple[set[str], list]:
     if not isinstance(data, dict):
-        data = {}
+        return set(), []
     removed = {str(item) for item in list(data.get("removed") or []) if str(item).strip()}
     rows = [
         row for row in (data.get("tracks") or []) if isinstance(row, dict) and str(row.get("path") or "") not in removed
     ]
-    available = [path for path in dict.fromkeys(paths) if path not in removed]
+    return removed, rows
+
+
+def _retarget_moved(rows: list, available: list[str]) -> bool:
     present = set(available)
-    changed = rows != [row for row in (data.get("tracks") or []) if isinstance(row, dict)]
+    changed = False
     for row in rows:
         path = str(row.get("path") or "")
         if not path or path in present:
@@ -70,7 +98,12 @@ def include_library_tracks(text: str, paths: list[str]) -> str:
         if len(matches) == 1:
             row["path"] = matches[0]
             changed = True
+    return changed
+
+
+def _append_missing(rows: list, available: list[str]) -> bool:
     known = {str(row.get("path") or "") for row in rows}
+    changed = False
     for path in available:
         if path in known:
             continue
@@ -78,7 +111,4 @@ def include_library_tracks(text: str, paths: list[str]) -> str:
         rows.append({"path": path, "title": title})
         known.add(path)
         changed = True
-    if not changed:
-        return text
-    data["tracks"] = rows
-    return yaml.safe_dump(data, sort_keys=False)
+    return changed

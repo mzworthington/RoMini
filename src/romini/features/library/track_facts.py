@@ -43,20 +43,11 @@ def mp3_duration_sec(audio: bytes) -> int | None:
     index = 0
     found = False
     while index + 4 <= len(audio):
-        if audio[index] != 0xFF or audio[index + 1] & 0xE0 != 0xE0:
+        frame = _mpeg_frame(audio, index)
+        if frame is None:
             index += 1
             continue
-        version = (audio[index + 1] >> 3) & 0x03
-        layer = (audio[index + 1] >> 1) & 0x03
-        bitrate_index = (audio[index + 2] >> 4) & 0x0F
-        rate_index = (audio[index + 2] >> 2) & 0x03
-        padding = (audio[index + 2] >> 1) & 0x01
-        if version != 0b11 or layer != 0b01 or bitrate_index in (0, 15) or rate_index == 3:
-            index += 1
-            continue
-        bitrate = _MPEG1_L3_KBPS[bitrate_index] * 1000
-        rate = _MPEG1_HZ[rate_index]
-        frame_len = int(144 * bitrate / rate) + padding
+        frame_len, rate = frame
         if frame_len < 4 or index + frame_len > len(audio):
             break
         seconds += 1152 / rate
@@ -65,6 +56,22 @@ def mp3_duration_sec(audio: bytes) -> int | None:
     if not found:
         return None
     return int(seconds)
+
+
+def _mpeg_frame(audio: bytes, index: int) -> tuple[int, int] | None:
+    if audio[index] != 0xFF or audio[index + 1] & 0xE0 != 0xE0:
+        return None
+    version = (audio[index + 1] >> 3) & 0x03
+    layer = (audio[index + 1] >> 1) & 0x03
+    bitrate_index = (audio[index + 2] >> 4) & 0x0F
+    rate_index = (audio[index + 2] >> 2) & 0x03
+    padding = (audio[index + 2] >> 1) & 0x01
+    if version != 0b11 or layer != 0b01 or bitrate_index in (0, 15) or rate_index == 3:
+        return None
+    bitrate = _MPEG1_L3_KBPS[bitrate_index] * 1000
+    rate = _MPEG1_HZ[rate_index]
+    frame_len = int(144 * bitrate / rate) + padding
+    return frame_len, rate
 
 
 def describe_audio(audio: bytes) -> TrackFacts:

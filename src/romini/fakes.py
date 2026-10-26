@@ -134,17 +134,16 @@ def frog_story_path(data: Path) -> Path:
     return data / "library" / FROG_REL_PATH
 
 
-def frog_sim_box(
-    player: FakePlayer,
-    led: FakeLed,
-    *,
-    sessions: FakeSessions | None = None,
-    mixer: FakeMixer | None = None,
-    halt: FakeHalt | None = None,
-    play_mode: PlayMode = PlayMode.PRESENCE,
-    assign_mode: bool = False,
-    empty: bool = False,
-) -> SimBox:
+def frog_sim_box(player: FakePlayer, led: FakeLed, **options: object) -> SimBox:
+    empty = bool(options.pop("empty", False))
+    sessions = options.pop("sessions", None)
+    mixer = options.pop("mixer", None)
+    halt = options.pop("halt", None)
+    play_mode = options.pop("play_mode", PlayMode.PRESENCE)
+    assign_mode = bool(options.pop("assign_mode", False))
+    if options:
+        unexpected = ", ".join(sorted(options))
+        raise TypeError(f"unexpected frog_sim_box arguments: {unexpected}")
     catalog = EMPTY_CATALOG_YAML if empty else FROG_CATALOG_YAML
     exists = (lambda path: False) if empty else (lambda path: path == FROG_REL_PATH)
     return SimBox(

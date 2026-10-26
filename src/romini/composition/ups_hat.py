@@ -91,14 +91,14 @@ class DeferredUpsHat:
         hat = self._hat()
         if hat is None:
             return None
-        return getattr(hat, "volts", None)
+        return hat.volts
 
     @property
     def flow(self) -> str | None:
         hat = self._hat()
         if hat is None:
             return None
-        return getattr(hat, "flow", None)
+        return hat.flow
 
 
 def open_ups_hat(*, open_bus: Callable[[int], object] | None = None) -> UpsHatBattery | None:

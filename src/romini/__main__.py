@@ -209,71 +209,100 @@ def main(
     catalog_ticks: Iterable[object] | None = None,
     nfc_opener: Callable[[], Nfc] | None = None,
 ) -> SimBox:
-    box = load_sim_box_from_env(
-        player=player
-        if player is not None
-        else (MpvPlayer(quiet=False) if os.environ.get("ROMINI_PROFILE", "sim") == "pi" else SilentPlayer()),
-        led=led if led is not None else default_led(),
-    )
+    box = load_sim_box_from_env(player=_chosen_player(player), led=led if led is not None else default_led())
     box.halt = _ChimeHalt(box.halt, box)
     listen_for_poweroff(box)
+    _serve_sim_http(box)
+    _serve_dashboard(box)
+    _quiet_idle(box)
+    play_power_chime(box, READY_EARCON_PATH)
+    _run_inputs(box, lines=lines, nfc=nfc, ticks=ticks, catalog_ticks=catalog_ticks, nfc_opener=nfc_opener)
+    return box
+
+
+def _chosen_player(player: Player | None) -> Player:
+    if player is not None:
+        return player
+    if os.environ.get("ROMINI_PROFILE", "sim") == "pi":
+        return MpvPlayer(quiet=False)
+    return SilentPlayer()
+
+
+def _serve_sim_http(box: SimBox) -> None:
     port = os.environ.get("ROMINI_HTTP_PORT")
-    if port is not None:
-        box.http = start_sim_http(box, host="127.0.0.1", port=int(port))
+    if port is None:
+        return
+    box.http = start_sim_http(box, host="127.0.0.1", port=int(port))
+
+
+def _serve_dashboard(box: SimBox) -> None:
     dash_port = os.environ.get("ROMINI_DASHBOARD_PORT")
-    if dash_port is not None:
-        data = Path(os.environ["ROMINI_DATA"])
-        profile = os.environ.get("ROMINI_PROFILE", "sim")
-        demo = profile == "demo"
-        traffic = DashboardTraffic()
-        box.traffic = traffic
-        if profile == "pi":
-            box.host_power = HostPower()
-        app = create_dashboard(
-            storage=DiskStorage(data / "library"),
-            assign_catalog=PathCatalog(data / "catalog.yaml"),
-            settings=SqliteSettings(box.state),
-            pad=box if profile == "sim" else None,
-            register=box,
-            mixer=box.mixer,
-            battery=None if demo else (DeferredUpsHat(open_ups_hat) if profile == "pi" else open_ups_hat()),
-            stories=data / "stories",
-            covers=data / "covers",
-            characters=data / "characters",
-            secrets=None if demo else data / "studio.env",
-            box_secrets=None if demo else Path("/etc/romini/env"),
-            player=box.player,
-            audit=getattr(box, "audit", None),
-            listening=getattr(box, "listening", None),
-            update_status=data / "update-check.json",
-            power=None if demo else LocalPower(halt=box.halt, profile=profile),
-            updates=None if demo else LocalUpdate(profile=profile),
-            traffic=traffic,
-            demo=demo,
-        )
-        box.dashboard = start_dashboard(
-            app,
-            host="0.0.0.0" if profile in {"pi", "demo"} else "127.0.0.1",
-            port=int(dash_port),
-        )
+    if dash_port is None:
+        return
+    data = Path(os.environ["ROMINI_DATA"])
+    profile = os.environ.get("ROMINI_PROFILE", "sim")
+    demo = profile == "demo"
+    traffic = DashboardTraffic()
+    box.traffic = traffic
+    if profile == "pi":
+        box.host_power = HostPower()
+    app = create_dashboard(
+        storage=DiskStorage(data / "library"),
+        assign_catalog=PathCatalog(data / "catalog.yaml"),
+        settings=SqliteSettings(box.state),
+        pad=box if profile == "sim" else None,
+        register=box,
+        mixer=box.mixer,
+        battery=_dashboard_battery(profile, demo),
+        stories=data / "stories",
+        covers=data / "covers",
+        characters=data / "characters",
+        secrets=None if demo else data / "studio.env",
+        box_secrets=None if demo else Path("/etc/romini/env"),
+        player=box.player,
+        audit=getattr(box, "audit", None),
+        listening=getattr(box, "listening", None),
+        update_status=data / "update-check.json",
+        power=None if demo else LocalPower(halt=box.halt, profile=profile),
+        updates=None if demo else LocalUpdate(profile=profile),
+        traffic=traffic,
+        demo=demo,
+    )
+    host = "0.0.0.0" if profile in {"pi", "demo"} else "127.0.0.1"
+    box.dashboard = start_dashboard(app, host=host, port=int(dash_port))
+
+
+def _dashboard_battery(profile: str, demo: bool) -> object | None:
+    if demo:
+        return None
+    if profile == "pi":
+        return DeferredUpsHat(open_ups_hat)
+    return open_ups_hat()
+
+
+def _quiet_idle(box: SimBox) -> None:
     quiet_idle = getattr(box.player, "quiet_idle", None)
     if callable(quiet_idle):
         quiet_idle()
-    play_power_chime(box, READY_EARCON_PATH)
+
+
+def _run_inputs(
+    box: SimBox,
+    *,
+    lines: Iterable[str] | None,
+    nfc: Nfc | None,
+    ticks: Iterable[object] | None,
+    catalog_ticks: Iterable[object] | None,
+    nfc_opener: Callable[[], Nfc] | None,
+) -> None:
     if nfc is None and nfc_opener is not None:
         nfc = nfc_opener()
     if lines is not None:
         run_sim_lines(box, lines)
     if nfc is not None and ticks is not None:
-        run_core_ticks(
-            box,
-            nfc,
-            data_dir=Path(os.environ["ROMINI_DATA"]),
-            ticks=ticks,
-        )
+        run_core_ticks(box, nfc, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=ticks)
     if catalog_ticks is not None:
         run_catalog_ticks(box, data_dir=Path(os.environ["ROMINI_DATA"]), ticks=catalog_ticks)
-    return box
 
 
 def run(*, player: Player | None = None, led: StatusLed | None = None) -> SimBox:

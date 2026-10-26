@@ -12,17 +12,28 @@ def register_tag(
     earcon: Earcon | None = None,
 ) -> None:
     data = yaml.safe_load(catalog.read_text()) or {}
-    tags = [row for row in (data.get("tags") or []) if row.get("uid") != uid]
-    existing = next((row for row in (data.get("tags") or []) if row.get("uid") == uid), None)
-    if existing is None:
-        tags.append({"uid": uid, "name": ""})
-    else:
-        kept = dict(existing)
-        kept["uid"] = uid
-        kept["name"] = str(existing.get("name") or "")
-        tags.append(kept)
-    data["tags"] = tags
+    data["tags"] = _tags_with_uid(data.get("tags") or [], uid)
     catalog.write_text(yaml.safe_dump(data, sort_keys=False))
+    _announce(led, earcon)
+
+
+def _tags_with_uid(rows: list, uid: str) -> list:
+    tags = [row for row in rows if row.get("uid") != uid]
+    existing = next((row for row in rows if row.get("uid") == uid), None)
+    tags.append(_kept_tag(existing, uid))
+    return tags
+
+
+def _kept_tag(existing: dict | None, uid: str) -> dict:
+    if existing is None:
+        return {"uid": uid, "name": ""}
+    kept = dict(existing)
+    kept["uid"] = uid
+    kept["name"] = str(existing.get("name") or "")
+    return kept
+
+
+def _announce(led: StatusLed | None, earcon: Earcon | None) -> None:
     if led is not None:
         led.pulse()
     if earcon is not None:

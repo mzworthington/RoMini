@@ -38,29 +38,34 @@ def sim_asset(path: str) -> tuple[bytes, str] | None:
     return file.read_bytes(), media_type
 
 
+_SIM_POSTS = {
+    "/remove": "remove",
+    "/vol/up": "vol up",
+    "/vol/down": "vol down",
+    "/halt": "halt",
+    "/play": "play",
+}
+
+
 def apply_sim_http(box: SimBox, method: str, path: str) -> int:
-    if method == "POST" and path.startswith("/place/"):
-        box.place(path.removeprefix("/place/"))
+    if method != "POST":
+        return 404
+    placed = _placed_uid(path)
+    if placed is not None:
+        box.place(placed)
         return 204
-    if method == "POST" and path.startswith("/tap/"):
-        box.place(path.removeprefix("/tap/"))
-        return 204
-    if method == "POST" and path == "/remove":
-        apply_sim_line(box, "remove")
-        return 204
-    if method == "POST" and path == "/vol/up":
-        apply_sim_line(box, "vol up")
-        return 204
-    if method == "POST" and path == "/vol/down":
-        apply_sim_line(box, "vol down")
-        return 204
-    if method == "POST" and path == "/halt":
-        apply_sim_line(box, "halt")
-        return 204
-    if method == "POST" and path == "/play":
-        apply_sim_line(box, "play")
-        return 204
-    return 404
+    command = _SIM_POSTS.get(path)
+    if command is None:
+        return 404
+    apply_sim_line(box, command)
+    return 204
+
+
+def _placed_uid(path: str) -> str | None:
+    for prefix in ("/place/", "/tap/"):
+        if path.startswith(prefix):
+            return path.removeprefix(prefix)
+    return None
 
 
 class SimHttpListener:

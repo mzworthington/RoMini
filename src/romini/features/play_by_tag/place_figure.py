@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class PlayMode(StrEnum):
@@ -63,47 +64,61 @@ class Earcon(Protocol):
     def play_earcon(self, path: str) -> None: ...
 
 
-def on_figure_placed(
-    uid: str,
-    *,
-    play_mode: PlayMode,
-    assign_mode: bool,
-    library: Library,
-    player: Player,
-    led: StatusLed,
-    sessions: Sessions | None = None,
-    earcon: Earcon | None = None,
-    beep: bool = True,
-) -> None:
-    if assign_mode:
+@dataclass
+class Placement:
+    play_mode: PlayMode
+    assign_mode: bool
+    library: Library
+    player: Player
+    led: StatusLed
+    sessions: Sessions | None = None
+    earcon: Earcon | None = None
+    beep: bool = True
+
+
+def on_figure_placed(uid: str, placement: Placement | None = None, **options: Any) -> None:
+    if placement is not None and options:
+        raise TypeError("pass Placement or keywords")
+    bound = placement if placement is not None else Placement(**options)
+    if bound.assign_mode:
         return
-    path = library.track_for(uid)
+    path = bound.library.track_for(uid)
     if path is None:
         return
-    if play_mode is PlayMode.TAP:
-        if player.is_playing() and player.playing_uid() == uid:
-            player.pause()
-            return
-        if player.is_playing():
-            player.stop()
-        if beep and earcon is not None:
-            earcon.play_earcon(CONNECT_EARCON_PATH)
-        player.play(path, position_sec=0.0, uid=uid)
-        led.pulse()
+    if bound.play_mode is PlayMode.TAP:
+        _place_tap(uid, path, bound)
         return
-    if play_mode is not PlayMode.PRESENCE:
+    if bound.play_mode is PlayMode.PRESENCE:
+        _place_presence(uid, path, bound)
+
+
+def _place_tap(uid: str, path: str, placement: Placement) -> None:
+    player = placement.player
+    if player.is_playing() and player.playing_uid() == uid:
+        player.pause()
         return
+    if player.is_playing():
+        player.stop()
+    _start_track(uid, path, 0.0, placement)
+
+
+def _place_presence(uid: str, path: str, placement: Placement) -> None:
+    player = placement.player
     if player.is_playing() and player.playing_uid() == uid:
         return
     if player.is_playing():
         player.stop()
     position = 0.0
-    if sessions is not None:
-        position = sessions.position_for(uid) or 0.0
-    if beep and earcon is not None:
-        earcon.play_earcon(CONNECT_EARCON_PATH)
-    player.play(path, position_sec=position, uid=uid)
-    led.pulse()
+    if placement.sessions is not None:
+        position = placement.sessions.position_for(uid) or 0.0
+    _start_track(uid, path, position, placement)
+
+
+def _start_track(uid: str, path: str, position: float, placement: Placement) -> None:
+    if placement.beep and placement.earcon is not None:
+        placement.earcon.play_earcon(CONNECT_EARCON_PATH)
+    placement.player.play(path, position_sec=position, uid=uid)
+    placement.led.pulse()
 
 
 def on_figure_lifted(
