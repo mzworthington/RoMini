@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from romini.composition.dashboard.ctx import DashboardDeps
+from romini.composition.dashboard.responses import cache_demo_page
 from romini.features.analytics.posthog import resolve_public_posthog_config
 
 _PRIVACY = Path(__file__).resolve().parent / "templates" / "privacy.html"
@@ -20,4 +21,4 @@ def mount(app: FastAPI, deps: DashboardDeps) -> None:
 
     @app.get("/privacy")
     def privacy() -> HTMLResponse:
-        return HTMLResponse(_PRIVACY.read_text(encoding="utf-8"))
+        return cache_demo_page(HTMLResponse(_PRIVACY.read_text(encoding="utf-8")))

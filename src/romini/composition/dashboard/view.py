@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 import romini.composition.dashboard.shared as seams
 from romini.composition.dashboard.catalog_view import catalog_board
 from romini.composition.dashboard.library_view import library_context
-from romini.composition.dashboard.responses import memory_fill
+from romini.composition.dashboard.responses import cache_demo_page, memory_fill
 from romini.composition.dashboard.shell_view import (
     audit_rows,
     charge_context,
@@ -44,7 +44,7 @@ def render_page(
     library = library_context(page, source.storage, source.stories, tracks, removed)
     shown = library["tracks"]
     now = seams.datetime.now().astimezone()
-    host = seams.read_demo_host_facts() if source.demo else seams.read_host_facts()
+    host = seams.read_host_facts()
     update = update_report(source.update_status)
     play_mode, sleep_at = play_settings(source.settings)
     context: dict[str, object] = {
@@ -54,7 +54,7 @@ def render_page(
         "play_mode": play_mode,
         "host": host,
         "update": update,
-        "player_log": _player_log(page, demo=source.demo),
+        "player_log": _player_log(page),
         "memory_fill": memory_fill(host["memory"]),
         "listen_today": listen_today_label(page, source.listening, now),
         "audit_entries": audit_rows(source.audit, page),
@@ -70,10 +70,13 @@ def render_page(
     context.update(charge_context(source.battery))
     context.update(sleep_context(source.settings, sleep_at, now))
     context.update(device_context(source, page=page, update=update, tracks=shown, tags=tags))
-    return templates.TemplateResponse(request, template, context)
+    rendered = templates.TemplateResponse(request, template, context)
+    if source.demo:
+        return cache_demo_page(rendered)
+    return rendered
 
 
-def _player_log(page: str, *, demo: bool) -> str:
-    if page != "settings" or demo:
+def _player_log(page: str) -> str:
+    if page != "settings":
         return ""
     return seams.read_player_log()

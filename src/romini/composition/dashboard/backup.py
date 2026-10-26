@@ -33,12 +33,15 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             raise
         handle.close()
         _drop_ephemeral(catalog, ephemeral)
-        return FileResponse(
+        response = FileResponse(
             path,
             media_type="application/zip",
             filename="romini-backup.zip",
             background=BackgroundTask(path.unlink, missing_ok=True),
         )
+        if ctx.demo:
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.post("/backup", response_model=None)
     async def import_backup(request: Request) -> RedirectResponse:
