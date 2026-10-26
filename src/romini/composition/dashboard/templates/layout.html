@@ -50,7 +50,7 @@
 <footer class="site-foot">
 <p>RoMini OS v{{ version }}</p>
 <p>Made for Romy, with ❤️ by <a href="https://mzworthington.co.uk/" target="_blank">Matthew Z Worthington</a> </p>
-<p>Screen-free domestic audio for growing minds. Local network hosted.</p>
+<p>Screen-free domestic audio for growing minds. Local network hosted.{% if demo %} <a href="/privacy">Privacy</a>{% endif %}</p>
 </footer>
 {% if now_playing and page != "home" %}
 <a class="now-strip" href="/">
@@ -90,5 +90,10 @@
 <script>
 {% include "page.js" %}
 </script>
+{% if demo %}
+<script>
+{% include "posthog.js" %}
+</script>
+{% endif %}
 </body>
 </html>

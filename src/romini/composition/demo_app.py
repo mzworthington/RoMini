@@ -16,6 +16,8 @@ def create_demo_app(
     settings_rows: list[tuple[str, str]],
     objects: list[dict[str, object]],
     base_url: str,
+    posthog_token: str = "",
+    posthog_host: str = "",
 ) -> FastAPI:
     catalog, settings = snapshot_from_settings(settings_rows)
     studio = _writable_studio(_CONTENT)
@@ -26,6 +28,8 @@ def create_demo_app(
         stories=studio / "stories",
         characters=studio / "characters",
         demo=True,
+        posthog_token=posthog_token,
+        posthog_host=posthog_host,
     )
 
 

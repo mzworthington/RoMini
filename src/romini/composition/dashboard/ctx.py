@@ -68,6 +68,8 @@ class DashboardDeps:
     updates: BoxUpdate | None = None
     traffic: DashboardTraffic | None = None
     demo: bool = False
+    posthog_token: str = ""
+    posthog_host: str = ""
 
 
 @dataclass

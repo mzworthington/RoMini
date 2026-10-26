@@ -18,6 +18,8 @@ async def app_for_env(env: object) -> FastAPI:
         settings_rows=rows,
         objects=objects,
         base_url=str(getattr(env, "LIBRARY_BASE_URL")),
+        posthog_token=str(getattr(env, "POSTHOG_TOKEN", "") or ""),
+        posthog_host=str(getattr(env, "POSTHOG_HOST", "") or ""),
     )
 
 

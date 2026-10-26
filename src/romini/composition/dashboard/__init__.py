@@ -15,6 +15,7 @@ from romini.features.audit.record import record_event
 from romini.features.demo.policy import demo_forbids, demo_return_path
 from romini.features.listening.log import sync_playback
 
+from . import analytics as analytics_page
 from . import backup as backup_page
 from . import characters as characters_page
 from . import figures, home, library
@@ -45,6 +46,7 @@ def create_dashboard(deps: DashboardDeps | None = None, **extra: Any) -> FastAPI
     characters_page.mount(app, ctx)
     settings_page.mount(app, ctx)
     backup_page.mount(app, ctx)
+    analytics_page.mount(app, bound)
     return app
 
 

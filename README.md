@@ -80,6 +80,8 @@ The database `5948544a-74ae-4e4e-922c-908af99e4b9a` and bucket `romini-demo` alr
 
 `romini.party` and `www.romini.party` are one page: a circular picture of RoMini, **find out more** linking to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy), **demo dashboard** linking to `demo.romini.party`, and the same footer as the parent dashboard.
 
+Those two public sites load cookieless [PostHog](https://posthog.com) pageviews through `https://a.mzworthington.co.uk`. Session replay is off. The project key is the `POSTHOG_TOKEN` GitHub Actions secret, baked at deploy. It is not in git. The house box at `romini.local` does not send these events. The notice is [/privacy](https://romini.party/privacy).
+
 Catalog content is a separate seed:
 
 ```bash
