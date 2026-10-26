@@ -250,7 +250,7 @@ def test_demo_home_keeps_the_play_button_beside_the_preview() -> None:
 
     assert 'class="play-glyph"' in transport
     assert "M8 5v14l11-7z" in transport
-    assert 'data-deck-toggle' in transport
+    assert "data-deck-toggle" in transport
     assert "<audio" not in transport
     assert "deck-preview" in audio
     assert "play-main" not in audio
