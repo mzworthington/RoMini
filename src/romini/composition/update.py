@@ -1,9 +1,14 @@
 import json
+import os
 import subprocess
+import traceback
+import urllib.request
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
+
+from romini.composition.pi import MpvIpcStatus
 
 
 class Playing(Protocol):
@@ -118,13 +123,6 @@ def restart_player() -> None:
 
 
 def main() -> int:
-    import json
-    import os
-    import traceback
-    import urllib.request
-
-    from romini.composition.pi import MpvIpcStatus
-
     root = Path(os.environ.get("ROMINI_DATA", "/var/lib/romini"))
     configured = os.environ.get("ROMINI_UPDATE_STATUS")
     status = Path(configured) if configured else root / "update-check.json"

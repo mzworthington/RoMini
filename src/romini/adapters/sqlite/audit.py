@@ -2,21 +2,13 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from romini.adapters.sqlite.schema import ensure_schema, open_state
+from romini.adapters.sqlite.store import SqliteStore
 from romini.features.audit.record import KEEP, AuditEntry
 
 
-class SqliteAudit:
+class SqliteAudit(SqliteStore):
     def __init__(self, source: Path | sqlite3.Connection) -> None:
-        if isinstance(source, sqlite3.Connection):
-            self._conn = source
-            self._path: Path | None = None
-        else:
-            self._conn = None
-            self._path = source
-            conn = open_state(source)
-            ensure_schema(conn)
-            conn.close()
+        super().__init__(source)
 
     def record(self, entry: AuditEntry) -> None:
         conn = self._connect()
@@ -46,13 +38,3 @@ class SqliteAudit:
                 continue
             entries.append(AuditEntry(happened_at=happened_at, action=action, summary=summary, headline=headline))
         return entries
-
-    def _connect(self) -> sqlite3.Connection:
-        if self._conn is not None:
-            return self._conn
-        assert self._path is not None
-        return open_state(self._path)
-
-    def _release(self, conn: sqlite3.Connection) -> None:
-        if self._conn is None:
-            conn.close()

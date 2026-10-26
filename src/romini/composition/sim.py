@@ -1,7 +1,9 @@
 import os
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from romini.adapters.sqlite.audit import SqliteAudit
 from romini.adapters.sqlite.catalog import SqliteCatalog
@@ -31,39 +33,37 @@ from romini.features.play_by_tag.place_figure import (
 )
 
 
+@dataclass
+class SimRig:
+    catalog_yaml: str
+    library_root: str
+    audio_exists: Callable[[str], bool]
+    player: Player
+    led: StatusLed
+    play_mode: PlayMode
+    assign_mode: bool
+    sessions: Sessions | None = None
+    mixer: Mixer | None = None
+    halt: Halt | None = None
+
+
 class SimBox:
-    def __init__(
-        self,
-        *,
-        catalog_yaml: str,
-        library_root: str,
-        audio_exists: Callable[[str], bool],
-        player: Player,
-        led: StatusLed,
-        play_mode: PlayMode,
-        assign_mode: bool,
-        sessions: Sessions | None = None,
-        mixer: Mixer | None = None,
-        halt: Halt | None = None,
-    ) -> None:
+    def __init__(self, rig: SimRig | None = None, **parts: Any) -> None:
+        if rig is not None and parts:
+            raise TypeError("pass SimRig or keywords")
+        bound = rig if rig is not None else SimRig(**parts)
         self.library = import_catalog(
-            catalog_yaml,
-            library_root=library_root,
-            audio_exists=audio_exists,
+            bound.catalog_yaml,
+            library_root=bound.library_root,
+            audio_exists=bound.audio_exists,
         )
-        self.player = player
-        self.led = led
-        self.play_mode = play_mode
-        self.assign_mode = assign_mode
-        self.sessions = sessions if sessions is not None else MemorySessions()
-        mixer = mixer if mixer is not None else MemoryMixer()
-        apply = getattr(player, "set_volume", None)
-        if callable(apply):
-            mixer = LiveMixer(mixer, apply)
-        self.mixer = mixer
-        if hasattr(player, "mixer"):
-            player.mixer = mixer
-        self.halt = halt if halt is not None else LoggingHalt()
+        self.player = bound.player
+        self.led = bound.led
+        self.play_mode = bound.play_mode
+        self.assign_mode = bound.assign_mode
+        self.sessions = bound.sessions if bound.sessions is not None else MemorySessions()
+        self.mixer = _live_mixer(bound.player, bound.mixer)
+        self.halt = bound.halt if bound.halt is not None else LoggingHalt()
 
     def note(self, action: str, summary: str, *, headline: str = "") -> None:
         log = getattr(self, "audit", None)
@@ -97,44 +97,11 @@ class SimBox:
     def place(self, uid: str) -> None:
         if getattr(self, "quiet", False) and not self.assign_mode:
             return
-        settings = getattr(self, "settings", None)
-        beep = True if settings is None else settings.nfc_beep()
-        earcon = getattr(self, "earcon", None) if beep else None
+        beep, earcon = _beep(self)
         if self.assign_mode:
-            catalog = getattr(self, "catalog_file", None)
-            if catalog is not None:
-                register_tag(
-                    uid=uid,
-                    catalog=catalog,
-                    led=self.led,
-                    earcon=earcon,
-                )
-                self.note("register", f"Registered {uid}", headline="Figure registered")
+            _register_placed(self, uid, earcon)
             return
-        was_playing = self.player.is_playing()
-        on_figure_placed(
-            uid,
-            play_mode=self.play_mode,
-            assign_mode=self.assign_mode,
-            library=self.library,
-            player=self.player,
-            led=self.led,
-            sessions=self.sessions,
-            earcon=earcon,
-            beep=beep,
-        )
-        self.mark_listening(was_playing)
-        if self.player.is_playing() and self.player.playing_uid() == uid:
-            self.note("play", f"Played {self.player.playing_path()}", headline="Story playing")
-            return
-        selected = self.player.selected_track()
-        if selected is not None and selected[0] == uid:
-            self.note("select", f"Selected {uid}", headline="Figure selected")
-            return
-        if self.library.track_for(uid) is None:
-            self.note("place", f"No story for {uid}", headline="No story linked")
-            return
-        self.note("place", f"Placed {uid}", headline="Figure placed")
+        _play_placed(self, uid, beep, earcon)
 
     def lift(self, uid: str, *, elapsed_sec: float, position_sec: float) -> None:
         if self.sessions is None:
@@ -150,6 +117,62 @@ class SimBox:
         )
         self.mark_listening(was_playing)
         self.note("lift", f"Lifted {uid}", headline="Tag lifted")
+
+
+def _live_mixer(player: Player, mixer: Mixer | None) -> Mixer:
+    chosen = mixer if mixer is not None else MemoryMixer()
+    apply = getattr(player, "set_volume", None)
+    if callable(apply):
+        chosen = LiveMixer(chosen, apply)
+    if hasattr(player, "mixer"):
+        player.mixer = chosen
+    return chosen
+
+
+def _beep(box: SimBox) -> tuple[bool, object | None]:
+    settings = getattr(box, "settings", None)
+    beep = True if settings is None else settings.nfc_beep()
+    earcon = getattr(box, "earcon", None) if beep else None
+    return beep, earcon
+
+
+def _register_placed(box: SimBox, uid: str, earcon: object | None) -> None:
+    catalog = getattr(box, "catalog_file", None)
+    if catalog is None:
+        return
+    register_tag(uid=uid, catalog=catalog, led=box.led, earcon=earcon)
+    box.note("register", f"Registered {uid}", headline="Figure registered")
+
+
+def _play_placed(box: SimBox, uid: str, beep: bool, earcon: object | None) -> None:
+    was_playing = box.player.is_playing()
+    on_figure_placed(
+        uid,
+        play_mode=box.play_mode,
+        assign_mode=box.assign_mode,
+        library=box.library,
+        player=box.player,
+        led=box.led,
+        sessions=box.sessions,
+        earcon=earcon,
+        beep=beep,
+    )
+    box.mark_listening(was_playing)
+    _note_place(box, uid)
+
+
+def _note_place(box: SimBox, uid: str) -> None:
+    if box.player.is_playing() and box.player.playing_uid() == uid:
+        box.note("play", f"Played {box.player.playing_path()}", headline="Story playing")
+        return
+    selected = box.player.selected_track()
+    if selected is not None and selected[0] == uid:
+        box.note("select", f"Selected {uid}", headline="Figure selected")
+        return
+    if box.library.track_for(uid) is None:
+        box.note("place", f"No story for {uid}", headline="No story linked")
+        return
+    box.note("place", f"Placed {uid}", headline="Figure placed")
 
 
 def load_sim_box(

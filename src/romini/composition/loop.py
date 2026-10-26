@@ -24,6 +24,36 @@ def release_armed_bedtime(box: SimBox, *, now: datetime | None = None) -> None:
         settings.remember_sleep_at(None)
 
 
+def _advance_assign(box: SimBox, seen: str | None, previous_uid: str | None, idle_sec: float) -> float:
+    if not box.assign_mode:
+        return 0.0
+    if seen is None or seen == previous_uid:
+        idle_sec += NFC_POLL_SEC
+    else:
+        idle_sec = 0.0
+    box.assign_mode = next_assign_mode(assign_mode=True, idle_sec=idle_sec)
+    return idle_sec
+
+
+def _tick_host(box: SimBox) -> None:
+    host_power = getattr(box, "host_power", None)
+    if host_power is None:
+        return
+    traffic = getattr(box, "traffic", None)
+    since = None if traffic is None else traffic.seconds_since(monotonic())
+    host_power.apply(
+        playing=box.player.is_playing(),
+        radio_sleep=radio_should_sleep(seconds_since_request=since),
+    )
+
+
+def _tick_dashboard(box: SimBox) -> None:
+    dashboard = getattr(box, "dashboard", None)
+    ensure_serving = getattr(dashboard, "ensure_serving", None)
+    if callable(ensure_serving):
+        ensure_serving(now=monotonic())
+
+
 def run_core_ticks(
     box: SimBox,
     nfc: Nfc,
@@ -38,28 +68,10 @@ def run_core_ticks(
     absent_ticks = [0]
     for _ in ticks:
         seen = poll_nfc(box, nfc, previous_uid=previous_uid, absent_ticks=absent_ticks)
-        if box.assign_mode:
-            if seen is not None and seen != previous_uid:
-                idle_sec = 0.0
-            else:
-                idle_sec += NFC_POLL_SEC
-            box.assign_mode = next_assign_mode(assign_mode=True, idle_sec=idle_sec)
-        else:
-            idle_sec = 0.0
+        idle_sec = _advance_assign(box, seen, previous_uid, idle_sec)
         previous_uid = seen
         previous_mtime = poll_catalog(box, data_dir=data_dir, previous_mtime=previous_mtime)
         release_armed_bedtime(box)
-        step = NFC_POLL_SEC
-        host_power = getattr(box, "host_power", None)
-        if host_power is not None:
-            traffic = getattr(box, "traffic", None)
-            since = None if traffic is None else traffic.seconds_since(monotonic())
-            host_power.apply(
-                playing=box.player.is_playing(),
-                radio_sleep=radio_should_sleep(seconds_since_request=since),
-            )
-        dashboard = getattr(box, "dashboard", None)
-        ensure_serving = getattr(dashboard, "ensure_serving", None)
-        if callable(ensure_serving):
-            ensure_serving(now=monotonic())
-        sleep(step)
+        _tick_host(box)
+        _tick_dashboard(box)
+        sleep(NFC_POLL_SEC)

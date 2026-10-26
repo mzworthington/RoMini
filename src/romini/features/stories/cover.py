@@ -37,21 +37,10 @@ def with_track_image(
     paths: set[str],
     info: dict[str, object],
 ) -> str:
-    filename = str(info.get("file") or "")
-    media_type = cover_media_type(filename)
-    size = info.get("size")
-    if not paths or not media_type or isinstance(size, bool) or not isinstance(size, int):
+    image = _image_record(info)
+    if not paths or image is None:
         return catalog_text
-    data = yaml.safe_load(catalog_text) or {}
-    image = {"file": filename, "size": size, "media_type": media_type}
-    changed = False
-    for row in data.get("tracks") or []:
-        if str(row.get("path") or "") in paths:
-            row["image"] = image
-            changed = True
-    if not changed:
-        return catalog_text
-    return yaml.safe_dump(data, sort_keys=False)
+    return _stamp_rows(catalog_text, "tracks", "path", paths, image)
 
 
 def with_tag_image(
@@ -60,16 +49,26 @@ def with_tag_image(
     uid: str,
     info: dict[str, object],
 ) -> str:
+    image = _image_record(info)
+    if not uid.strip() or image is None:
+        return catalog_text
+    return _stamp_rows(catalog_text, "tags", "uid", {uid}, image)
+
+
+def _image_record(info: dict[str, object]) -> dict[str, object] | None:
     filename = str(info.get("file") or "")
     media_type = cover_media_type(filename)
     size = info.get("size")
-    if not uid.strip() or not media_type or isinstance(size, bool) or not isinstance(size, int):
-        return catalog_text
+    if not media_type or isinstance(size, bool) or not isinstance(size, int):
+        return None
+    return {"file": filename, "size": size, "media_type": media_type}
+
+
+def _stamp_rows(catalog_text: str, key: str, field: str, wanted: set[str], image: dict[str, object]) -> str:
     data = yaml.safe_load(catalog_text) or {}
-    image = {"file": filename, "size": size, "media_type": media_type}
     changed = False
-    for row in data.get("tags") or []:
-        if str(row.get("uid") or "") == uid:
+    for row in data.get(key) or []:
+        if str(row.get(field) or "") in wanted:
             row["image"] = image
             changed = True
     if not changed:

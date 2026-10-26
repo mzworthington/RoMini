@@ -9,6 +9,7 @@ class ObjectLibrary:
         self._objects = objects
         self.free_bytes = free_bytes
         self.total_bytes = free_bytes
+        self.root = ""
 
     def paths(self) -> list[str]:
         return sorted(key for key in self._objects if _is_audio(key))

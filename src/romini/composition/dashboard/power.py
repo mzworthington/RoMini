@@ -10,6 +10,10 @@ class BoxPower(Protocol):
     def poweroff(self) -> None: ...
 
 
+class BoxUpdate(Protocol):
+    def check(self) -> None: ...
+
+
 class LocalPower:
     def __init__(self, *, halt: object | None, profile: str) -> None:
         self._halt = halt

@@ -3,23 +3,22 @@ import subprocess
 from collections.abc import Callable
 from datetime import datetime
 from importlib.resources import files
-from os import environ
-from pathlib import Path
 from threading import Event, Thread
 from time import sleep
 
+from romini.composition.mpv_ipc import MpvIpcStatus, mpv_ipc_socket
+from romini.composition.mpv_ipc import unix_connect as _unix_connect
+from romini.composition.pn532 import NFC_READ_TIMEOUT, Pn532Nfc
 from romini.features.boot.ready import READY_EARCON_PATH
 
-NFC_READ_TIMEOUT = 0.2
-
-
-def mpv_ipc_socket() -> str:
-    runtime = environ.get("RUNTIME_DIRECTORY") or environ.get("XDG_RUNTIME_DIR")
-    if runtime:
-        return str(Path(runtime) / "mpv.sock")
-    home = Path.home() / ".romini"
-    home.mkdir(mode=0o700, exist_ok=True)
-    return str(home / "mpv.sock")
+__all__ = [
+    "MpvIpcStatus",
+    "MpvPlayer",
+    "NFC_READ_TIMEOUT",
+    "Pn532Nfc",
+    "SystemdHalt",
+    "mpv_ipc_socket",
+]
 
 
 class SystemdHalt:
@@ -234,48 +233,5 @@ class MpvPlayer:
                 self._silence_headphones()
 
 
-class MpvIpcStatus:
-    def __init__(self, connect=None, path: str | None = None) -> None:
-        self._connect = connect
-        self._path = path if path is not None else mpv_ipc_socket()
-
-    def is_playing(self) -> bool:
-        import json
-
-        connect = self._connect if self._connect is not None else _unix_connect
-        try:
-            sock = connect(self._path)
-            sock.sendall(b'{"command":["get_property","pause"]}\n')
-            payload = json.loads(sock.recv(4096).decode())
-            sock.close()
-        except OSError:
-            return False
-        return payload.get("data") is False
-
-
-def _unix_connect(path: str) -> object:
-    import socket
-
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(path)
-    return sock
-
-
 def _alsa_run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=False)
-
-
-class Pn532Nfc:
-    def __init__(self, reader: object) -> None:
-        self._reader = reader
-
-    def read_uid(self) -> str | None:
-        uid = self._reader.read_passive_target(timeout=NFC_READ_TIMEOUT)
-        if uid is None:
-            return None
-        return bytes(uid).hex()
-
-    def rest(self) -> None:
-        power_down = getattr(self._reader, "power_down", None)
-        if callable(power_down):
-            power_down()

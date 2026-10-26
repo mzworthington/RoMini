@@ -14,15 +14,21 @@ def catalog_without_track(text: str, path: str) -> str:
     data = yaml.safe_load(text) or {}
     if not wanted or not isinstance(data, dict):
         return text
-    data["tracks"] = [
-        row
-        for row in list(data.get("tracks") or [])
-        if not (isinstance(row, dict) and str(row.get("path") or "") == wanted)
-    ]
+    data["tracks"] = [row for row in list(data.get("tracks") or []) if _keep_track(row, wanted)]
+    data["removed"] = _removed_paths(data, wanted)
+    return yaml.safe_dump(data, sort_keys=False)
+
+
+def _keep_track(row: object, wanted: str) -> bool:
+    if not isinstance(row, dict):
+        return True
+    return str(row.get("path") or "") != wanted
+
+
+def _removed_paths(data: dict, wanted: str) -> list:
     removed = [item for item in list(data.get("removed") or []) if str(item).strip() and str(item) != wanted]
     removed.append(wanted)
-    data["removed"] = removed
-    return yaml.safe_dump(data, sort_keys=False)
+    return removed
 
 
 def remove_track(*, path: str, catalog: CatalogFile) -> None:

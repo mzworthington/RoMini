@@ -47,31 +47,61 @@ def describe_now_playing(
     tracks: list[dict[str, str]],
     tags: list[dict[str, str]],
 ) -> NowPlaying | None:
-    if not player.is_playing() and not (player.playing_uid() and player.playing_path()):
+    if not _has_selection(player):
         return None
     uid = player.playing_uid() or ""
     path = player.playing_path() or ""
-    story = (
-        next(
-            (track.get("title") or "" for track in tracks if track.get("uid") == uid or track.get("path") == path),
-            "",
-        )
-        or Path(path).name
-    )
-    trigger = next((tag.get("name") or "" for tag in tags if tag.get("uid") == uid), "") or uid
-    position = getattr(player, "position_sec", lambda: 0.0)()
-    matched = next((track for track in tracks if track.get("uid") == uid or track.get("path") == path), {})
-    duration = int(matched.get("duration_sec") or 0)
-    progress = round(100 * position / duration) if duration else 0
+    matched = _matching_track(tracks, uid, path)
+    position = _position(player)
     raw_image = matched.get("image") or ""
     return NowPlaying(
-        story=story,
-        trigger=trigger,
+        story=_story_title(matched, path),
+        trigger=_trigger_name(tags, uid),
         time=format_clock(player.started_at()),
         is_playing=player.is_playing(),
         place=format_place(position),
         length=matched.get("length") or "",
-        progress=min(100, max(0, progress)),
+        progress=_progress(position, int(matched.get("duration_sec") or 0)),
         uid=uid,
         image=raw_image if isinstance(raw_image, str) else "",
     )
+
+
+def _has_selection(player: NowPlayingPlayer) -> bool:
+    if player.is_playing():
+        return True
+    return bool(player.playing_uid() and player.playing_path())
+
+
+def _matching_track(tracks: list[dict[str, str]], uid: str, path: str) -> dict[str, str]:
+    for track in tracks:
+        if track.get("uid") == uid or track.get("path") == path:
+            return track
+    return {}
+
+
+def _story_title(matched: dict[str, str], path: str) -> str:
+    title = matched.get("title") or ""
+    if title:
+        return title
+    return Path(path).name
+
+
+def _trigger_name(tags: list[dict[str, str]], uid: str) -> str:
+    for tag in tags:
+        if tag.get("uid") == uid:
+            return tag.get("name") or ""
+    return uid
+
+
+def _position(player: object) -> float:
+    read = getattr(player, "position_sec", None)
+    if not callable(read):
+        return 0.0
+    return float(read())
+
+
+def _progress(position: float, duration: int) -> int:
+    if not duration:
+        return 0
+    return min(100, max(0, round(100 * position / duration)))

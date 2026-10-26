@@ -15,8 +15,8 @@ from romini.adapters.sqlite.audit import SqliteAudit
 from romini.adapters.sqlite.settings import SqliteSettings
 from romini.composition.dashboard import DiskStorage, PathCatalog, create_dashboard
 from romini.composition.dashboard import shared as dashboard_shared
+from romini.composition.dashboard.packs import write_character, write_story_notes
 from romini.composition.dashboard.server import start_dashboard
-from romini.composition.dashboard.shared import write_character, write_story_notes
 from romini.composition.http import start_sim_http
 from romini.composition.mixer import MemoryMixer
 from romini.fakes import FakePlayer
