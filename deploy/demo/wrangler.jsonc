@@ -5,6 +5,11 @@
   "compatibility_flags": ["python_workers"],
   "workers_dev": false,
   "preview_urls": false,
+  // Workers left on the old bundled plan stay capped at 50 ms until this is set.
+  // A Python render then dies with error 1102. 30000 ms is the paid-plan ceiling.
+  "limits": {
+    "cpu_ms": 30000
+  },
   // The database and bucket are imported by infra/cloudflare. This id must match that database.
   // Point LIBRARY_BASE_URL at the bucket's public hostname before publishing audio.
   "vars": {
