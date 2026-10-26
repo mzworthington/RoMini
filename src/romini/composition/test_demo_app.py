@@ -227,3 +227,34 @@ def test_demo_home_plays_the_seeded_track_in_the_page() -> None:
     assert "<audio" in html
     assert 'src="https://media.example/frog.mp3"' in html
     assert 'action="/play"' not in html
+
+
+def test_demo_home_keeps_the_play_button_beside_the_preview() -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.demo_app import create_demo_app
+
+    app = create_demo_app(
+        settings_rows=[
+            ("catalog", "tracks:\n  - uid: '04a1'\n    path: frog.mp3\n    title: Frog\n"),
+            ("play_mode", "presence"),
+        ],
+        objects=[{"key": "frog.mp3", "size": 4}],
+        base_url="https://media.example",
+    )
+    html = TestClient(app).get("/").text
+    quiet = html.split('class="deck card quiet"', 1)[1].split("</section>", 1)[0]
+    transport = quiet.split('class="transport"', 1)[1].split("</div>", 1)[0]
+    audio = quiet.split("<audio", 1)[1].split(">", 1)[0]
+    preview = html.split("audio.deck-preview {", 1)[1].split("}", 1)[0]
+
+    assert 'class="play-glyph"' in transport
+    assert "M8 5v14l11-7z" in transport
+    assert 'data-deck-toggle' in transport
+    assert "<audio" not in transport
+    assert "deck-preview" in audio
+    assert "play-main" not in audio
+    assert "controls" in audio
+    assert "width: 100%" in preview
+    assert "min-height: 3.25rem" in preview
+    assert "border-radius" not in preview

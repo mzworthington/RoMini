@@ -398,6 +398,19 @@ def test_dashboard_audio_and_figures_stay_a_grid_on_a_narrow_screen() -> None:
     assert ".library-catalog tbody { display: grid; grid-template-columns: 1fr" not in html
     assert ".figures { grid-template-columns: 1fr" not in html
     assert html.count("grid-template-columns: repeat(2, minmax(0, 1fr))") >= 2
+    narrow = html.split("@media (max-width: 960px) {", 1)[1]
+    specs = narrow.split(".figure-specs dd {", 1)[1].split("}", 1)[0]
+    foot = narrow.split(".figure-foot {", 1)[1].split("}", 1)[0]
+    picture = html.split('.cover-pick input[type="file"] {', 1)[1].split("}", 1)[0]
+    audition = narrow.split(".audition-bar audio {", 1)[1].split("}", 1)[0]
+
+    assert ".figure { min-width: 0; }" in narrow
+    assert "white-space: normal" in specs
+    assert "overflow-wrap: anywhere" in specs
+    assert "flex-wrap: wrap" in foot
+    assert "min-height: 0" in picture
+    assert "clip:" in picture
+    assert "min-height: 3.25rem" in audition
 
 
 def test_dashboard_sync_queue_reports_the_file_being_transferred() -> None:

@@ -128,6 +128,7 @@
   .audition-bar { flex-wrap: wrap; }
   .audition-bar audio,
   .audition-bar select { flex: 1 1 100%; width: 100%; min-width: 0; }
+  .audition-bar audio { height: 3.25rem; min-height: 3.25rem; }
   .library-catalog .table-wrap { overflow: visible; }
   .library-catalog table { display: block; }
   .library-catalog thead {
@@ -155,9 +156,41 @@
     padding: 0.2rem 0;
     text-align: left;
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+  }
+  .library-catalog table.is-grid tbody { padding: 0; }
+  .library-catalog .story-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+  .library-catalog .chip {
+    max-width: 100%;
+    height: auto;
+    white-space: normal;
   }
   .library-catalog button.play-dot { width: 2.75rem; height: 2.75rem; min-height: 2.75rem; }
+  .figure { min-width: 0; }
+  .figure-top { flex-direction: column; align-items: flex-start; gap: 0.55rem; }
+  .figure-copy { width: 100%; }
+  .figure-copy h3 { white-space: normal; overflow: visible; text-overflow: clip; }
+  .figure-specs,
+  .figure-specs div { min-width: 0; }
+  .figure-specs div { flex-wrap: wrap; }
+  .figure-specs dd {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .figure-foot {
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .figure-foot .chip-btn,
+  .assign-audio { max-width: 100%; white-space: normal; text-align: center; }
+  .library-catalog .story-cell,
+  .library-catalog .track-title { min-width: 0; }
   .row-assign[open] form { position: static; width: 100%; }
 
   .studio:has(.telemetry) { display: flex; flex-direction: column; }
