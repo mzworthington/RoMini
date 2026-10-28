@@ -399,7 +399,7 @@ def test_romini_core_main_pi_dashboard_binds_lan(tmp_path: Path, monkeypatch) ->
         def close(self) -> None:
             return
 
-    def start(app, *, host: str, port: int) -> Listener:
+    def start(app, *, host: str, port: int, **extra: object) -> Listener:
         hosts.append(host)
         return Listener()
 
@@ -800,9 +800,9 @@ def test_pi_boot_serves_the_dashboard_before_opening_the_nfc_reader(tmp_path: Pa
 
     real_start = core.start_dashboard
 
-    def start_dashboard(app: object, *, host: str, port: int) -> object:
+    def start_dashboard(app: object, *, host: str, port: int, **extra: object) -> object:
         order.append("dashboard")
-        started = real_start(app, host=host, port=port)
+        started = real_start(app, host=host, port=port, **extra)
         listener.append(started)
         return started
 
@@ -839,9 +839,9 @@ def test_pi_boot_starts_the_ready_chime_after_the_dashboard_is_listening(tmp_pat
 
     real_start = core.start_dashboard
 
-    def start_dashboard(app: object, *, host: str, port: int) -> object:
+    def start_dashboard(app: object, *, host: str, port: int, **extra: object) -> object:
         order.append("dashboard")
-        started = real_start(app, host=host, port=port)
+        started = real_start(app, host=host, port=port, **extra)
         listener.append(started)
         return started
 
@@ -887,9 +887,9 @@ def test_pi_boot_binds_the_dashboard_before_opening_the_ups(tmp_path: Path, monk
         batteries.append(kwargs["battery"])
         return real_create(**kwargs)
 
-    def start_dashboard(app: object, *, host: str, port: int) -> object:
+    def start_dashboard(app: object, *, host: str, port: int, **extra: object) -> object:
         order.append("dashboard")
-        started = real_start(app, host=host, port=port)
+        started = real_start(app, host=host, port=port, **extra)
         listener.append(started)
         return started
 
@@ -934,9 +934,9 @@ def test_pi_boot_binds_the_dashboard_before_the_player_mutes(tmp_path: Path, mon
 
     real_start = core.start_dashboard
 
-    def start_dashboard(app: object, *, host: str, port: int) -> object:
+    def start_dashboard(app: object, *, host: str, port: int, **extra: object) -> object:
         order.append("dashboard")
-        started = real_start(app, host=host, port=port)
+        started = real_start(app, host=host, port=port, **extra)
         listener.append(started)
         return started
 

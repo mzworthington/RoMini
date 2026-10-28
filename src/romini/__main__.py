@@ -15,6 +15,7 @@ from romini.composition.gpio import GpioLed, RpiGpioLedDriver
 from romini.composition.host_power import HostPower
 from romini.composition.http import start_sim_http
 from romini.composition.inject import run_sim_lines
+from romini.composition.local_https import ensure_local_certificate
 from romini.composition.loop import run_core_ticks
 from romini.composition.nfc import FakeNfc, Nfc
 from romini.composition.pi import MpvPlayer, Pn532Nfc
@@ -269,7 +270,23 @@ def _serve_dashboard(box: SimBox) -> None:
         demo=demo,
     )
     host = "0.0.0.0" if profile in {"pi", "demo"} else "127.0.0.1"
-    box.dashboard = start_dashboard(app, host=host, port=int(dash_port))
+    https_port = None
+    certfile = None
+    keyfile = None
+    https_env = os.environ.get("ROMINI_DASHBOARD_HTTPS_PORT")
+    if https_env is not None:
+        pair = ensure_local_certificate(data / "tls")
+        if pair is not None:
+            certfile, keyfile = pair
+            https_port = int(https_env)
+    box.dashboard = start_dashboard(
+        app,
+        host=host,
+        port=int(dash_port),
+        https_port=https_port,
+        certfile=certfile,
+        keyfile=keyfile,
+    )
 
 
 def _dashboard_battery(profile: str, demo: bool) -> object | None:

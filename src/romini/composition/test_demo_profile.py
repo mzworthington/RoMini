@@ -18,7 +18,7 @@ def test_demo_profile_serves_a_public_dashboard_without_nfc(tmp_path: Path, monk
         seen["power"] = kwargs["power"]
         return object()
 
-    def start_dashboard(app: object, *, host: str, port: int) -> object:
+    def start_dashboard(app: object, *, host: str, port: int, **extra: object) -> object:
         seen["host"] = host
         return type("Listener", (), {"wait": lambda self: None, "close": lambda self: None})()
 

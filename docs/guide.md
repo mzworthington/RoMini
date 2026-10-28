@@ -257,7 +257,7 @@ sudo chmod 700 /etc/romini
 
 `bin/install-pi` copies Avahi. Optional PAT in `/etc/romini/env` (`GITHUB_TOKEN`, `GITHUB_REPO`).
 
-Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses **80**). Port 80 needs `AmbientCapabilities=CAP_NET_BIND_SERVICE` on `romini-core.service`; a normal login cannot bind it. Avahi `_http._tcp` port 80 → `http://<hostname>.local`.
+Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses **80** and `ROMINI_DASHBOARD_HTTPS_PORT=443`). Port 80 and 443 need `AmbientCapabilities=CAP_NET_BIND_SERVICE` on `romini-core.service`; a normal login cannot bind them. The player writes a certificate under `$ROMINI_DATA/tls` and answers HTTPS beside HTTP. The browser warns once because the certificate is the box's own. Avahi `_http._tcp` port 80 → `http://<hostname>.local`.
 
 ### 3.7 Install the app
 
