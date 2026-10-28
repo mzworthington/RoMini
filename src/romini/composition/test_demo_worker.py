@@ -6,6 +6,39 @@ from fastapi.testclient import TestClient
 from romini.composition.demo_worker import app_for_env
 
 
+def test_overlapping_fetches_do_not_run_the_app_together() -> None:
+    from romini.composition import demo_worker
+
+    entered = 0
+    peak = 0
+
+    class FakeAsgi:
+        async def fetch(self, app: object, request: object, env: object, ctx: object) -> bytes:
+            nonlocal entered, peak
+            entered += 1
+            peak = max(peak, entered)
+            await asyncio.sleep(0.05)
+            entered -= 1
+            return b"ok"
+
+    previous = demo_worker.asgi
+    demo_worker.asgi = FakeAsgi()
+    try:
+        worker = demo_worker.Default()
+        worker.env = object()
+        worker.ctx = None
+        worker._app = object()
+
+        async def both() -> None:
+            await asyncio.gather(worker.fetch(object()), worker.fetch(object()))
+
+        asyncio.run(both())
+    finally:
+        demo_worker.asgi = previous
+
+    assert peak == 1
+
+
 def test_default_fetch_registers_a_worker_entrypoint() -> None:
     source = Path(__file__).with_name("demo_worker.py").read_text()
 

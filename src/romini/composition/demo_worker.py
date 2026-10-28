@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import FastAPI
 
 from romini.adapters.cloudflare.bindings import load_objects, load_settings_rows
@@ -24,12 +26,17 @@ async def app_for_env(env: object) -> FastAPI:
 
 
 class Default(WorkerEntrypoint):
+    _gate: asyncio.Lock | None = None
+
     async def fetch(self, request: object) -> object:
         if asgi is None:
             raise RuntimeError("workers is required to serve the demo")
 
-        app = getattr(self, "_app", None)
-        if app is None:
-            app = await app_for_env(self.env)
-            self._app = app
-        return await asgi.fetch(app, request, self.env, getattr(self, "ctx", None))
+        if Default._gate is None:
+            Default._gate = asyncio.Lock()
+        async with Default._gate:
+            app = getattr(self, "_app", None)
+            if app is None:
+                app = await app_for_env(self.env)
+                self._app = app
+            return await asgi.fetch(app, request, self.env, getattr(self, "ctx", None))
