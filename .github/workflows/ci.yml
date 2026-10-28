@@ -78,7 +78,7 @@ jobs:
 
       - name: Install mise
         if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
-        uses: jdx/mise-action@v5.1.2
+        uses: jdx/mise-action@v5.2.2
 
       - name: Bootstrap
         if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
