@@ -2,6 +2,8 @@ from typing import Protocol
 
 import yaml
 
+from romini.features.library.import_catalog import collapse_duplicate_tracks
+
 
 class CatalogFile(Protocol):
     def read_text(self) -> str: ...
@@ -65,5 +67,5 @@ def confirm_assign(*, uid: str, path: str, title: str, catalog: CatalogFile) -> 
     if isinstance(previous, dict) and previous.get("path") == path and isinstance(previous.get("image"), dict):
         stored["image"] = previous["image"]
     tracks.append(stored)
-    data["tracks"] = tracks
+    data["tracks"] = collapse_duplicate_tracks(tracks)
     catalog.write_text(yaml.safe_dump(data, sort_keys=False))

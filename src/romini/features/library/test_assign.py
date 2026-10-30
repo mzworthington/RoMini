@@ -75,6 +75,36 @@ def test_assign_confirm_keeps_the_cover_when_the_path_stays() -> None:
     assert "story" not in image
 
 
+def test_assign_confirm_replaces_the_unlinked_copy_of_that_file() -> None:
+    catalog = FakeCatalogFile()
+    catalog.text = (
+        "tags:\n"
+        "  - uid: monkey\n"
+        "    name: Monkey\n"
+        "tracks:\n"
+        "  - path: romy-and-the-little-monkey.mp3\n"
+        "    title: romy and the little monkey\n"
+        "  - path: other-story.mp3\n"
+        "    title: other story\n"
+    )
+
+    confirm_assign(
+        uid="monkey",
+        path="romy-and-the-little-monkey.mp3",
+        title="romy and the little monkey",
+        catalog=catalog,
+    )
+
+    tracks = (yaml.safe_load(catalog.text) or {})["tracks"]
+    linked = [row for row in tracks if row["path"] == "romy-and-the-little-monkey.mp3"]
+    other = [row for row in tracks if row["path"] == "other-story.mp3"]
+    assert len(tracks) == 2
+    assert len(linked) == 1
+    assert linked[0]["uid"] == "monkey"
+    assert len(other) == 1
+    assert "uid" not in other[0]
+
+
 def test_assign_confirm_drops_the_cover_when_the_audio_changes() -> None:
     catalog = FakeCatalogFile()
     catalog.text = (
