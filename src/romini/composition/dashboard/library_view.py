@@ -2,6 +2,7 @@ from pathlib import Path
 
 from romini.composition.dashboard.media import library_paths, public_https_url, stored_size
 from romini.composition.dashboard.packs import library_file_labels
+from romini.features.library.import_catalog import collapse_duplicate_tracks
 from romini.features.library.track_facts import format_size
 
 
@@ -19,7 +20,7 @@ def library_context(
     return {
         "library_paths": on_disk,
         "library_files": files,
-        "tracks": [*tracks, *_loose_tracks(page, tracks, files, removed, storage)],
+        "tracks": collapse_duplicate_tracks([*tracks, *_loose_tracks(page, tracks, files, removed, storage)]),
     }
 
 

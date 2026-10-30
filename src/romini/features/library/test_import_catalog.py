@@ -102,6 +102,54 @@ tags:
     assert data["tags"][0]["name"] == "Skateboard"
 
 
+def test_a_linked_file_is_not_also_listed_without_a_figure() -> None:
+    catalog = """
+tracks:
+- path: romy-and-the-little-monkey.mp3
+  title: romy and the little monkey
+- uid: monkey
+  path: romy-and-the-little-monkey.mp3
+  title: romy and the little monkey
+- path: taymour-and-romy-s-day-out.mp3
+  title: taymour and romy s day out
+- uid: blue
+  path: taymour-and-romy-s-day-out.mp3
+  title: taymour and romy s day out
+tags:
+- uid: monkey
+  name: Monkey
+- uid: blue
+  name: Blue tag
+"""
+    updated = include_library_tracks(
+        catalog,
+        ["romy-and-the-little-monkey.mp3", "taymour-and-romy-s-day-out.mp3"],
+    )
+    rows = yaml.safe_load(updated)["tracks"]
+
+    assert [(row.get("uid"), row["path"]) for row in rows] == [
+        ("monkey", "romy-and-the-little-monkey.mp3"),
+        ("blue", "taymour-and-romy-s-day-out.mp3"),
+    ]
+
+
+def test_two_figures_on_one_file_both_stay_listed() -> None:
+    catalog = """
+tracks:
+- uid: monkey
+  path: story.mp3
+  title: Story
+- uid: blue
+  path: story.mp3
+  title: Story
+"""
+    updated = include_library_tracks(catalog, ["story.mp3"])
+    rows = yaml.safe_load(updated)["tracks"]
+
+    assert {row["uid"] for row in rows} == {"monkey", "blue"}
+    assert [row["path"] for row in rows] == ["story.mp3", "story.mp3"]
+
+
 def test_a_removed_track_stays_out_when_its_file_is_still_on_disk() -> None:
     catalog = """
 tracks:

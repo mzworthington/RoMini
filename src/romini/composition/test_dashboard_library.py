@@ -753,6 +753,49 @@ def test_dashboard_library_catalog_table_matches_the_directory_design(tmp_path: 
     assert "Link figure" not in waiting
 
 
+def test_dashboard_library_lists_a_linked_file_once(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tags:\n"
+        "  - uid: monkey\n"
+        "    name: Monkey\n"
+        "  - uid: blue\n"
+        "    name: Blue tag\n"
+        "tracks:\n"
+        "  - path: romy-and-the-little-monkey.mp3\n"
+        "    title: romy and the little monkey\n"
+        "  - uid: monkey\n"
+        "    path: romy-and-the-little-monkey.mp3\n"
+        "    title: romy and the little monkey\n"
+        "  - path: taymour-and-romy-s-day-out.mp3\n"
+        "    title: taymour and romy s day out\n"
+        "  - uid: blue\n"
+        "    path: taymour-and-romy-s-day-out.mp3\n"
+        "    title: taymour and romy s day out\n"
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+            )
+        )
+        .get("/library")
+        .text
+    )
+
+    assert html.count('class="track-title"') == 2
+    assert "All Tracks (2)" in html
+    assert "Unassigned to Figures (0)" in html
+    assert "No figure linked" not in html
+    assert ">Monkey<" in html
+    assert ">Blue tag<" in html
+
+
 def test_dashboard_library_play_stays_disabled_when_no_figure_is_linked(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 

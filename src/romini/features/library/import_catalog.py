@@ -60,10 +60,32 @@ def include_library_tracks(text: str, paths: list[str]) -> str:
     return text
 
 
+def collapse_duplicate_tracks(rows: list) -> list:
+    linked = {str(row.get("path") or "") for row in rows if isinstance(row, dict) and str(row.get("uid") or "").strip()}
+    kept: list = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            kept.append(row)
+            continue
+        path = str(row.get("path") or "")
+        uid = str(row.get("uid") or "").strip()
+        if _skip_duplicate(path, uid, linked, seen):
+            continue
+        if path:
+            seen.add((path, uid))
+        kept.append(row)
+    return kept
+
+
 def _apply_library(data: dict, rows: list, paths: list[str], removed: set[str]) -> bool:
     available = [path for path in dict.fromkeys(paths) if path not in removed]
     changed = rows != _dict_rows(data.get("tracks") or [])
     if _retarget_moved(rows, available):
+        changed = True
+    collapsed = collapse_duplicate_tracks(rows)
+    if collapsed != rows:
+        rows[:] = collapsed
         changed = True
     if _append_missing(rows, available):
         changed = True
@@ -71,6 +93,14 @@ def _apply_library(data: dict, rows: list, paths: list[str], removed: set[str]) 
         return False
     data["tracks"] = rows
     return True
+
+
+def _skip_duplicate(path: str, uid: str, linked: set[str], seen: set[tuple[str, str]]) -> bool:
+    if not path:
+        return False
+    if not uid and path in linked:
+        return True
+    return (path, uid) in seen
 
 
 def _dict_rows(tracks: list) -> list:
