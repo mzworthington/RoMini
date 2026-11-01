@@ -3,6 +3,7 @@ from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
+from romini.composition.dashboard.media import library_relative_path
 from romini.composition.dashboard.responses import HOME_NOTICES, format_free_space
 from romini.composition.dashboard.studio_keys import (
     DRAFT_MODEL,
@@ -143,7 +144,7 @@ def device_context(
 ) -> dict[str, object]:
     context = {}
     context.update(_mixer_context(source.mixer))
-    context.update(_player_context(source.player, tracks, tags))
+    context.update(_player_context(source.player, tracks, tags, source.storage))
     context.update(_register_context(source.register, page, update))
     context["pad"] = source.pad is not None
     context["can_power"] = source.power is not None
@@ -190,16 +191,20 @@ def _player_context(
     player: object | None,
     tracks: list[dict[str, str]],
     tags: list[dict[str, str]],
+    storage: object,
 ) -> dict[str, object]:
     if player is None:
-        return {"has_player": False, "now_playing": None, "playing_uid": ""}
+        return {"has_player": False, "now_playing": None, "playing_uid": "", "playing_path": ""}
     playing_uid = ""
+    playing_path = ""
     if player.is_playing():
         playing_uid = player.playing_uid() or ""
+        playing_path = library_relative_path(storage, player.playing_path() or "")
     return {
         "has_player": True,
         "now_playing": describe_now_playing(player, tracks=tracks, tags=tags),
         "playing_uid": playing_uid,
+        "playing_path": playing_path,
     }
 
 

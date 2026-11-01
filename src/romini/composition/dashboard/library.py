@@ -41,6 +41,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
             ("/assign", ["POST"], assign_tag, False, {"response_model": None}),
             ("/library/delete", ["POST"], delete_library_track, False, {"response_model": None}),
             ("/place/{uid}", ["POST"], place_figure, False, {}),
+            ("/library/play", ["POST"], play_library_file, False, {}),
             ("/library/play/{uid}", ["POST"], play_library_track, False, {}),
             ("/library/stop", ["POST"], stop_library_track, True, {}),
             ("/library/cover", ["POST"], upload_track_cover, False, {"response_model": None}),
@@ -94,6 +95,23 @@ def place_figure(ctx: DashboardCtx, request: Request) -> RedirectResponse:
     ctx.pad.place(uid)
     ctx.note("place", f"Placed {uid}", headline="Figure placed")
     return notice("/library", "placed")
+
+
+async def play_library_file(ctx: DashboardCtx, request: Request) -> RedirectResponse:
+    if ctx.player is None:
+        raise HTTPException(status_code=404)
+    form = await request.form()
+    path = str(form.get("path") or "").strip()
+    absolute = _library_audio(ctx, path)
+    if absolute is None:
+        return notice("/library", "needed")
+    was_playing = ctx.player.is_playing()
+    if was_playing:
+        ctx.player.stop()
+    ctx.player.play(str(absolute), position_sec=0.0, uid="")
+    ctx.mark_listening(was_playing)
+    ctx.note("play", f"Played {path}", headline="Story playing")
+    return notice("/library", "playing")
 
 
 def play_library_track(ctx: DashboardCtx, request: Request) -> RedirectResponse:
@@ -233,6 +251,22 @@ def _drop_file(ctx: DashboardCtx, path: str) -> None:
         remove(path)
     except PermissionError:
         return
+
+
+def _library_audio(ctx: DashboardCtx, path: str) -> Path | None:
+    if not path or any(part == ".." for part in Path(path).parts):
+        return None
+    root = getattr(ctx.storage, "_root", None)
+    if root is None or path not in library_paths(ctx.storage):
+        return None
+    target = (Path(root) / path).resolve()
+    try:
+        target.relative_to(Path(root).resolve())
+    except ValueError:
+        return None
+    if not target.is_file():
+        return None
+    return target
 
 
 def _placed_library(ctx: DashboardCtx) -> object:

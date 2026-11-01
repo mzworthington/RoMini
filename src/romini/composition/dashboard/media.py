@@ -29,6 +29,18 @@ def library_paths(storage: object) -> list[str]:
     return [str(path) for path in listing()]
 
 
+def library_relative_path(storage: object, playing: str) -> str:
+    if not playing:
+        return ""
+    root = getattr(storage, "_root", None)
+    if root is None:
+        return playing.replace("\\", "/")
+    try:
+        return Path(playing).resolve().relative_to(Path(root).resolve()).as_posix()
+    except ValueError:
+        return ""
+
+
 def stored_size(storage: object, path: str) -> int | None:
     sized = getattr(storage, "size", None)
     if callable(sized):
