@@ -85,10 +85,10 @@ class MpvPlayer:
         ]
         if self.mixer is not None:
             cmd.append(f"--volume={self.mixer.level}")
-            self._apply_alsa(self.mixer.level, unmute=True)
         cmd.append(path)
         self._playing = True
         self._end_earcon()
+        self._open_pcm()
         self._restore_pwm_pins()
         self._end_mpv()
         self._proc = subprocess.Popen(cmd)
@@ -153,7 +153,7 @@ class MpvPlayer:
 
     def set_volume(self, level: int) -> None:
         if self._playing:
-            self._apply_alsa(level, unmute=True)
+            self._open_pcm()
         else:
             self._silence_headphones()
         payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))
@@ -167,11 +167,8 @@ class MpvPlayer:
         except OSError:
             return
 
-    def _apply_alsa(self, level: int, *, unmute: bool) -> None:
-        cmd = ["amixer", "-c", "Headphones", "--", "sset", "PCM", f"{level}%"]
-        if unmute:
-            cmd.append("unmute")
-        self._alsa_cmd(cmd)
+    def _open_pcm(self) -> None:
+        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"])
 
     def _silence_headphones(self) -> None:
         self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"])
@@ -196,8 +193,7 @@ class MpvPlayer:
         name = path.rsplit("/", 1)[-1]
         wav = files("romini").joinpath(name)
         audio = str(wav) if wav.is_file() else path
-        if self.mixer is not None:
-            self._apply_alsa(self.mixer.level, unmute=True)
+        self._open_pcm()
         self._restore_pwm_pins()
         proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
         if path == READY_EARCON_PATH:
