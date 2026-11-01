@@ -796,7 +796,7 @@ def test_dashboard_library_lists_a_linked_file_once(tmp_path: Path) -> None:
     assert ">Blue tag<" in html
 
 
-def test_dashboard_library_play_stays_disabled_when_no_figure_is_linked(tmp_path: Path) -> None:
+def test_dashboard_library_play_posts_the_file_when_no_figure_is_linked(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     from romini.composition.dashboard import PathCatalog
@@ -836,10 +836,10 @@ def test_dashboard_library_play_stays_disabled_when_no_figure_is_linked(tmp_path
 
     assert 'action="/library/play/04aabbccddeeff"' in linked
     assert "disabled" not in linked.split("<td>", 1)[1].split("</td>", 1)[0]
-    assert 'action="/library/play/"' not in unlinked
-    assert 'action="/library/play/romy' not in unlinked
     play = unlinked.split("<td>", 1)[1].split("</td>", 1)[0]
-    assert "disabled" in play
+    assert 'action="/library/play"' in play
+    assert 'name="path" value="stories/romy.mp3"' in play
+    assert "disabled" not in play
     assert ">Play<" in play
 
 
@@ -1137,6 +1137,109 @@ def test_dashboard_library_offers_stop_for_the_playing_track(tmp_path: Path) -> 
     assert ">Stop<" in html
     assert 'action="/library/play/04bbccddeeff00"' in html
     assert 'action="/library/play/04aabbccddeeff"' not in html
+
+
+def test_dashboard_library_offers_stop_while_an_unlinked_file_plays(tmp_path: Path) -> None:
+    from datetime import datetime
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return ""
+
+        def playing_path(self) -> str:
+            return "stories/romy.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 21, 6, 15)
+
+        def position_sec(self) -> float:
+            return 0.0
+
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        'tracks:\n  - path: "stories/romy.mp3"\n    title: "Romy"\n  - path: "stories/bear.mp3"\n    title: "Bear"\n'
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024),
+                assign_catalog=PathCatalog(catalog_path),
+                player=Playing(),
+            )
+        )
+        .get("/library")
+        .text
+    )
+    romy = html.split(">Romy<", 1)[0].rsplit("<tr", 1)[1] + html.split(">Romy<", 1)[1].split("</tr>", 1)[0]
+    bear = html.split(">Bear<", 1)[0].rsplit("<tr", 1)[1] + html.split(">Bear<", 1)[1].split("</tr>", 1)[0]
+
+    assert 'action="/library/stop"' in romy
+    assert ">Stop<" in romy
+    assert "Active Preview" in romy
+    assert 'name="path" value="stories/bear.mp3"' in bear
+
+
+def test_dashboard_library_play_starts_an_unlinked_file(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    (library / "stories").mkdir(parents=True)
+    (library / "stories" / "romy.mp3").write_bytes(b"id3")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text('tracks:\n  - path: "stories/romy.mp3"\n    title: "Romy"\n')
+    player = FakePlayer()
+    response = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+            player=player,
+        )
+    ).post("/library/play", data={"path": "stories/romy.mp3"}, follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/library?notice=playing"
+    assert player.is_playing() is True
+    assert player.playing_uid() == ""
+    assert player.plays == [(str(library / "stories" / "romy.mp3"), 0.0)]
+
+
+def test_dashboard_library_play_refuses_a_path_outside_the_library(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    library = tmp_path / "library"
+    library.mkdir()
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text("tracks: []\n")
+    player = FakePlayer()
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(library),
+            assign_catalog=PathCatalog(catalog_path),
+            player=player,
+        )
+    )
+
+    missing = client.post("/library/play", data={"path": "stories/missing.mp3"}, follow_redirects=False)
+    escaped = client.post("/library/play", data={"path": "../secret.mp3"}, follow_redirects=False)
+
+    assert missing.status_code == 303
+    assert missing.headers["location"] == "/library?notice=needed"
+    assert escaped.status_code == 303
+    assert escaped.headers["location"] == "/library?notice=needed"
+    assert player.plays == []
 
 
 def test_dashboard_library_play_starts_the_mapped_track(tmp_path: Path) -> None:

@@ -74,10 +74,30 @@ def _has_selection(player: NowPlayingPlayer) -> bool:
 
 
 def _matching_track(tracks: list[dict[str, str]], uid: str, path: str) -> dict[str, str]:
+    if uid:
+        for track in tracks:
+            if track.get("uid") == uid:
+                return track
+    return _track_for_path(tracks, path)
+
+
+def _track_for_path(tracks: list[dict[str, str]], playing: str) -> dict[str, str]:
+    chosen: dict[str, str] = {}
+    matched = ""
     for track in tracks:
-        if track.get("uid") == uid or track.get("path") == path:
-            return track
-    return {}
+        catalog_path = track.get("path") or ""
+        if _same_audio(catalog_path, playing) and len(catalog_path) > len(matched):
+            chosen = track
+            matched = catalog_path
+    return chosen
+
+
+def _same_audio(catalog_path: str, playing: str) -> bool:
+    if not catalog_path or not playing:
+        return False
+    if catalog_path == playing:
+        return True
+    return playing.endswith("/" + catalog_path)
 
 
 def _story_title(matched: dict[str, str], path: str) -> str:

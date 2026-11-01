@@ -189,7 +189,7 @@
 {% if tracks %}
 {% for track in tracks if (not query or query|lower in track.title|lower or query|lower in track.figure|lower or query|lower in track.artist|lower) and (not unassigned or not track.figure) %}
 {% set shown.count = shown.count + 1 %}
-{% set preview = track.uid and playing_uid == track.uid %}
+{% set preview = (track.uid and playing_uid == track.uid) or (not track.uid and playing_path and playing_path == track.path) %}
 <tr class="{{ 'is-preview' if preview else '' }} {{ 'unlinked' if not track.figure else '' }}">
 <td>
 {% if demo and track.media %}
@@ -199,6 +199,8 @@
 <form action="/library/stop" method="post"><button class="play-dot is-playing" type="submit" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg><span>Stop</span></button></form>
 {% elif track.uid.strip() %}
 <form action="/library/play/{{ track.uid }}" method="post"><button class="play-dot" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Play</span></button></form>
+{% elif track.path.strip() %}
+<form action="/library/play" method="post"><input type="hidden" name="path" value="{{ track.path }}"><button class="play-dot" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Play</span></button></form>
 {% else %}
 <button class="play-dot" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5z"/></svg><span>Play</span></button>
 {% endif %}

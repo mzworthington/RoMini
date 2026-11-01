@@ -180,3 +180,34 @@ def test_now_playing_carries_the_story_image() -> None:
 
     assert view is not None
     assert view.image == "/library/cover/stories/frog-prince.mp3"
+
+
+def test_now_playing_names_an_unlinked_file_by_its_library_path() -> None:
+    class Playing:
+        def is_playing(self) -> bool:
+            return True
+
+        def playing_uid(self) -> str:
+            return ""
+
+        def playing_path(self) -> str:
+            return "/var/lib/romini/library/stories/romy.mp3"
+
+        def started_at(self) -> datetime:
+            return datetime(2026, 9, 21, 6, 15)
+
+        def position_sec(self) -> float:
+            return 0.0
+
+    view = describe_now_playing(
+        Playing(),
+        tracks=[
+            {"uid": "", "title": "Bear", "path": "stories/bear.mp3"},
+            {"uid": "", "title": "Romy", "path": "stories/romy.mp3"},
+        ],
+        tags=[],
+    )
+
+    assert view is not None
+    assert view.story == "Romy"
+    assert view.trigger == ""
