@@ -21,13 +21,22 @@ def _tone(path: Path) -> None:
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory() as directory:
-        wav = Path(directory) / "boot.wav"
-        _tone(wav)
-        for index in range(3):
-            subprocess.run(["aplay", "-D", "plughw:Headphones", str(wav)], check=False)
-            if index < 2:
-                sleep(0.22)
+    try:
+        with tempfile.TemporaryDirectory() as directory:
+            wav = Path(directory) / "boot.wav"
+            _tone(wav)
+            for index in range(3):
+                subprocess.run(["aplay", "-D", "plughw:Headphones", str(wav)], check=False)
+                if index < 2:
+                    sleep(0.22)
+    finally:
+        _quiet_pwm()
+
+
+def _quiet_pwm() -> None:
+    subprocess.run(["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"], check=False)
+    for pin in ("18", "19"):
+        subprocess.run(["pinctrl", "set", pin, "op", "dl"], check=False)
 
 
 if __name__ == "__main__":

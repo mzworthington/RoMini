@@ -152,7 +152,10 @@ class MpvPlayer:
         return 0.0
 
     def set_volume(self, level: int) -> None:
-        self._apply_alsa(level, unmute=self._playing)
+        if self._playing:
+            self._apply_alsa(level, unmute=True)
+        else:
+            self._silence_headphones()
         payload = json.dumps({"command": ["set_property", "volume", level]}, separators=(",", ":"))
         if self._ipc is not None:
             self._ipc(payload)
@@ -165,13 +168,13 @@ class MpvPlayer:
             return
 
     def _apply_alsa(self, level: int, *, unmute: bool) -> None:
-        cmd = ["amixer", "-c", "Headphones", "--", "sset", "Headphone", f"{level}%"]
+        cmd = ["amixer", "-c", "Headphones", "--", "sset", "PCM", f"{level}%"]
         if unmute:
             cmd.append("unmute")
         self._alsa_cmd(cmd)
 
     def _silence_headphones(self) -> None:
-        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"])
+        self._alsa_cmd(["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"])
         self._park_pwm_pins()
 
     def _park_pwm_pins(self) -> None:
