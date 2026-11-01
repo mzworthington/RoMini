@@ -11,6 +11,9 @@ from romini.composition.mpv_ipc import unix_connect as _unix_connect
 from romini.composition.pn532 import NFC_READ_TIMEOUT, Pn532Nfc
 from romini.features.boot.ready import READY_EARCON_PATH
 
+# makeup=4 is +12 dB. The limiter holds peaks that the compressor lets through.
+_STORY_LOUDNESS = "lavfi=[acompressor=threshold=0.125:ratio=4:attack=5:release=80:makeup=4,alimiter=limit=0.89]"
+
 __all__ = [
     "MpvIpcStatus",
     "MpvPlayer",
@@ -82,6 +85,7 @@ class MpvPlayer:
             "--audio-device=alsa/sysdefault:CARD=Headphones",
             f"--input-ipc-server={mpv_ipc_socket()}",
             f"--start={position_sec}",
+            f"--af={_STORY_LOUDNESS}",
         ]
         if self.mixer is not None:
             cmd.append(f"--volume={self.mixer.level}")
