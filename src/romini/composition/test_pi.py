@@ -128,7 +128,7 @@ def test_mpv_player_set_volume_while_playing_opens_pcm(monkeypatch) -> None:
 
     player.set_volume(42)
 
-    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"]]
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"]]
 
 
 def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch) -> None:
@@ -157,7 +157,7 @@ def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
     ]
@@ -174,6 +174,7 @@ def test_mpv_player_pause_silences_headphones(monkeypatch) -> None:
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
@@ -193,6 +194,7 @@ def test_mpv_player_stop_silences_headphones(monkeypatch) -> None:
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
@@ -214,7 +216,7 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
     ]
@@ -369,7 +371,7 @@ def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) ->
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "100%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
         ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
