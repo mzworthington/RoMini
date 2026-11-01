@@ -38,6 +38,7 @@ def test_mpv_player_starts_track_on_alsa(monkeypatch) -> None:
             "--audio-device=alsa/sysdefault:CARD=Headphones",
             f"--input-ipc-server={sock}",
             "--start=14.5",
+            "--af=lavfi=[acompressor=threshold=0.125:ratio=4:attack=5:release=80:makeup=4,alimiter=limit=0.89]",
             "/var/lib/romini/library/frog.mp3",
         ]
     ]
@@ -59,6 +60,7 @@ def test_mpv_player_play_uses_mixer_level(monkeypatch) -> None:
     )
 
     assert "--volume=42" in calls[0]
+    assert any(part.startswith("--af=lavfi=[acompressor=") for part in calls[0])
 
 
 def test_mpv_player_set_volume_sends_ipc() -> None:
