@@ -73,7 +73,7 @@ def test_mpv_player_mutes_headphones_as_soon_as_it_starts() -> None:
     MpvPlayer(alsa=sent.append)
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
     ]
@@ -105,16 +105,30 @@ def test_mpv_player_puts_the_pwm_pins_back_before_a_track_starts(monkeypatch) ->
     assert order.index("pinctrl set 19 a5") < order.index("mpv")
 
 
-def test_mpv_player_set_volume_sets_alsa_headphone() -> None:
+def test_mpv_player_volume_while_idle_keeps_pcm_muted() -> None:
     sent: list[list[str]] = []
     MpvPlayer(alsa=sent.append).set_volume(42)
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
+        ["pinctrl", "set", "18", "op", "dl"],
+        ["pinctrl", "set", "19", "op", "dl"],
     ]
+
+
+def test_mpv_player_set_volume_while_playing_opens_pcm(monkeypatch) -> None:
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", lambda *args, **kwargs: object())
+    sent: list[list[str]] = []
+    player = MpvPlayer(alsa=sent.append)
+    player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
+    sent.clear()
+
+    player.set_volume(42)
+
+    assert sent == [["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"]]
 
 
 def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch) -> None:
@@ -132,7 +146,7 @@ def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch
 
     assert player.is_playing() is False
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
     ]
@@ -140,10 +154,10 @@ def test_mpv_player_silences_headphones_when_the_track_process_exits(monkeypatch
     player.play("/var/lib/romini/library/frog.mp3", position_sec=0.0, uid="04aabbcc")
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
     ]
@@ -157,12 +171,12 @@ def test_mpv_player_pause_silences_headphones(monkeypatch) -> None:
     player.pause()
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
     ]
@@ -176,12 +190,12 @@ def test_mpv_player_stop_silences_headphones(monkeypatch) -> None:
     player.stop()
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
     ]
@@ -197,10 +211,10 @@ def test_mpv_player_play_sets_alsa_headphone(monkeypatch) -> None:
     )
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
     ]
@@ -352,13 +366,13 @@ def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) ->
     sleep(0.4)
 
     assert sent == [
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "42%", "unmute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "42%", "unmute"],
         ["pinctrl", "set", "18", "a5"],
         ["pinctrl", "set", "19", "a5"],
-        ["amixer", "-c", "Headphones", "--", "sset", "Headphone", "mute"],
+        ["amixer", "-c", "Headphones", "--", "sset", "PCM", "0%", "mute"],
         ["pinctrl", "set", "18", "op", "dl"],
         ["pinctrl", "set", "19", "op", "dl"],
     ]
