@@ -97,6 +97,7 @@ jobs:
     needs: verify
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: production
       url: https://demo.romini.party
