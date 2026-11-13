@@ -68,6 +68,11 @@ def test_install_pi_script_installs_pn532_hat_packages() -> None:
     assert "do_spi 0" in script
 
 
+def test_install_pi_script_installs_blinka_gpiod() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert "'gpiod>=2.2.2,<3'" in script
+
+
 def test_install_pi_script_installs_ups_hat_smbus() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "smbus2" in script

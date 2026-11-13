@@ -7,6 +7,11 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src" / "romini"
 
 
+def test_linux_wheel_depends_on_blinka_gpiod() -> None:
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert "gpiod>=2.2.2,<3; sys_platform == 'linux'" in config["project"]["dependencies"]
+
+
 def test_wheel_package_data_includes_the_welcome_track() -> None:
     config = tomllib.loads((ROOT / "pyproject.toml").read_text())
     patterns = config["tool"]["setuptools"]["package-data"]["romini"]

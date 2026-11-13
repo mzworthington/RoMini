@@ -261,7 +261,7 @@ Dashboard on Pi binds `0.0.0.0` when `ROMINI_DASHBOARD_PORT` is set (unit uses *
 
 ### 3.7 Install the app
 
-Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `adafruit-blinka`, `adafruit-circuitpython-pn532`, and `smbus2` (installed by `bin/install-pi` into the venv). `default_nfc()` uses `romini.composition.pn532_hat.PN532_SPI` (`reset=20`, `cs=4`). If that import or init fails, it uses `FakeNfc`.
+Pi packages not in the wheel: `mpv`, plus `RPi.GPIO`, `adafruit-blinka`, `adafruit-circuitpython-pn532`, and `smbus2` (installed by `bin/install-pi` into the venv). The wheel also depends on `gpiod>=2.2.2,<3` on Linux, and `bin/install-pi` pins the same range. Blinka on a Pi 4 imports `gpiod` before the PN532 opens. `default_nfc()` uses `romini.composition.pn532_hat.PN532_SPI` (`reset=20`, `cs=4`). If that import or init fails, it uses `FakeNfc`.
 
 MP3s never come from git. The Release wheel is the player, dashboard, updater, and systemd snippets. Stories live in `/var/lib/romini/library`.
 
