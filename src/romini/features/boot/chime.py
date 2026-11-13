@@ -11,7 +11,7 @@ def _tone(path: Path) -> None:
     frames = int(rate * 0.18)
     samples = bytearray()
     for index in range(frames):
-        level = int(9000 * math.sin(2 * math.pi * 880 * index / rate))
+        level = int(9000 * 0.30 * math.sin(2 * math.pi * 880 * index / rate))
         samples += level.to_bytes(2, "little", signed=True)
     with wave.open(str(path), "wb") as handle:
         handle.setnchannels(1)

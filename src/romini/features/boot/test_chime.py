@@ -1,3 +1,20 @@
+def test_boot_chime_tone_peaks_at_thirty_percent(tmp_path) -> None:
+    import struct
+    import wave
+    from pathlib import Path
+
+    from romini.features.boot.chime import _tone
+
+    path = Path(tmp_path) / "boot.wav"
+    _tone(path)
+    with wave.open(str(path)) as handle:
+        raw = handle.readframes(handle.getnframes())
+    samples = struct.unpack("<" + "h" * (len(raw) // 2), raw)
+    peak = max(abs(sample) for sample in samples)
+
+    assert 2500 <= peak <= 2700
+
+
 def test_boot_chime_plays_three_tones_on_the_headphones(monkeypatch) -> None:
     from romini.features.boot.chime import main
 
