@@ -33,6 +33,27 @@ def test_dashboard_downloads_a_backup_of_stories_and_catalog(tmp_path: Path) -> 
         assert saved.read("catalog.yaml") == b"tracks: []\n"
 
 
+def test_dashboard_downloads_cover_images(tmp_path: Path) -> None:
+    catalog = tmp_path / "catalog.yaml"
+    catalog.write_text("tracks: []\n")
+    figure = tmp_path / "covers" / "figures" / "04aabbccddeeff" / "cover.jpg"
+    figure.parent.mkdir(parents=True)
+    figure.write_bytes(b"figure-photo")
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(tmp_path / "library"),
+            assign_catalog=PathCatalog(catalog),
+            covers=tmp_path / "covers",
+        )
+    )
+
+    response = client.get("/backup")
+
+    assert response.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(response.content)) as saved:
+        assert saved.read("covers/figures/04aabbccddeeff/cover.jpg") == b"figure-photo"
+
+
 def test_dashboard_import_restores_stories_and_catalog(tmp_path: Path) -> None:
     catalog = tmp_path / "catalog.yaml"
     catalog.write_text("tracks: []\n")
@@ -64,6 +85,31 @@ def test_dashboard_import_restores_stories_and_catalog(tmp_path: Path) -> None:
     assert (stories / "frog" / "story.yaml").read_text() == "title: Frog\n"
     character = tmp_path / "characters" / "romy" / "character.yaml"
     assert character.read_text() == "name: Romy\nbackground: The main character\n"
+
+
+def test_dashboard_import_restores_cover_images(tmp_path: Path) -> None:
+    catalog = tmp_path / "catalog.yaml"
+    catalog.write_text("tracks: []\n")
+    covers = tmp_path / "covers"
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as saved:
+        saved.writestr("covers/figures/04aabbccddeeff/cover.jpg", b"figure-photo")
+    client = TestClient(
+        create_dashboard(
+            storage=DiskStorage(tmp_path / "library"),
+            assign_catalog=PathCatalog(catalog),
+            covers=covers,
+        )
+    )
+
+    response = client.post(
+        "/backup",
+        files={"file": ("romini-backup.zip", archive.getvalue(), "application/zip")},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert (covers / "figures" / "04aabbccddeeff" / "cover.jpg").read_bytes() == b"figure-photo"
 
 
 def test_settings_page_offers_backup_download_and_restore(tmp_path: Path) -> None:

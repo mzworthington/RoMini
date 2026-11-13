@@ -25,6 +25,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 stories=ctx.stories,
                 characters=ctx.characters,
                 library=_library_root(ctx.storage),
+                covers=ctx.covers,
             )
         except BaseException:
             handle.close()
@@ -60,6 +61,7 @@ def mount(app: FastAPI, ctx: DashboardCtx) -> None:
                 stories=ctx.stories,
                 characters=ctx.characters,
                 library=_library_root(ctx.storage),
+                covers=ctx.covers,
             )
         except (zipfile.BadZipFile, ValueError):
             return notice("/settings", "backup-needed")

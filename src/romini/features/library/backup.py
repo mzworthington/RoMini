@@ -13,6 +13,7 @@ def write_backup(
     stories: Path | None,
     characters: Path | None,
     library: Path | None,
+    covers: Path | None = None,
 ) -> None:
     with zipfile.ZipFile(dest, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         _record_library(catalog, library)
@@ -21,6 +22,7 @@ def write_backup(
         _add_tree(archive, stories, "stories")
         _add_tree(archive, characters, "characters")
         _add_tree(archive, library, "library")
+        _add_tree(archive, covers, "covers")
 
 
 def _record_library(catalog: Path | None, library: Path | None) -> None:
@@ -60,8 +62,9 @@ def restore_backup(
     stories: Path | None,
     characters: Path | None,
     library: Path | None,
+    covers: Path | None = None,
 ) -> None:
-    roots = {"stories": stories, "characters": characters, "library": library}
+    roots = {"stories": stories, "characters": characters, "library": library, "covers": covers}
     with zipfile.ZipFile(source) as archive:
         planned: list[tuple[zipfile.ZipInfo, Path]] = []
         for info in archive.infolist():

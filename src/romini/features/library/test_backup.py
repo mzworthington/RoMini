@@ -48,6 +48,30 @@ def test_backup_archive_keeps_characters_and_library_audio(tmp_path: Path) -> No
         assert saved.read("library/frog.mp3") == b"audio"
 
 
+def test_backup_archive_keeps_cover_images(tmp_path: Path) -> None:
+    figure = tmp_path / "covers" / "figures" / "04aabbccddeeff" / "cover.jpg"
+    figure.parent.mkdir(parents=True)
+    figure.write_bytes(b"figure-photo")
+    story = tmp_path / "covers" / "frog.mp3" / "cover.png"
+    story.parent.mkdir(parents=True)
+    story.write_bytes(b"story-photo")
+    archive = io.BytesIO()
+
+    write_backup(
+        archive,
+        catalog=None,
+        stories=None,
+        characters=None,
+        library=None,
+        covers=tmp_path / "covers",
+    )
+
+    archive.seek(0)
+    with zipfile.ZipFile(archive) as saved:
+        assert saved.read("covers/figures/04aabbccddeeff/cover.jpg") == b"figure-photo"
+        assert saved.read("covers/frog.mp3/cover.png") == b"story-photo"
+
+
 def test_backup_records_library_audio_the_catalog_left_out(tmp_path: Path) -> None:
     catalog = tmp_path / "catalog.yaml"
     catalog.write_text("tracks:\n- uid: 6cde55fa\n  path: romys-birthday-party.mp3\n  title: romys birthday party\n")
@@ -90,6 +114,28 @@ def test_restore_puts_stories_and_catalog_back(tmp_path: Path) -> None:
 
     assert (restored / "catalog.yaml").read_text() == catalog.read_text()
     assert (restored / "stories" / "frog" / "story.yaml").read_text() == "title: Frog\n"
+
+
+def test_restore_puts_cover_images_back(tmp_path: Path) -> None:
+    source = tmp_path / "source" / "covers"
+    figure = source / "figures" / "04aabbccddeeff" / "cover.jpg"
+    figure.parent.mkdir(parents=True)
+    figure.write_bytes(b"figure-photo")
+    archive = io.BytesIO()
+    write_backup(archive, catalog=None, stories=None, characters=None, library=None, covers=source)
+
+    restored = tmp_path / "restored" / "covers"
+    archive.seek(0)
+    restore_backup(
+        archive,
+        catalog=None,
+        stories=None,
+        characters=None,
+        library=None,
+        covers=restored,
+    )
+
+    assert (restored / "figures" / "04aabbccddeeff" / "cover.jpg").read_bytes() == b"figure-photo"
 
 
 def test_restore_refuses_a_path_that_leaves_the_data_folders(tmp_path: Path) -> None:

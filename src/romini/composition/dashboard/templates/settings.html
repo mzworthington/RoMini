@@ -227,7 +227,7 @@ sudo nmtui</pre>
 {% endif %}
 <form action="/backup" method="get"><button type="submit">Download backup</button></form>
 {% if not demo %}
-<form action="/backup" method="post" enctype="multipart/form-data" onsubmit="return confirm('Restore this backup? Matching stories, characters, catalog, and library files are replaced.')">
+<form action="/backup" method="post" enctype="multipart/form-data" onsubmit="return confirm('Restore this backup? Matching stories, characters, pictures, catalog, and library files are replaced.')">
 <label for="backup-file">Backup file</label>
 <input id="backup-file" name="file" type="file" accept=".zip,application/zip" required>
 <button type="submit">Restore backup</button>
