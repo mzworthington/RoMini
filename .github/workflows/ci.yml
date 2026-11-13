@@ -52,8 +52,37 @@ jobs:
             echo "- sha: \`$GITHUB_SHA\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  ota-upgrade:
+    name: OTA upgrade emulate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install mise
+        uses: jdx/mise-action@v5.2.6
+
+      - name: Bootstrap
+        run: make bootstrap
+
+      - name: Prove last Release upgrades to this wheel
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: ./bin/ota-emulate
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## OTA upgrade emulate"
+            echo "- sha: \`$GITHUB_SHA\`"
+            echo "- harness: \`bin/ota-emulate\` (last older Release → candidate wheel)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   release:
-    needs: verify
+    needs: [verify, ota-upgrade]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
@@ -94,7 +123,7 @@ jobs:
 
   deploy-demo:
     name: Deploy demo
-    needs: verify
+    needs: [verify, ota-upgrade]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30

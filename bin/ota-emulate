@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Emulate a Pi with the last older Release wheel installed, then upgrade to a candidate.
+# Same OTA contract as the box (persistent venv + apply_update). No QEMU / SD flash.
+#
+#   ./bin/ota-emulate
+#   ROMINI_OTA_BASELINE_WHEEL=/path/to/romini-0.75.0-py3-none-any.whl ./bin/ota-emulate
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+if [[ ! -d "$ROOT/.venv" ]]; then
+  PYTHON="${PYTHON:-$(command -v python3)}" "$ROOT/bin/bootstrap"
+fi
+
+# shellcheck disable=SC1091
+source "$ROOT/.venv/bin/activate"
+
+export ROMINI_ROOT="${ROMINI_ROOT:-$ROOT}"
+export ROMINI_PYTHON="${ROMINI_PYTHON:-$ROOT/.venv/bin/python}"
+
+exec "$ROMINI_PYTHON" -m romini.composition.ota_emulate "$@"

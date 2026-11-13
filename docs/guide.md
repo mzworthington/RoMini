@@ -54,7 +54,7 @@ make test
 
 That is ruff check, ruff format `--check` and pytest. Pre-commit: ruff + Prettier on commit; **full** pytest on pre-push; conventional subjects on commit-msg.
 
-CI (`.github/workflows/ci.yml`) runs the same `make test`. Merge to `main` with `feat`/`fix` under `src/` or `pyproject.toml` can cut a GitHub Release wheel.
+CI (`.github/workflows/ci.yml`) runs the same `make test`, then `./bin/ota-emulate` so a broken candidate cannot ship until it upgrades cleanly from the last older Release. Merge to `main` with `feat`/`fix` under `src/` or `pyproject.toml` can cut a GitHub Release wheel.
 
 ### 1.2 Data tree
 
@@ -160,7 +160,7 @@ Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST
 | Dashboard | Same FastAPI; bind `127.0.0.1` |
 | Audio | Silent. CI must not need speakers |
 | OverlayFS, Avahi, HAT power cut | Not emulated |
-| OTA | Tests + `python -m romini.composition.update` against GitHub; not the inner loop |
+| OTA | Unit tests for `apply_update`. Full path: `./bin/ota-emulate` (last older Release → this wheel); CI job `ota-upgrade` |
 
 ---
 

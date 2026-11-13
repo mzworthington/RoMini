@@ -16,7 +16,9 @@ def test_main_deploys_the_demo_worker_after_verify() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
 
     assert "deploy-demo:" in workflow
-    assert "needs: verify" in workflow
+    assert "needs: [verify, ota-upgrade]" in workflow
+    assert "ota-upgrade:" in workflow
+    assert "bin/ota-emulate" in workflow
     assert "https://demo.romini.party" in workflow
     assert "uv run pywrangler d1 migrations apply romini-demo --remote" in workflow
     assert "uv run pywrangler deploy" in workflow

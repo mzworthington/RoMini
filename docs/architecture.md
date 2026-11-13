@@ -184,7 +184,7 @@ Domain talks these; adapters bind in `sim` / `pi` (`src/romini/`).
 
 ## 8. CI / release
 
-PR: `pre-commit --all-files` + `make test` (ruff, pytest). `main`: semantic-release wheel on GitHub Releases. Device timer installs the wheel with PAT.
+PR: `pre-commit --all-files` + `make test` (ruff, pytest) + `ota-upgrade` (`bin/ota-emulate`: last older Release → candidate wheel). `main`: semantic-release wheel on GitHub Releases after that gate. Device timer installs the wheel with PAT.
 
 ## 9. Implementation order
 

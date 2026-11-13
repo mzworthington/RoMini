@@ -1,6 +1,6 @@
 VENV := .venv
 
-.PHONY: help bootstrap lint format test build sim screenshots tour
+.PHONY: help bootstrap lint format test build sim ota-emulate screenshots tour
 
 help:
 	@echo "bootstrap    Install venv and hooks"
@@ -9,6 +9,7 @@ help:
 	@echo "test         lint, format check, pytest"
 	@echo "build        sdist and wheel"
 	@echo "sim          Laptop sim (dashboard 8080, injectors 8081)"
+	@echo "ota-emulate  Install last older Release wheel, upgrade to this tree"
 	@echo "screenshots  Playwright page shots into docs/images"
 	@echo "tour         Playwright walkthrough video into docs/images"
 
@@ -39,6 +40,9 @@ clean:
 
 sim:
 	./bin/sim
+
+ota-emulate: $(VENV)/bin/python
+	./bin/ota-emulate
 
 screenshots: $(VENV)/bin/python
 	./$(VENV)/bin/python -m pip install -e ".[screenshots]"
