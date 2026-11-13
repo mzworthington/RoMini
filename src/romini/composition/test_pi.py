@@ -355,6 +355,28 @@ def test_mpv_player_play_earcon_starts_mpv(monkeypatch) -> None:
     assert calls[0][-1].endswith("connect.mp3")
 
 
+def test_hello_and_goodbye_play_at_thirty_percent(monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    class Proc:
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    def popen(cmd: list[str], *args, **kwargs) -> Proc:
+        calls.append(cmd)
+        return Proc()
+
+    monkeypatch.setattr("romini.composition.pi.subprocess.Popen", popen)
+    player = MpvPlayer(alsa=lambda cmd: None)
+    player.play_earcon("romini/connect.mp3")
+    player.play_earcon("romini/disconnect.mp3")
+
+    assert "--volume=30" in calls[0]
+    assert calls[0][-1].endswith("connect.mp3")
+    assert "--volume=30" in calls[1]
+    assert calls[1][-1].endswith("disconnect.mp3")
+
+
 def test_mpv_player_play_earcon_restores_the_level_then_silences(monkeypatch) -> None:
     from time import sleep
 

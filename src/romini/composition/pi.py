@@ -199,7 +199,9 @@ class MpvPlayer:
         audio = str(wav) if wav.is_file() else path
         self._open_pcm()
         self._restore_pwm_pins()
-        proc = subprocess.Popen(["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", audio])
+        proc = subprocess.Popen(
+            ["mpv", "--ao=alsa", "--audio-device=alsa/sysdefault:CARD=Headphones", "--volume=30", audio]
+        )
         if path == READY_EARCON_PATH:
             self._earcon = proc
             self._earcon_done = Event()
