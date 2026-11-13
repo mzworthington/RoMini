@@ -66,6 +66,16 @@ make test
 
 Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/GPIO/player are fakes.
 
+## Prove an upgrade (no SD flash)
+
+`sim` does not exercise OTA. To catch a wheel that would brick the next update, spin up a local data tree with the **last older GitHub Release** installed, then upgrade to a wheel built from this tree:
+
+```bash
+./bin/ota-emulate
+```
+
+That uses a throwaway tree under `var/ota-emulate/` (`ROMINI_OTA_DATA`, not `ROMINI_DATA`), `pip install`s the baseline into `install/venv`, runs the same `apply_update` path the timer uses, and checks that the library marker survives and `romini-core` still imports. It will not wipe your laptop sim library. CI runs this on every PR before a Release can cut.
+
 ## Public site
 
 The zone `romini.party` is owned by [edge-dns](https://github.com/mzworthington/edge-dns). This repo owns the product resources and the deploys. Preview and apply for the Pulumi stack live in the [edge-dns reusable workflow](https://github.com/mzworthington/edge-dns/blob/main/docs/reusable-cloudflare-ci.md).

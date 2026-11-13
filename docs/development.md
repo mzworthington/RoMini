@@ -46,6 +46,8 @@ Halt logs instead of `systemctl poweroff`.
 
 Same as `sim` with fakes. No QEMU job in v1.
 
+The **OTA upgrade** job runs `./bin/ota-emulate`: install the newest published wheel **older** than this tree’s version into a throwaway `install/venv`, then upgrade to a candidate wheel built here. That is the Pi OTA contract without an SD card. Release and demo deploy wait on it.
+
 ## Explicitly out of scope for emulation
 
 - QEMU Raspberry Pi as the daily driver.

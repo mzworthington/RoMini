@@ -34,6 +34,7 @@ Chosen option: "**Option A**", because it is proven on gpio, ships the updater *
 * Units and updater ship **in the wheel** (`python -m romini.composition.provision` / `.update`). First install is `bin/install-pi`. No git working tree on the box.
 * The repo is **public** from day one; the device still uses a **PAT** in `/etc/romini/env` (`chmod 600`) for Releases API rate limits. Never commit the token.
 * A broken wheel can break the next OTA until you `pip install` a previous Release asset by hand.
+* Mitigation: CI `ota-upgrade` runs `bin/ota-emulate` (venv with last older Release → candidate wheel + import smoke) before semantic-release. Not a QEMU/SD soak.
 * Follow-up: skip install while playing is implemented (`apply_update` + `MpvIpcStatus`). Re-run provision and recopy `/etc` when unit files change.
 
 ## Architecture sketch
