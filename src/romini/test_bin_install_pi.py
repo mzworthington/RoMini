@@ -36,6 +36,11 @@ def test_install_pi_script_blanks_unused_peripherals() -> None:
     assert "dtparam=pwr_led_trigger=none" in script
 
 
+def test_install_pi_script_uses_the_quieter_pwm_audio_mode() -> None:
+    script = (ROOT / "bin" / "install-pi").read_text()
+    assert 'ensure_boot_line "audio_pwm_mode=2"' in script
+
+
 def test_install_pi_script_remaps_analogue_audio_once_then_reboots() -> None:
     script = (ROOT / "bin" / "install-pi").read_text()
     assert "dtparam=audio=on" in script

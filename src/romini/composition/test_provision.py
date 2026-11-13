@@ -357,6 +357,17 @@ def test_merge_boot_config_appends_audremap_once() -> None:
     assert twice == once
 
 
+def test_boot_config_uses_the_quieter_pwm_audio_mode(tmp_path: Path) -> None:
+    from romini.composition.provision import apply_boot_config
+
+    path = tmp_path / "config.txt"
+    path.write_text("dtparam=audio=on\n")
+
+    apply_boot_config(path)
+
+    assert "audio_pwm_mode=2" in path.read_text()
+
+
 def test_boot_config_disables_the_analogue_dither_that_hisses_while_idle(tmp_path: Path) -> None:
     from romini.composition.provision import apply_boot_config
 

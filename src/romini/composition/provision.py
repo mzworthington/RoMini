@@ -8,6 +8,7 @@ I2C_ARM = "dtparam=i2c_arm=on"
 SPI_ARM = "dtparam=spi=on"
 ANALOGUE_AUDIO = "dtparam=audio=on"
 DISABLE_AUDIO_DITHER = "disable_audio_dither=1"
+QUIET_PWM_AUDIO = "audio_pwm_mode=2"
 AUDREMAP_GPIO_18_19 = "dtoverlay=audremap,pins_18_19"
 HDMI_BLANKING = "hdmi_blanking=2"
 DISABLE_BT = "dtoverlay=disable-bt"
@@ -20,6 +21,7 @@ BOOT_CONFIG_LINES = (
     SPI_ARM,
     ANALOGUE_AUDIO,
     DISABLE_AUDIO_DITHER,
+    QUIET_PWM_AUDIO,
     AUDREMAP_GPIO_18_19,
     HDMI_BLANKING,
     DISABLE_BT,
