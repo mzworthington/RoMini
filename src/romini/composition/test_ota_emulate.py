@@ -5,8 +5,10 @@ import pytest
 from romini.composition.ota_emulate import (
     choose_baseline,
     list_release_wheels,
+    ota_work_paths,
     parse_wheel_version,
     prove_upgrade,
+    reset_ota_data_root,
     version_key,
 )
 
@@ -121,7 +123,38 @@ def test_ota_emulate_script_points_at_the_module() -> None:
     script = ROOT / "bin" / "ota-emulate"
     text = script.read_text()
     assert "-m romini.composition.ota_emulate" in text
+    assert "unset ROMINI_DATA" in text
+    assert "ROMINI_OTA_DATA" in text
     assert script.stat().st_mode & 0o111
+
+
+def test_ota_work_paths_ignore_romini_data(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("ROMINI_DATA", str(tmp_path / "sim-library"))
+    monkeypatch.delenv("ROMINI_OTA_DATA", raising=False)
+    monkeypatch.delenv("ROMINI_OTA_WORK", raising=False)
+    work, data_root, _dist, _cache = ota_work_paths(tmp_path / "repo")
+    assert data_root == work / "device"
+    assert "sim-library" not in str(data_root)
+
+
+def test_reset_ota_data_root_refuses_paths_outside_work(tmp_path: Path) -> None:
+    work = tmp_path / "ota"
+    work.mkdir()
+    foreign = tmp_path / "var" / "romini"
+    foreign.mkdir(parents=True)
+    (foreign / "catalog.yaml").write_text("tracks: []\n")
+    with pytest.raises(RuntimeError, match="refusing to wipe"):
+        reset_ota_data_root(foreign, work=work)
+    assert (foreign / "catalog.yaml").is_file()
+
+
+def test_reset_ota_data_root_wipes_only_under_work(tmp_path: Path) -> None:
+    work = tmp_path / "ota"
+    data = work / "device"
+    data.mkdir(parents=True)
+    (data / "stale").write_text("gone\n")
+    reset_ota_data_root(data, work=work)
+    assert not data.exists()
 
 
 def test_ci_runs_ota_upgrade_before_release() -> None:

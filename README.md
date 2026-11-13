@@ -74,7 +74,7 @@ Dashboard on the laptop is `http://127.0.0.1:8080`. Same domain as the box; NFC/
 ./bin/ota-emulate
 ```
 
-That creates `$ROMINI_DATA` (default `var/ota-emulate/device`), `pip install`s the baseline into `install/venv`, runs the same `apply_update` path the timer uses, and checks that the library marker survives and `romini-core` still imports. CI runs this on every PR before a Release can cut.
+That uses a throwaway tree under `var/ota-emulate/` (`ROMINI_OTA_DATA`, not `ROMINI_DATA`), `pip install`s the baseline into `install/venv`, runs the same `apply_update` path the timer uses, and checks that the library marker survives and `romini-core` still imports. It will not wipe your laptop sim library. CI runs this on every PR before a Release can cut.
 
 ## Public site
 

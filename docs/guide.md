@@ -160,7 +160,7 @@ Dashboard routes: `GET /`, `GET /storage`, `POST /tracks`, `POST /assign`, `POST
 | Dashboard | Same FastAPI; bind `127.0.0.1` |
 | Audio | Silent. CI must not need speakers |
 | OverlayFS, Avahi, HAT power cut | Not emulated |
-| OTA | Unit tests for `apply_update`. Full path: `./bin/ota-emulate` (last older Release → this wheel); CI job `ota-upgrade` |
+| OTA | Unit tests for `apply_update`. Full path: `./bin/ota-emulate` under `var/ota-emulate/` (not `ROMINI_DATA`); CI job `ota-upgrade` |
 
 ---
 

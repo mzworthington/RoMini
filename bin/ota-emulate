@@ -18,5 +18,9 @@ source "$ROOT/.venv/bin/activate"
 
 export ROMINI_ROOT="${ROMINI_ROOT:-$ROOT}"
 export ROMINI_PYTHON="${ROMINI_PYTHON:-$ROOT/.venv/bin/python}"
+# Never reuse the laptop sim library tree; OTA emulate has its own throwaway path.
+unset ROMINI_DATA
+export ROMINI_OTA_WORK="${ROMINI_OTA_WORK:-$ROOT/var/ota-emulate}"
+export ROMINI_OTA_DATA="${ROMINI_OTA_DATA:-$ROMINI_OTA_WORK/device}"
 
 exec "$ROMINI_PYTHON" -m romini.composition.ota_emulate "$@"

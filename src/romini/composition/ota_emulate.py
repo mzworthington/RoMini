@@ -256,13 +256,34 @@ def resolve_baseline_wheel(
     return version, str(path)
 
 
+def ota_work_paths(root: Path) -> tuple[Path, Path, Path, Path]:
+    """Throwaway trees under var/ota-emulate — never the laptop sim's ROMINI_DATA."""
+    work = Path(os.environ.get("ROMINI_OTA_WORK", root / "var" / "ota-emulate")).expanduser()
+    data_root = Path(os.environ.get("ROMINI_OTA_DATA", work / "device")).expanduser()
+    dist = Path(os.environ.get("ROMINI_OTA_DIST", work / "dist")).expanduser()
+    cache = Path(os.environ.get("ROMINI_OTA_CACHE", work / "cache")).expanduser()
+    return work, data_root, dist, cache
+
+
+def reset_ota_data_root(data_root: Path, *, work: Path) -> None:
+    """Wipe only paths under the OTA work tree so a exported ROMINI_DATA cannot be deleted."""
+    resolved = data_root.expanduser().resolve()
+    work_resolved = work.expanduser().resolve()
+    try:
+        resolved.relative_to(work_resolved)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"refusing to wipe {resolved}; OTA emulate data must stay under {work_resolved} "
+            "(use ROMINI_OTA_DATA, not ROMINI_DATA)"
+        ) from exc
+    if resolved.exists():
+        shutil.rmtree(resolved)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     root = Path(os.environ.get("ROMINI_ROOT", Path(__file__).resolve().parents[3]))
-    work = Path(os.environ.get("ROMINI_OTA_WORK", root / "var" / "ota-emulate"))
-    data_root = Path(os.environ.get("ROMINI_DATA", work / "device"))
-    dist = Path(os.environ.get("ROMINI_OTA_DIST", work / "dist"))
-    cache = Path(os.environ.get("ROMINI_OTA_CACHE", work / "cache"))
+    work, data_root, dist, cache = ota_work_paths(root)
     repo = os.environ.get("GITHUB_REPO", "mzworthington/RoMini")
     token = os.environ.get("GITHUB_TOKEN", "")
     python = os.environ.get("ROMINI_PYTHON", sys.executable)
@@ -272,7 +293,9 @@ def main(argv: list[str] | None = None) -> int:
     if args in (["-h"], ["--help"]):
         print(
             "Emulate a Pi data tree: install the last older Release wheel, then upgrade to a candidate.\n"
-            "Env: ROMINI_OTA_BASELINE_WHEEL, ROMINI_OTA_CANDIDATE_WHEEL, ROMINI_DATA, GITHUB_TOKEN, GITHUB_REPO"
+            "Env: ROMINI_OTA_BASELINE_WHEEL, ROMINI_OTA_CANDIDATE_WHEEL, ROMINI_OTA_DATA, "
+            "GITHUB_TOKEN, GITHUB_REPO\n"
+            "Does not read or wipe ROMINI_DATA (laptop sim library)."
         )
         return 0
 
@@ -291,8 +314,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"baseline: {baseline_version} ({baseline_wheel})")
     print(f"candidate: {candidate_version} ({candidate})")
 
-    if data_root.exists():
-        shutil.rmtree(data_root)
+    reset_ota_data_root(data_root, work=work)
     report = prove_upgrade(
         data_root=data_root,
         baseline_wheel=baseline_wheel,
