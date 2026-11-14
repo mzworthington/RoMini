@@ -1795,6 +1795,63 @@ def test_dashboard_live_player_follows_the_plate_without_reloading(tmp_path: Pat
     assert "location.reload" not in lifted
 
 
+def test_dashboard_playhead_follows_the_playing_story(tmp_path: Path) -> None:
+    import io
+    import wave
+
+    from fastapi.testclient import TestClient
+
+    from romini.composition.dashboard import PathCatalog
+    from romini.fakes import FakePlayer
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 80000)
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        "tracks:\n"
+        '  - uid: "04aabbccddeeff"\n'
+        '    path: "stories/gruffalo.mp3"\n'
+        '    title: "The Gruffalo"\n'
+        "tags:\n"
+        "  - uid: 04aabbccddeeff\n"
+        "    name: Gruffalo\n"
+    )
+    player = FakePlayer()
+    player.play(
+        "/var/lib/romini/library/stories/gruffalo.mp3",
+        position_sec=3.1,
+        uid="04aabbccddeeff",
+    )
+    html = (
+        TestClient(
+            create_dashboard(
+                storage=FakeStorage(free_bytes=1024, files={"stories/gruffalo.mp3": buffer.getvalue()}),
+                assign_catalog=PathCatalog(catalog_path),
+                player=player,
+            )
+        )
+        .get("/now-playing")
+        .text
+    )
+
+    assert 'style="--play: 31%; --play-at: 31"' in html
+    assert ">0:03<" in html
+
+
+def test_playhead_line_moves_by_a_unitless_amount() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    templates = Path(__file__).parent / "dashboard" / "templates"
+    css = Environment(loader=FileSystemLoader(templates)).get_template("dashboard.css").render()
+    rule = css.split(".waveform::after {", 1)[1].split("}", 1)[0]
+
+    assert "* var(--play-at, 0) / 100)" in rule
+
+
 def test_dashboard_home_offers_play_when_the_story_is_paused(tmp_path: Path) -> None:
     from datetime import datetime
 

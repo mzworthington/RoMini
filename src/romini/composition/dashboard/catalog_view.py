@@ -140,9 +140,17 @@ def _show_track(uid: str, title: str, path: str, removed: set[str]) -> bool:
 
 
 def _playing_facts(storage: object, path: str, playing: str) -> TrackFacts | None:
-    if not path or path != playing:
+    if not _is_playing_path(path, playing):
         return None
     return audio_facts(storage, path)
+
+
+def _is_playing_path(path: str, playing: str) -> bool:
+    catalog = path.replace("\\", "/")
+    current = playing.replace("\\", "/")
+    if not catalog or not current:
+        return False
+    return current == catalog or current.endswith("/" + catalog)
 
 
 def _track_fields(

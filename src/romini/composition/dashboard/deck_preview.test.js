@@ -70,6 +70,7 @@ test("the waveform follows playback and a scrub moves the preview", () => {
   audio.dispatchEvent(new window.Event("timeupdate"));
 
   assert.equal(wave.style.getPropertyValue("--play"), "50%");
+  assert.equal(wave.style.getPropertyValue("--play-at"), "50");
   assert.equal(scrub.value, "500");
   assert.equal(window.document.querySelector("[data-deck-place]").textContent, "1:02");
   assert.equal(window.document.querySelector("[data-deck-length]").textContent, "2:05");
@@ -79,6 +80,7 @@ test("the waveform follows playback and a scrub moves the preview", () => {
 
   assert.equal(audio.currentTime, 31.25);
   assert.equal(wave.style.getPropertyValue("--play"), "25%");
+  assert.equal(wave.style.getPropertyValue("--play-at"), "25");
 });
 
 test("restart returns the preview to the beginning and plays it", () => {

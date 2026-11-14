@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from typing import Protocol
 
 from romini.composition.sim import SimBox
+from romini.features.play_by_tag.place_figure import PRESENCE_LIFT_GRACE_SEC
 
 NFC_POLL_SEC = 0.25
 NFC_ABSENT_TICKS = 3
@@ -40,11 +41,12 @@ def poll_nfc(
         misses[0] = 0
         return None
     misses[0] += 1
-    if misses[0] >= NFC_ABSENT_TICKS:
-        box.lift(previous_uid, elapsed_sec=2.1, position_sec=0.0)
-        misses[0] = 0
-        return None
-    return previous_uid
+    elapsed = misses[0] * NFC_POLL_SEC
+    if elapsed <= PRESENCE_LIFT_GRACE_SEC:
+        return previous_uid
+    box.lift(previous_uid, elapsed_sec=elapsed, position_sec=0.0)
+    misses[0] = 0
+    return None
 
 
 def run_nfc_ticks(box: SimBox, nfc: Nfc, ticks: Iterable[object]) -> None:

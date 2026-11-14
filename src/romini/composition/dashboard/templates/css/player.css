@@ -53,7 +53,7 @@
   content: "";
   position: absolute;
   z-index: 1;
-  left: calc(0.85rem + (100% - 1.7rem - 2px) * var(--play, 0%) / 100%);
+  left: calc(0.85rem + (100% - 1.7rem - 2px) * var(--play-at, 0) / 100);
   top: 0.4rem;
   bottom: 0.4rem;
   width: 2px;

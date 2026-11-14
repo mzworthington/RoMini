@@ -38,7 +38,7 @@ from romini.fakes import (
     write_empty_data,
     write_frog_data,
 )
-from romini.features.play_by_tag.place_figure import PlayMode
+from romini.features.play_by_tag.place_figure import PRESENCE_LIFT_GRACE_SEC, PlayMode
 
 
 def test_sim_place_plays_the_connect_chirp(tmp_path: Path) -> None:
@@ -1082,7 +1082,7 @@ def test_nfc_one_missed_poll_does_not_retrigger_tap_playback() -> None:
     assert player.is_playing() is True
 
 
-def test_nfc_poll_lifts_when_uid_disappears() -> None:
+def test_nfc_short_gap_keeps_the_story_playing() -> None:
     player = FakePlayer()
     box = frog_sim_box(player, FakeLed())
     nfc = FakeNfc(uid=FROG_UID)
@@ -1091,6 +1091,24 @@ def test_nfc_poll_lifts_when_uid_disappears() -> None:
     nfc.clear()
     absent = [0]
     for _ in range(NFC_ABSENT_TICKS):
+        seen = poll_nfc(box, nfc, previous_uid=seen, absent_ticks=absent)
+    nfc = FakeNfc(uid=FROG_UID)
+    poll_nfc(box, nfc, previous_uid=seen, absent_ticks=absent)
+
+    assert player.plays == [(f"{SIM_LIBRARY_ROOT}/{FROG_REL_PATH}", 0.0)]
+    assert player.pauses == 0
+    assert player.is_playing() is True
+
+
+def test_nfc_poll_lifts_when_uid_disappears() -> None:
+    player = FakePlayer()
+    box = frog_sim_box(player, FakeLed())
+    nfc = FakeNfc(uid=FROG_UID)
+
+    seen = poll_nfc(box, nfc)
+    nfc.clear()
+    absent = [0]
+    for _ in range(int(PRESENCE_LIFT_GRACE_SEC / NFC_POLL_SEC) + 1):
         seen = poll_nfc(box, nfc, previous_uid=seen, absent_ticks=absent)
 
     assert player.pauses == 1
@@ -1104,9 +1122,8 @@ def test_nfc_ticks_lift_after_uid_clears() -> None:
     def ticks() -> None:
         yield None
         nfc.clear()
-        yield None
-        yield None
-        yield None
+        for _ in range(int(PRESENCE_LIFT_GRACE_SEC / NFC_POLL_SEC) + 1):
+            yield None
 
     run_nfc_ticks(box, nfc, ticks())
 

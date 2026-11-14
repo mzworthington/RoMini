@@ -31,7 +31,10 @@
     var duration = audio.duration;
     if (!duration) return;
     var pct = (audio.currentTime / duration) * 100;
-    if (wave) wave.style.setProperty("--play", pct + "%");
+    if (wave) {
+      wave.style.setProperty("--play", pct + "%");
+      wave.style.setProperty("--play-at", String(pct));
+    }
     if (scrub && !dragging) scrub.value = String(Math.round(pct * 10));
     if (place) place.textContent = clock(audio.currentTime);
     if (length) length.textContent = clock(duration);
@@ -50,7 +53,10 @@
   audio.addEventListener("pause", function () { label(false); });
   audio.addEventListener("ended", function () {
     label(false);
-    if (wave) wave.style.setProperty("--play", "0%");
+    if (wave) {
+      wave.style.setProperty("--play", "0%");
+      wave.style.setProperty("--play-at", "0");
+    }
     if (scrub) scrub.value = "0";
     if (place) place.textContent = "0:00";
   });
@@ -60,7 +66,10 @@
     scrub.addEventListener("input", function () {
       dragging = true;
       var pct = Number(scrub.value) / 10;
-      if (wave) wave.style.setProperty("--play", pct + "%");
+      if (wave) {
+        wave.style.setProperty("--play", pct + "%");
+        wave.style.setProperty("--play-at", String(pct));
+      }
       if (audio.duration) audio.currentTime = (pct / 100) * audio.duration;
       if (place) place.textContent = clock(audio.currentTime);
     });
