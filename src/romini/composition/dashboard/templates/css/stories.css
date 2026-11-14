@@ -138,7 +138,7 @@
 .story-stack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.65rem; }
 .story-stack li {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
   padding: 0.8rem 0.9rem;
@@ -146,7 +146,7 @@
   background: #faf2ed;
 }
 .story-stack li.is-open { background: #f4ece7; }
-.story-stack .track-title { font-weight: 800; margin-right: auto; }
+.story-stack .track-title { font-weight: 800; flex: 1; min-width: 0; }
 .story-stack form { margin: 0; }
 .saved-head {
   display: flex;

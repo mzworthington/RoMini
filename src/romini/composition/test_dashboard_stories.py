@@ -145,6 +145,17 @@ def test_dashboard_saved_stories_empty_when_none_saved(tmp_path: Path) -> None:
     assert "No saved stories yet" in html
 
 
+def test_saved_story_buttons_stay_on_the_title_row() -> None:
+    from fastapi.testclient import TestClient
+
+    html = TestClient(create_dashboard(storage=FakeStorage(free_bytes=1024))).get("/stories").text
+    row = html.split(".story-stack li {", 1)[1].split("}", 1)[0]
+    title = html.split(".story-stack .track-title {", 1)[1].split("}", 1)[0]
+
+    assert "flex-wrap: nowrap" in row
+    assert "min-width: 0" in title
+
+
 def test_story_studio_is_one_page_for_writing_and_characters() -> None:
     from fastapi.testclient import TestClient
 
@@ -890,7 +901,7 @@ def test_dashboard_draft_uses_gemini_when_no_drafter_is_injected(tmp_path: Path)
     client.post("/stories", data={"story_title": "The little station", "outline": "a ride"})
     html = client.post("/stories/draft").text
 
-    assert ">Rowmy waited at the station. [pause]</textarea>" in html
+    assert ">Rowmy waited at the station.</textarea>" in html
     assert posts
     assert "gem-secret" not in html
 

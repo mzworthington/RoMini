@@ -65,7 +65,7 @@ def test_gemini_script_draft_posts_notes_and_returns_text() -> None:
         outline="a ride",
     )
 
-    assert script == "Rowmy waited at the station. [pause]"
+    assert script == "Rowmy waited at the station."
     url, headers, body = calls[0]
     payload = json.loads(body)
     prompt = payload["contents"][0]["parts"][0]["text"]
@@ -80,6 +80,37 @@ def test_gemini_script_draft_posts_notes_and_returns_text() -> None:
     assert "Baaba" in prompt
     assert "[pause]" in prompt
     assert "gem-secret" not in url
+
+
+def test_gemini_script_draft_drops_square_bracket_directions() -> None:
+    from romini.composition.story_draft import GeminiScriptDraft
+
+    calls: list[bytes] = []
+
+    def post(url: str, *, headers: dict[str, str], body: bytes) -> bytes:
+        calls.append(body)
+        return json.dumps(
+            {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [{"text": "[title]\nRowmy waited at the station. [pause]\nShe waved."}],
+                        }
+                    }
+                ]
+            }
+        ).encode()
+
+    script = GeminiScriptDraft(api_key="gem-secret", post=post).draft(
+        title="The little station",
+        characters="Romy",
+        interests="trains",
+        outline="a ride",
+    )
+
+    prompt = json.loads(calls[0])["contents"][0]["parts"][0]["text"]
+    assert "Keep square-bracket lines" not in prompt
+    assert script == "Rowmy waited at the station.\nShe waved."
 
 
 def test_gemini_script_draft_asks_for_target_spoken_words() -> None:

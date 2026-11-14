@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from collections.abc import Callable
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -59,7 +60,8 @@ class GeminiScriptDraft:
         prompt = (
             "Write a bedtime story script for a parent to edit, then speak aloud.\n"
             "Titles may say Romy. Spoken names are Rowmy, Maama, and Baaba.\n"
-            "Keep square-bracket lines such as [pause] as audio direction, not spoken words.\n"
+            "Write only words that are spoken aloud.\n"
+            "Do not add a title line, stage directions, or square brackets such as [title] or [pause].\n"
             f"Aim for about {words} spoken words, a {length} listen.\n"
             f"Title: {title}\n"
             f"Characters: {characters}\n"
@@ -76,7 +78,16 @@ class GeminiScriptDraft:
             body=json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode(),
         )
         data = json.loads(raw)
-        return str(data["candidates"][0]["content"]["parts"][0]["text"]).strip()
+        return _spoken_script(str(data["candidates"][0]["content"]["parts"][0]["text"]))
+
+
+def _spoken_script(text: str) -> str:
+    lines = []
+    for line in re.sub(r"\[[^\]]*\]", "", text).splitlines():
+        cleaned = " ".join(line.split())
+        if cleaned:
+            lines.append(cleaned)
+    return "\n".join(lines)
 
 
 def gemini_http_post(url: str, *, headers: dict[str, str], body: bytes) -> bytes:
