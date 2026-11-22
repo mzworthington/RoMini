@@ -61,7 +61,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install mise
-        uses: jdx/mise-action@v5.2.7
+        uses: jdx/mise-action@v5.2.10
 
       - name: Bootstrap
         run: make bootstrap
@@ -107,7 +107,7 @@ jobs:
 
       - name: Install mise
         if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
-        uses: jdx/mise-action@v5.2.7
+        uses: jdx/mise-action@v5.2.10
 
       - name: Bootstrap
         if: github.event.inputs.force_release == 'true' || steps.changes.outputs.release == 'true'
@@ -150,7 +150,7 @@ jobs:
         with:
           node-version: 24
 
-      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: '3.13'
           working-directory: deploy/demo
