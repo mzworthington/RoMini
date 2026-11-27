@@ -22,7 +22,9 @@ def test_main_deploys_the_demo_worker_after_verify() -> None:
     assert "https://demo.romini.party" in workflow
     assert "uv run pywrangler d1 migrations apply romini-demo --remote" in workflow
     assert "uv run pywrangler deploy" in workflow
-    assert "CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID" in workflow
+    assert "infra/cloudflare/hosting.yaml" in workflow
+    assert "secrets.CLOUDFLARE_ACCOUNT_ID" not in workflow
+    assert "CLOUDFLARE_API_TOKEN" in workflow
     assert "secrets.POSTHOG_TOKEN" in workflow
     assert "pywrangler secret put POSTHOG_TOKEN" in workflow
     assert "https://a.mzworthington.co.uk" in workflow
@@ -42,6 +44,8 @@ def test_party_deploy_fails_when_cloudflare_credentials_are_missing() -> None:
     workflow = (ROOT / ".github" / "workflows" / "party.yml").read_text()
 
     assert "https://romini.party" in workflow
+    assert "infra/cloudflare/hosting.yaml" in workflow
+    assert "secrets.CLOUDFLARE_ACCOUNT_ID" not in workflow
     assert "CLOUDFLARE_ACCOUNT_ID" in workflow
     assert "Skipping wrangler deploy" not in workflow
     assert "exit 1" in workflow

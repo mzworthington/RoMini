@@ -27,13 +27,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - name: Require Cloudflare credentials
+      - name: Read Cloudflare account
+        id: cloudflare-account
+        run: |
+          id=$(awk -F': *' '$1 == "accountId" { print $2; exit }' infra/cloudflare/hosting.yaml)
+          if [ -z "${id}" ]; then
+            echo "::error::infra/cloudflare/hosting.yaml is missing accountId."
+            exit 1
+          fi
+          echo "id=${id}" >> "$GITHUB_OUTPUT"
+
+      - name: Require Cloudflare token
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ]; then
-            echo "::error::Party deploy needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ]; then
+            echo "::error::Party deploy needs CLOUDFLARE_API_TOKEN."
             exit 1
           fi
 
@@ -73,5 +82,5 @@ jobs:
         working-directory: deploy/party
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cloudflare-account.outputs.id }}
         run: npx wrangler deploy

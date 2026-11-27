@@ -86,7 +86,7 @@ The zone `romini.party` is owned by [edge-dns](https://github.com/mzworthington/
 | Demo dashboard script and `migrations/0001_state.sql` | `deploy/demo` | `deploy-demo` in `.github/workflows/ci.yml` on `main`, after verify (`uv run pywrangler deploy`) |
 | Landing page on `romini.party` and `www` | `deploy/party` | `.github/workflows/party.yml` when that directory changes on `main` |
 
-The database `5948544a-74ae-4e4e-922c-908af99e4b9a` and bucket `romini-demo` already exist and are protected in the Pulumi stack. Repository secrets are `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`, and `PULUMI_ACCESS_TOKEN`. `bin/setup-cloudflare-hosting.sh` copies them from a gitignored `.env` (see `.env.example`).
+The database `5948544a-74ae-4e4e-922c-908af99e4b9a` and bucket `romini-demo` already exist and are protected in the Pulumi stack. The Cloudflare account and zone ids are in `infra/cloudflare/hosting.yaml`. Repository secrets are `CLOUDFLARE_API_TOKEN` and `PULUMI_ACCESS_TOKEN`. `bin/setup-cloudflare-hosting.sh` copies them from a gitignored `.env` (see `.env.example`).
 
 `romini.party` and `www.romini.party` are one page: a circular picture of RoMini, **find out more** linking to [Building a story box for Romy](https://mzworthington.co.uk/open-source/building-a-story-box-for-romy), **demo dashboard** linking to `demo.romini.party`, and the same footer as the parent dashboard.
 
